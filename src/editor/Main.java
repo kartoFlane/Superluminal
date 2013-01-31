@@ -100,7 +100,7 @@ public class Main
 	public static boolean allowRoomPlacement = true;
 	
 		// === Internal
-	static boolean debug = true;
+	static boolean debug = false;
 	/**
 	 * when set to true, all ship data is pre-loaded into hashmaps/sets when the ship browser is opened for the first time.
 	 * no need to do this, only one ship is being used at any given time.
@@ -170,7 +170,7 @@ public class Main
 	
 	/*
 	 * TODO
-	 * - fix shield graphic alignment
+	 * - fix shield graphic alignment on enemy ships
 	 * 
 	 * - gibs -> male okienko gdzie ustawiasz kat (ko³o ze wskaznikiem), predkosc liniowa i katowa (slidery)
 	 * - gibs -> ujemne angular velocity obraca w lewa strone
@@ -1357,8 +1357,8 @@ public class Main
 							}
 						} else if (rightMouseDown) {
 							if (!modShift) {
-								ship.ellipse.x = e.x - dragRoomAnchor.x - ship.anchor.x;
-								ship.ellipse.y = e.y - dragRoomAnchor.y - ship.anchor.y;
+								ship.ellipse.x = e.x - dragRoomAnchor.x;
+								ship.ellipse.y = e.y - dragRoomAnchor.y;
 							} else {
 								ship.ellipse.x = (int)((e.x - phantomRect.x)/10);
 								ship.ellipse.y = (int)((e.y - phantomRect.y)/10);
@@ -1497,6 +1497,9 @@ public class Main
 			public void mouseDown(MouseEvent e) {
 				mousePosLastClick.x = e.x;
 				mousePosLastClick.y = e.y;
+				
+				leftMouseDown = e.button == 1;
+				rightMouseDown = e.button == 3;
 				onCanvas = true;
 				if (canvasActive) {
 					if (tltmPointer.getSelection() && showAnchor && (e.x >= ship.anchor.x-FTLShip.ANCHOR && ((ship.anchor.x == 0) ? (e.x <= FTLShip.ANCHOR) : ((e.x <= ship.anchor.x)))
@@ -1519,8 +1522,13 @@ public class Main
 							hullSelected = phantomRect.contains(mousePos);
 							moveSelected = hullSelected;
 							if (hullSelected) {
-								dragRoomAnchor.x = e.x - ship.imageRect.x;
-								dragRoomAnchor.y = e.y - ship.imageRect.y;
+								if (leftMouseDown) {
+									dragRoomAnchor.x = e.x - ship.imageRect.x;
+									dragRoomAnchor.y = e.y - ship.imageRect.y;
+								} else if (rightMouseDown) {
+									dragRoomAnchor.x = e.x;
+									dragRoomAnchor.y = e.y;
+								}
 							}
 						}
 						if (selectedRoom != null) {
@@ -1528,9 +1536,6 @@ public class Main
 							selectedDoor = null;
 						}
 					}
-					
-					leftMouseDown = e.button == 1;
-					rightMouseDown = e.button == 3;
 					
 					if (tltmPointer.getSelection() && onCanvas && e.button == 1) {
 						if (selectedMount != null && selectedMount.rect.contains(mousePosLastClick)) {
@@ -2096,7 +2101,7 @@ public class Main
 				
 				if (!ShipIO.isNull(path) && selectedRoom != null) {
 					selectedRoom.img = path;
-					
+
 					ShipIO.loadSystemImage(selectedRoom);
 					canvas.redraw();
 				}

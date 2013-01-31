@@ -3,6 +3,7 @@ package elements;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.PaintEvent;
@@ -79,9 +80,9 @@ public class FTLShip implements Serializable
 	public int missiles = 5;
 	public int drones = 5;
 	
-	public HashSet<String> weaponSet;
-	public HashSet<String> droneSet;
-	public HashSet<String> augmentSet;
+	public LinkedList<String> weaponSet;
+	public LinkedList<String> droneSet;
+	public LinkedList<String> augmentSet;
 	public HashMap<String, Integer> crewMap;
 	public HashMap<Systems, Integer> powerMap;
 	public HashMap<Systems, Integer> levelMap;
@@ -92,9 +93,9 @@ public class FTLShip implements Serializable
 		doors = new HashSet<FTLDoor>();
 		mounts = new HashSet<FTLMount>();
 		
-		weaponSet = new HashSet<String>();
-		droneSet = new HashSet<String>();
-		augmentSet = new HashSet<String>();
+		weaponSet = new LinkedList<String>();
+		droneSet = new LinkedList<String>();
+		augmentSet = new LinkedList<String>();
 		crewMap = new HashMap<String, Integer>();
 		powerMap = new HashMap<Systems, Integer>();
 		levelMap = new HashMap<Systems, Integer>();

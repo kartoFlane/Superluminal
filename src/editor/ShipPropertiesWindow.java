@@ -3,7 +3,6 @@ package editor;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
@@ -38,10 +37,6 @@ public class ShipPropertiesWindow extends Dialog
 	private Text textLayout;
 	private Text textImage;
 	private Text textDesc;
-	private Text textShieldO;
-	private Text textCloakO;
-	private Button btnCloak;
-	private Button btnShield;
 	private Spinner spHealth;
 	private Spinner spReactor;
 	private Spinner spMax;
@@ -85,6 +80,8 @@ public class ShipPropertiesWindow extends Dialog
 	private Label lblReqPower;
 	private Label lblReqStart;
 	private List listAugments;
+	private Spinner spMissiles;
+	private Spinner spDrones;
 
 	public ShipPropertiesWindow(Shell parent)
 	{
@@ -111,11 +108,13 @@ public class ShipPropertiesWindow extends Dialog
 			textImage.setText(Main.ship.imageName);
 		if (!ShipIO.isNull(Main.ship.descr))
 			textDesc.setText(Main.ship.descr);
+		/*
 		if (!ShipIO.isNull(Main.ship.cloakOverride))
 			textCloakO.setText(Main.ship.cloakOverride);
 		if (!ShipIO.isNull(Main.ship.shieldOverride))
 			textShieldO.setText(Main.ship.shieldOverride);
-
+		 */
+		
 		textName.setEnabled(Main.ship.isPlayer);
 		if (!ShipIO.isNull(Main.ship.shipName))
 			textName.setText(Main.ship.shipName);
@@ -129,16 +128,12 @@ public class ShipPropertiesWindow extends Dialog
 		if (!ShipIO.isNull(Main.ship.descr))
 			textDesc.setText(Main.ship.descr);
 
+		/*
 		if (!ShipIO.isNull(Main.ship.cloakOverride))
 			textCloakO.setText(Main.ship.cloakOverride);
 		if (!ShipIO.isNull(Main.ship.shieldOverride))
 			textShieldO.setText(Main.ship.shieldOverride);
-		
-	// overrides
-		//btnCloak.setEnabled(Main.ship.isPlayer);
-		//btnShield.setEnabled(Main.ship.isPlayer);
-		btnCloak.setEnabled(false);
-		btnShield.setEnabled(false);
+		*/
 		
 	// power & health
 		
@@ -190,6 +185,7 @@ public class ShipPropertiesWindow extends Dialog
 		spCrystal.setSelection(Main.ship.crewMap.get("crystal"));
 		
 	// weapons
+		spMissiles.setSelection(Main.ship.missiles);
 		spSlots.setSelection(Main.ship.weaponSlots);
 		spMaxWeapons.setMaximum(spSlots.getSelection());
 		spMaxWeapons.setSelection(Main.ship.weaponCount);
@@ -231,6 +227,7 @@ search:		for (String s : presets.getItems()) {
 		}
 		
 	// drones
+		spDrones.setSelection(Main.ship.drones);
 		spSlotsDr.setSelection(Main.ship.droneSlots);
 		spMaxDrones.setMaximum(spSlotsDr.getSelection());
 		spMaxDrones.setSelection(Main.ship.droneCount);
@@ -351,51 +348,44 @@ search:		for (String s : presetsDr.getItems()) {
 		Label lblDescription = new Label(shipInfoC, SWT.NONE);
 		lblDescription.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
 		lblDescription.setText("Description:");
-		
-		Label lblCloakOverride = new Label(shipInfoC, SWT.NONE);
-		lblCloakOverride.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
-		lblCloakOverride.setText("Cloak Override:");
-		lblCloakOverride.setToolTipText("Allows to change the cloak image used by this ship by default.");
-		
-		btnCloak = new Button(shipInfoC, SWT.NONE);
-		btnCloak.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
-		btnCloak.setText("Browse");
+		new Label(shipInfoC, SWT.NONE);
+		new Label(shipInfoC, SWT.NONE);
+		new Label(shipInfoC, SWT.NONE);
 		
 		textDesc = new Text(shipInfoC, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL | SWT.MULTI);
-		GridData gd_textDesc = new GridData(SWT.FILL, SWT.FILL, false, true, 2, 4);
+		GridData gd_textDesc = new GridData(SWT.FILL, SWT.FILL, false, true, 2, 5);
 		gd_textDesc.widthHint = 212;
 		textDesc.setLayoutData(gd_textDesc);
+		new Label(shipInfoC, SWT.NONE);
+		new Label(shipInfoC, SWT.NONE);
+		new Label(shipInfoC, SWT.NONE);
+		new Label(shipInfoC, SWT.NONE);
+		new Label(shipInfoC, SWT.NONE);
+		new Label(shipInfoC, SWT.NONE);
 		
-		textCloakO = new Text(shipInfoC, SWT.BORDER);
-		textCloakO.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 3, 1));
-		//textCloakO.setEnabled(Main.ship.isPlayer);
-		textCloakO.setEnabled(false);
+		Label lblMissiles = new Label(shipInfoC, SWT.NONE);
+		lblMissiles.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 2, 1));
+		lblMissiles.setText("Missiles:");
 		
-		Label lblShieldOverride = new Label(shipInfoC, SWT.NONE);
-		lblShieldOverride.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
-		lblShieldOverride.setText("Shield Override:");
-		lblShieldOverride.setToolTipText("Allows to change the shield image used by this ship by default.");
+		spMissiles = new Spinner(shipInfoC, SWT.BORDER);
+		spMissiles.setMaximum(99);
+		spMissiles.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		
-		btnShield = new Button(shipInfoC, SWT.NONE);
-		btnShield.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
-		btnShield.setText("Browse");
+		Label lblDroneParts = new Label(shipInfoC, SWT.NONE);
+		lblDroneParts.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
+		lblDroneParts.setText("Drone parts:");
 		
-		textShieldO = new Text(shipInfoC, SWT.BORDER);
-		textShieldO.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 3, 1));
-		//textShieldO.setEnabled(Main.ship.isPlayer);
-		textShieldO.setEnabled(false);
+		spDrones = new Spinner(shipInfoC, SWT.BORDER);
+		spDrones.setMaximum(99);
+		spDrones.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		
 		Label lblNewLabel = new Label(shipInfoC, SWT.NONE);
+		lblNewLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 2, 1));
 		lblNewLabel.setText("Hull Health:");
-		new Label(shipInfoC, SWT.NONE);
 		
 		spHealth = new Spinner(shipInfoC, SWT.BORDER);
-		spHealth.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
+		spHealth.setMaximum(99);
+		spHealth.setLayoutData(new GridData(SWT.RIGHT, SWT.BOTTOM, true, false, 1, 1));
 		
 	// === Properties -> Systems Overview
 		TabItem tbtmSystemsOverview = new TabItem(tabFolder, SWT.NONE);
@@ -900,6 +890,9 @@ search:		for (String s : presetsDr.getItems()) {
 				Main.ship.hullHealth = spHealth.getSelection();
 				
 				// armaments
+				Main.ship.missiles = spMissiles.getSelection();
+				Main.ship.drones = spDrones.getSelection();
+				
 				Main.ship.weaponsBySet = btnUseSet.getSelection();
 				Main.ship.dronesBySet = btnUseSetDr.getSelection();
 				
@@ -935,38 +928,6 @@ search:		for (String s : presetsDr.getItems()) {
 				}
 				
 				shell.setVisible(false);
-			}
-		});
-		
-		btnCloak.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-				String[] filterExtensions = new String[] {"*.png"};
-				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(Main.resPath);
-				String path = dialog.open();
-				
-				if (!ShipIO.isNull(path)) {
-					Main.ship.imagePath = path;
-					ShipIO.loadImage(path, "cloak");
-					textCloakO.setText(Main.ship.cloakOverride);
-				}
-			}
-		});
-		
-		btnShield.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-				String[] filterExtensions = new String[] {"*.png"};
-				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(Main.resPath);
-				String path = dialog.open();
-				
-				if (!ShipIO.isNull(path)) {
-					Main.ship.imagePath = path;
-					ShipIO.loadImage(path, "shields");
-					textShieldO.setText(Main.ship.shieldOverride);
-				}
 			}
 		});
 		

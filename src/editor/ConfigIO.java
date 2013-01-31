@@ -70,8 +70,8 @@ public class ConfigIO {
 		Pattern pattern;
 		Matcher matcher;
 		
-    	try {
-			fr = new FileReader("superluminal.ini");
+		try {
+    		fr = new FileReader("superluminal.ini");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}

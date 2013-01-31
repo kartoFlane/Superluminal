@@ -28,6 +28,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
@@ -783,49 +784,57 @@ ship:					while(sc.hasNext()) {
 			Main.shieldImage.dispose();
 		Main.shieldImage = null;
 		
-		if (!isNull(Main.resPath) && ship != null) {
-			if (loadingSwitch) {
-				Main.hullImage = SWTResourceManager.getImage(ship.imagePath);
-				// load floor
-				if (ship.isPlayer && new File(ship.floorPath).exists() && Main.loadFloor)
-					Main.floorImage = SWTResourceManager.getImage(ship.floorPath);
-				// load shield
-				if (Main.loadShield) {
-					if (isNull(ship.shieldOverride)) {
-						Main.shieldImage = SWTResourceManager.getImage(ship.shieldPath);
+		try {
+			if (!isNull(Main.resPath) && ship != null) {
+				if (loadingSwitch) {
+					Main.hullImage = SWTResourceManager.getImage(ship.imagePath);
+					// load floor
+					if (ship.isPlayer && new File(ship.floorPath).exists() && Main.loadFloor)
+						Main.floorImage = SWTResourceManager.getImage(ship.floorPath);
+					// load shield
+					if (Main.loadShield) {
+						if (isNull(ship.shieldOverride)) {
+							Main.shieldImage = SWTResourceManager.getImage(ship.shieldPath);
+						} else {
+							Main.shieldImage = SWTResourceManager.getImage(ship.shieldOverride);
+						}
+					}
+				} else {
+					if (new File(ship.imagePath).exists()) {
+						Main.hullImage = new Image(Main.shell.getDisplay(), ship.imagePath);
 					} else {
-						Main.shieldImage = SWTResourceManager.getImage(ship.shieldOverride);
+						errors.add("Error: load ship image - hull image not found.");
+					}
+					// load floor
+					File f = new File(ship.floorPath);
+					if (ship.isPlayer && f.exists() && Main.loadFloor) {
+							Main.floorImage = new Image(Main.shell.getDisplay(), ship.floorPath);
+					} else if (ship.isPlayer && !f.exists()) {
+						errors.add("Error: load ship image - floor image not found.");
+					}
+					// load shield
+					if (Main.loadShield) {
+						if (isNull(ship.shieldOverride)) {
+							f = new File(ship.shieldPath);
+							if (f.exists()) {
+								Main.shieldImage = new Image(Main.shell.getDisplay(), ship.shieldPath);
+							} else {
+								errors.add("Error: load ship image - shield image not found.");
+							}
+						} else {
+							Main.shieldImage = SWTResourceManager.getImage(ship.shieldOverride);
+						}
 					}
 				}
 			} else {
-				if (new File(ship.imagePath).exists()) {
-					Main.hullImage = new Image(Main.shell.getDisplay(), ship.imagePath);
-				} else {
-					errors.add("Error: load ship image - hull image not found.");
-				}
-				// load floor
-				File f = new File(ship.floorPath);
-				if (ship.isPlayer && f.exists() && Main.loadFloor) {
-						Main.floorImage = new Image(Main.shell.getDisplay(), ship.floorPath);
-				} else if (ship.isPlayer && !f.exists()) {
-					errors.add("Error: load ship image - floor image not found.");
-				}
-				// load shield
-				if (Main.loadShield) {
-					if (isNull(ship.shieldOverride)) {
-						f = new File(ship.shieldPath);
-						if (f.exists()) {
-							Main.shieldImage = new Image(Main.shell.getDisplay(), ship.shieldPath);
-						} else {
-							errors.add("Error: load ship image - shield image not found.");
-						}
-					} else {
-						Main.shieldImage = SWTResourceManager.getImage(ship.shieldOverride);
-					}
-				}
+				errors.add("Error: load ship image - resource path is not set, unable to find images.");
 			}
-		} else {
-			errors.add("Error: load ship image - resource path is not set, unable to find images.");
+		} catch (SWTException e) {
+			errors.add("Error: load ships images - one of the ship's images could not be found.");
+			if (Main.hullImage == null) Main.ship.imagePath = null;
+			if (Main.floorImage == null) Main.ship.floorPath = null;
+			if (Main.shieldImage == null) Main.ship.shieldPath = null;
+			if (Main.cloakImage == null) Main.ship.cloakPath = null;
 		}
 	}
 	
@@ -1499,12 +1508,17 @@ search:		while(sc.hasNext()) {
 	public static void loadSystemImage(FTLRoom r) {
 		if (r.sysImg != null && !r.sysImg.isDisposed() && !loadingSwitch)
 			r.sysImg.dispose();
-		
-		if (isNull(r.img) && !r.sys.equals(Systems.TELEPORTER) && !r.sys.equals(Systems.EMPTY)) // load default graphics (teleporter doesn't have default graphic)
-			r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + "room_" + r.sys.toString().toLowerCase() + ".png";
-		
-		if (Main.loadSystem && !isNull(r.img))
-			r.sysImg = (loadingSwitch) ? SWTResourceManager.getImage(r.img) : new Image(Main.shell.getDisplay(), r.img);
+
+		try { 
+			if (isNull(r.img) && !r.sys.equals(Systems.TELEPORTER) && !r.sys.equals(Systems.EMPTY)) // load default graphics (teleporter doesn't have default graphic)
+				r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + "room_" + r.sys.toString().toLowerCase() + ".png";
+			
+			if (Main.loadSystem && !isNull(r.img))
+				r.sysImg = (loadingSwitch) ? SWTResourceManager.getImage(r.img) : new Image(Main.shell.getDisplay(), r.img);
+		} catch (SWTException e) {
+			r.img = null;
+			r.sysImg = null;
+		}
 	}
 	
 	public static void loadShipProject(String path) {
@@ -1525,6 +1539,7 @@ search:		while(sc.hasNext()) {
 
 			Main.ship = (FTLShip) ois.readObject();
 			
+			
 			loadShipImages(Main.ship);
 			
 			loadSystemImages();
@@ -1532,8 +1547,11 @@ search:		while(sc.hasNext()) {
 			for (FTLRoom r : Main.ship.rooms) {
 				Main.idList.add(r.id);
 			}
-			
-			Main.print("Project loaded successfully.");
+			if (errors.size() == 0) {
+				Main.print("Project loaded successfully.");
+			} else {
+				Main.print("Errors occured during project loading. Some data may be missing");
+			}
 			ois.close();
 		} catch (FileNotFoundException e) {
 			errors.add("Error: load ship project - file not found.");
