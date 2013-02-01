@@ -71,6 +71,7 @@ public class ExportDialog extends Dialog
 		
 		Group grpSaving = new Group(shell, SWT.NONE);
 		grpSaving.setText("Saving");
+		grpSaving.setFont(Main.appFont);
 		grpSaving.setLayout(new GridLayout(4, false));
 		FormData fd_grpSaving = new FormData();
 		fd_grpSaving.top = new FormAttachment(0, 10);
@@ -79,7 +80,11 @@ public class ExportDialog extends Dialog
 		grpSaving.setLayoutData(fd_grpSaving);
 		
 		final Button btnAdd = new Button(grpSaving, SWT.RADIO);
-		btnAdd.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		btnAdd.setFont(Main.appFont);
+		GridData gd_btnAdd = new GridData(SWT.LEFT, SWT.CENTER, true, false, 2, 1);
+		gd_btnAdd.minimumWidth = 90;
+		gd_btnAdd.widthHint = 90;
+		btnAdd.setLayoutData(gd_btnAdd);
 		btnAdd.setToolTipText("");
 		btnAdd.setEnabled(!Main.ship.isPlayer);
 		btnAdd.setText("Add new ship");
@@ -89,7 +94,11 @@ public class ExportDialog extends Dialog
 		new Label(grpSaving, SWT.NONE);
 		
 		final Button btnReplace = new Button(grpSaving, SWT.RADIO);
-		btnReplace.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		btnReplace.setFont(Main.appFont);
+		GridData gd_btnReplace = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1);
+		gd_btnReplace.minimumWidth = 100;
+		gd_btnReplace.widthHint = 100;
+		btnReplace.setLayoutData(gd_btnReplace);
 		btnReplace.setSelection(true);
 		btnReplace.setText("Replace existing");
 		
@@ -101,6 +110,7 @@ public class ExportDialog extends Dialog
 		composite.setLayoutData(fd_composite);
 		
 		Button btnCancel = new Button(shell, SWT.NONE);
+		btnCancel.setFont(Main.appFont);
 		fd_composite.bottom = new FormAttachment(100, -36);
 		FormData fd_btnCancel = new FormData();
 		fd_btnCancel.top = new FormAttachment(composite, 1);
@@ -109,6 +119,7 @@ public class ExportDialog extends Dialog
 		btnCancel.setText("Cancel");
 		
 		final Button btnExport = new Button(shell, SWT.NONE);
+		btnExport.setFont(Main.appFont);
 		fd_btnCancel.left = new FormAttachment(0, 173);
 		btnExport.setEnabled(false);
 		FormData fd_btnExport = new FormData();
@@ -119,6 +130,7 @@ public class ExportDialog extends Dialog
 		btnExport.setText("Export");
 		
 		final Combo replaceCombo = new Combo(composite, SWT.READ_ONLY);
+		replaceCombo.setFont(Main.appFont);
 		FormData fd_replaceCombo = new FormData();
 		fd_replaceCombo.right = new FormAttachment(0, 244);
 		fd_replaceCombo.top = new FormAttachment(0, 21);
@@ -153,6 +165,7 @@ public class ExportDialog extends Dialog
 		
 		newName = new Text(composite, SWT.BORDER);
 		newName.setTextLimit(32);
+		newName.setFont(Main.appFont);
 		FormData fd_newName = new FormData();
 		fd_newName.bottom = new FormAttachment(0, 44);
 		fd_newName.right = new FormAttachment(0, 244);
@@ -161,6 +174,7 @@ public class ExportDialog extends Dialog
 		newName.setLayoutData(fd_newName);
 		
 		Label lblBlueprintNameid = new Label(composite, SWT.NONE);
+		lblBlueprintNameid.setFont(Main.appFont);
 		FormData fd_lblBlueprintNameid = new FormData();
 		fd_lblBlueprintNameid.right = new FormAttachment(0, 244);
 		fd_lblBlueprintNameid.top = new FormAttachment(0);
@@ -171,6 +185,7 @@ public class ExportDialog extends Dialog
 				+ShipIO.lineDelimiter+"This name will be used to identify your ship in the autoBlueprints.xml and blueprints.xml files");
 		
 		exportDir = new Text(composite, SWT.BORDER);
+		exportDir.setFont(Main.appFont);
 		exportDir.setToolTipText("Export directory");
 		FormData fd_exportDir = new FormData();
 		fd_exportDir.left = new FormAttachment(0);
@@ -179,6 +194,7 @@ public class ExportDialog extends Dialog
 			exportDir.setText(Main.exportPath);
 		
 		Button btnBrowse = new Button(composite, SWT.NONE);
+		btnBrowse.setFont(Main.appFont);
 		fd_exportDir.right = new FormAttachment(btnBrowse, -5);
 		FormData fd_btnBrowse = new FormData();
 		fd_btnBrowse.top = new FormAttachment(exportDir, -2, SWT.TOP);
@@ -187,6 +203,7 @@ public class ExportDialog extends Dialog
 		btnBrowse.setText("Browse");
 		
 		Label lblSaveDirectory = new Label(composite, SWT.NONE);
+		lblSaveDirectory.setFont(Main.appFont);
 		fd_exportDir.top = new FormAttachment(lblSaveDirectory);
 		FormData fd_lblSaveDirectory = new FormData();
 		fd_lblSaveDirectory.top = new FormAttachment(replaceCombo, 6);
@@ -195,9 +212,11 @@ public class ExportDialog extends Dialog
 		lblSaveDirectory.setText("Save directory:");
 		
 		final Button btnCreateFtl = new Button(composite, SWT.CHECK);
+		btnCreateFtl.setFont(Main.appFont);
 		btnCreateFtl.setToolTipText("When checked, the export function also"+ShipIO.lineDelimiter
 								   +"packs the ship to an .ftl archive.");
 		FormData fd_btnCreateFtl = new FormData();
+		fd_btnCreateFtl.top = new FormAttachment(82);
 		fd_btnCreateFtl.bottom = new FormAttachment(100, -10);
 		fd_btnCreateFtl.left = new FormAttachment(0, 10);
 		btnCreateFtl.setLayoutData(fd_btnCreateFtl);
@@ -205,6 +224,7 @@ public class ExportDialog extends Dialog
 		btnCreateFtl.setSelection(ShipIO.createFtl);
 		
 		final Button btnDeleteTemp = new Button(composite, SWT.CHECK);
+		btnDeleteTemp.setFont(Main.appFont);
 		btnDeleteTemp.setToolTipText("When checked, the export function deletes the"+ShipIO.lineDelimiter
 									 +"temporary files after the .ftl file is created.");
 		btnDeleteTemp.setEnabled(false);
@@ -217,8 +237,10 @@ public class ExportDialog extends Dialog
 		btnDeleteTemp.setEnabled(ShipIO.createFtl);
 		
 		final Button btnDontCheck = new Button(composite, SWT.CHECK);
+		btnDontCheck.setFont(Main.appFont);
 		btnDontCheck.setToolTipText("When checked, even the default images will be exported.");
 		FormData fd_btnDontCheck = new FormData();
+		fd_btnDontCheck.top = new FormAttachment(70);
 		fd_btnDontCheck.right = new FormAttachment(btnDeleteTemp, 0, SWT.RIGHT);
 		fd_btnDontCheck.left = new FormAttachment(exportDir, 10, SWT.LEFT);
 		fd_btnDontCheck.bottom = new FormAttachment(btnCreateFtl, -3);

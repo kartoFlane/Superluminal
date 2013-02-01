@@ -9,6 +9,9 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 
 import com.kartoflane.superluminal.core.Main;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.widgets.Composite;
 
 
 public class NewShipWindow extends Dialog
@@ -43,33 +46,22 @@ public class NewShipWindow extends Dialog
 	{
 		shell = new Shell(getParent(), SWT.BORDER | SWT.TITLE);
 		shell.setText(getText());
+		shell.setFont(Main.appFont);
 
 		shell.setSize(225, 100);
 		shell.setLocation(Main.shell.getLocation().x+100, Main.shell.getLocation().y+50);
+		shell.setLayout(new GridLayout(4, false));
 		
 		Button btnPlayerShip = new Button(shell, SWT.RADIO);
+		btnPlayerShip.setFont(Main.appFont);
+		btnPlayerShip.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		btnPlayerShip.setSelection(true);
-		btnPlayerShip.setBounds(10, 10, 90, 16);
 		btnPlayerShip.setText("Player Ship");
 		
 		Button btnEnemyShip = new Button(shell, SWT.RADIO);
-		btnEnemyShip.setBounds(119, 10, 90, 16);
+		btnEnemyShip.setFont(Main.appFont);
+		btnEnemyShip.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 3, 1));
 		btnEnemyShip.setText("Enemy Ship");
-		
-		Button btnOk = new Button(shell, SWT.NONE);
-		btnOk.setBounds(20, 37, 75, 25);
-		btnOk.setText("Confirm");
-		
-		Button btnCancel = new Button(shell, SWT.NONE);
-		btnCancel.setBounds(125, 37, 75, 25);
-		btnCancel.setText("Cancel");
-
-		btnPlayerShip.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				result = 1;
-			}
-		});
 		
 		btnEnemyShip.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -78,16 +70,48 @@ public class NewShipWindow extends Dialog
 			}
 		});
 		
+		Composite composite = new Composite(shell, SWT.NONE);
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 4, 1));
+		GridLayout gl_composite = new GridLayout(4, false);
+		gl_composite.marginHeight = 0;
+		gl_composite.marginWidth = 0;
+		composite.setLayout(gl_composite);
+		
+		Button btnOk = new Button(composite, SWT.NONE);
+		btnOk.setFont(Main.appFont);
+		GridData gd_btnOk = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 3, 1);
+		gd_btnOk.heightHint = 25;
+		gd_btnOk.widthHint = 80;
+		btnOk.setLayoutData(gd_btnOk);
+		btnOk.setSize(48, 25);
+		btnOk.setText("Confirm");
+		
 		btnOk.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				shell.dispose();
 			}
 		});
+		
+		Button btnCancel = new Button(composite, SWT.NONE);
+		btnCancel.setFont(Main.appFont);
+		GridData gd_btnCancel = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		gd_btnCancel.heightHint = 25;
+		gd_btnCancel.widthHint = 80;
+		btnCancel.setLayoutData(gd_btnCancel);
+		btnCancel.setSize(80, 25);
+		btnCancel.setText("Cancel");
 		btnCancel.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				result = 0;
 				shell.dispose();
+			}
+		});
+
+		btnPlayerShip.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				result = 1;
 			}
 		});
 	}

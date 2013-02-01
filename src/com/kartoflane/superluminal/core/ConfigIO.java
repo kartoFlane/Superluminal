@@ -18,12 +18,6 @@ public class ConfigIO {
 	static BufferedReader in;
 	
 	public static void saveConfig() {
-		/*String path = Main.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-		try {
-			String decodedPath = URLDecoder.decode(path, "UTF-8");
-			(new File(path)).getParentFile().getPath();
-		} catch (UnsupportedEncodingException e1) {
-		}*/
 		try {
 			fw = new FileWriter("superluminal.ini");
 			out = new BufferedWriter(fw);

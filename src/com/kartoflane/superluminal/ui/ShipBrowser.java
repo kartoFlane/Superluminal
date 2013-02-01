@@ -76,6 +76,7 @@ public class ShipBrowser
 	protected void createContents()
 	{
 		shell.setText(Main.APPNAME + " - Ship Browser");
+		shell.setFont(Main.appFont);
 		shell.setSize(400, 400);
 		shell.setLayout(new GridLayout(2, false));
 		
@@ -84,22 +85,40 @@ public class ShipBrowser
 		composite_2.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));
 		
 		dataDir = new Text(composite_2, SWT.BORDER);
-		dataDir.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
+		dataDir.setFont(Main.appFont);
+		GridData gd_dataDir = new GridData(SWT.LEFT, SWT.FILL, true, true, 1, 1);
+		gd_dataDir.minimumWidth = 290;
+		gd_dataDir.widthHint = 290;
+		dataDir.setLayoutData(gd_dataDir);
 		dataDir.setText("Data-unpacked directory");
 		
 		Button btnData = new Button(composite_2, SWT.NONE);
-		btnData.setLayoutData(new GridData(SWT.RIGHT, SWT.FILL, false, false, 1, 1));
-		btnData.setText("Change Directory");
+		btnData.setFont(Main.appFont);
+		GridData gd_btnData = new GridData(SWT.RIGHT, SWT.FILL, false, false, 1, 1);
+		gd_btnData.minimumWidth = 70;
+		gd_btnData.widthHint = 70;
+		btnData.setLayoutData(gd_btnData);
+		btnData.setText("Browse...");
 		
 		resDir = new Text(composite_2, SWT.BORDER);
-		resDir.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
+		resDir.setFont(Main.appFont);
+		GridData gd_resDir = new GridData(SWT.LEFT, SWT.FILL, true, true, 1, 1);
+		gd_resDir.minimumWidth = 290;
+		gd_resDir.widthHint = 290;
+		resDir.setLayoutData(gd_resDir);
 		resDir.setText("Resources-unpacked directory");
 		
 		Button btnRes = new Button(composite_2, SWT.NONE);
-		btnRes.setText("Change Directory");
+		btnRes.setFont(Main.appFont);
+		GridData gd_btnRes = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_btnRes.minimumWidth = 70;
+		gd_btnRes.widthHint = 70;
+		btnRes.setLayoutData(gd_btnRes);
+		btnRes.setText("Browse...");
 		
 				
 		tree = new Tree(shell, SWT.BORDER);
+		tree.setFont(Main.appFont);
 		GridData gd_tree = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 2);
 		gd_tree.heightHint = 339;
 		tree.setLayoutData(gd_tree);
@@ -124,11 +143,13 @@ public class ShipBrowser
 		composite_1.setLayoutData(gd_composite_1);
 		
 		btnConfirm = new Button(composite_1, SWT.NONE);
+		btnConfirm.setFont(Main.appFont);
 		btnConfirm.setBounds(228, 0, 75, 25);
 		btnConfirm.setText("Load");
 		btnConfirm.setEnabled(false);
 		
 		Button btnCancel = new Button(composite_1, SWT.NONE);
+		btnCancel.setFont(Main.appFont);
 		btnCancel.setBounds(309, 0, 75, 25);
 		btnCancel.setText("Cancel");
 		

@@ -21,9 +21,6 @@ import com.kartoflane.superluminal.core.Main;
  */
 public class FTLShip implements Serializable
 {
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 344200154077072015L;
 	/**
 	 * Size of the anchor handle;
@@ -46,6 +43,9 @@ public class FTLShip implements Serializable
 	public String shieldPath;
 	public String floorPath;
 	public String cloakPath;
+	
+	public boolean hullPinned;
+	public boolean shieldPinned;
 	
 	/**
 	 *  posiition of the ship on canvas (anchor's x and y)
@@ -118,6 +118,8 @@ public class FTLShip implements Serializable
 		missiles = 5;
 		drones = 5;
 		
+		hullPinned = false;
+		shieldPinned = false;
 		isPlayer = false;
 		weaponsBySet = false;
 		dronesBySet = false;
@@ -226,6 +228,12 @@ public class FTLShip implements Serializable
 			Main.ship.imageRect.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
 			dist = newAnchor.y - anchor.y;
 			Main.ship.imageRect.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
+		}
+		if (Main.ship != null && Main.shieldEllipse != null) {
+			dist = newAnchor.x - anchor.x;
+			Main.shieldEllipse.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
+			dist = newAnchor.y - anchor.y;
+			Main.shieldEllipse.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
 		}
 		for (FTLMount m : mounts) {
 			dist = newAnchor.x - anchor.x;

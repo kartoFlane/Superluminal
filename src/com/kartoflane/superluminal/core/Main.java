@@ -28,7 +28,6 @@ import com.kartoflane.superluminal.ui.PropertiesWindow;
 import com.kartoflane.superluminal.ui.ShipBrowser;
 import com.kartoflane.superluminal.ui.ShipPropertiesWindow;
 
-
 public class Main
 {
 		// === CONSTANTS
@@ -56,7 +55,7 @@ public class Main
 	
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "2013.01.30" + "-";
+	public final static String VERSION = "2013.02.1" + "-";
 	
 		// === Important objects
 	public static Shell shell;
@@ -101,13 +100,14 @@ public class Main
 	private static boolean moveSelected = false;
 	private static boolean resizeSelected = false;
 	private static boolean hullSelected = false;
+	private static boolean shieldSelected = false;
 	public static boolean canvasActive = false;
 	public static boolean modShift = false;
 	public static boolean moveAnchor = false;
 	public static boolean allowRoomPlacement = true;
 	
 		// === Internal
-	public static boolean debug = false;
+	public static boolean debug = true;
 	/**
 	 * when set to true, all ship data is pre-loaded into hashmaps/sets when the ship browser is opened for the first time.
 	 * no need to do this, only one ship is being used at any given time.
@@ -127,6 +127,7 @@ public class Main
 	private static Rectangle parseRect = null;
 	private static Rectangle phantomRect = null;
 	public static Rectangle mountRect = new Rectangle(0,0,0,0);
+	public static Rectangle shieldEllipse = new Rectangle(0,0,0,0);
 	
 	private static Slide mountToolSlide = Slide.UP;
 	private static boolean mountToolMirror = true;
@@ -138,6 +139,7 @@ public class Main
 	public static Image shieldImage = null;
 	public static Image cloakImage = null;
 	public static Image tempImage;
+	public static Image pinImage = null;
 	
 		// === Miscellaneous
 	private static Rectangle[] corners = new Rectangle[4];
@@ -172,13 +174,28 @@ public class Main
 	private static Label mPosText;
 	private static Label shipInfoText;
 	public static MenuItem mntmClose;
+
+	public static Font appFont = (SWTResourceManager.getFont("Segoe UI", 9, SWT.NORMAL));
+	
 	
 	// =================================================================================================== //
 	
 	/*
-	 * TODO
-	 * - fix shield graphic alignment on enemy ships
+	 * === TODO
 	 * 
+	 * - GMM nie zmienia rzeczy w bluepritns.xml, tylko dokleja na koncu pliku -> trzeba chyba zrobic wstepny skan czy sa drugie blueprinty, jak tak to wczytaj najdalszy / ostatni
+	 * - wczytuj default weapon image zamiast zoltych prostokatow
+	 * - mouse coords -> dodaj box wyswietlajacy pixel mousePos, + box gdzie mozna ustawic x,y wybranego elementu
+	 * 
+	 * === DONE
+	 * NEEDS TESTING - rozne font sizes fuck up alignment w okienkach, ustaw explicitly szerokosc/wysokosc tak zeby nie zalezaly od font size lub ustaw globalny font size dla calej aplikacji (bo inaczej dziedziczy po OS) 
+	 * DONE - button do "przypiecia" wybranego elementu -> ze jak sa przypiete to nie mozna ich ruszyc (variable zrob w FTLShip, zeby zapisywalo razem z projektem)
+	 * DONE - modify shield size for enemy ships
+	 * DONE - fix shield graphic alignment on enemy ships
+	 * DONE - make room interiors stretch to match room dimensions
+	 * X - see if its possible to make tooltips display for a longer period of time --> NOT possible, would have to implement custom tooltip system yourself
+	 * 
+	 * =========================================================================
 	 * - gibs -> male okienko gdzie ustawiasz kat (ko³o ze wskaznikiem), predkosc liniowa i katowa (slidery)
 	 * - gibs -> ujemne angular velocity obraca w lewa strone
 	 * 		  -> 10 angular velocty = pelen obrot
@@ -237,6 +254,14 @@ public class Main
 		loadSystem = ConfigIO.getBoolean("loadSystem");
 		constantRedraw = ConfigIO.getBoolean("constantRedraw");
 		
+		// several levels of redundancy, in case someone, somewhere, somehow, didn't have one of those fonts...
+		if (appFont == null) {
+			appFont = (SWTResourceManager.getFont("Arial", 9, SWT.NORMAL));
+		}
+		if (appFont == null) {
+			appFont = (SWTResourceManager.getFont("Times New Roman", 9, SWT.NORMAL));
+		}
+		
 		createContents();
 		ShipIO.fetchShipNames();
 		
@@ -274,12 +299,14 @@ public class Main
 	{
 		shell = new Shell(SWT.BORDER | SWT.CLOSE | SWT.TITLE | SWT.MIN);
 		shell.setText(APPNAME + " - Ship Editor");
+		shell.setFont(appFont);
 		
 		highlightColor = shell.getDisplay().getSystemColor(SWT.COLOR_GREEN);
 		shell.setLayout(new GridLayout(2, false));
 		
 		// Info label
 		helpIcon = new Label(shell, SWT.NONE);
+		helpIcon.setFont(appFont);
 		helpIcon.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
 		tempImage = SWTResourceManager.getImage(Main.class, "/org/eclipse/jface/dialogs/images/help.gif");
 		helpIcon.setImage(SWTResourceManager.getImage(Main.class, "/img/message_info.gif"));
@@ -327,6 +354,8 @@ public class Main
 		toolsMap.put("mount", tempImage);
 		tempImage = SWTResourceManager.getImage(Main.class, "/img/system.png");
 		toolsMap.put("system", tempImage);
+		
+		pinImage = SWTResourceManager.getImage(Main.class, "/img/pin.png");
 
 	// === Menu bar
 		
@@ -450,12 +479,16 @@ public class Main
 	// === Text Info Fields
 		
 		Composite textHolder = new Composite(shell, SWT.NONE);
-		textHolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1));
+		GridData gd_textHolder = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
+		gd_textHolder.heightHint = 20;
+		textHolder.setLayoutData(gd_textHolder);
 		textHolder.setLayout(new FormLayout());
 		
 		// === Position of the pointer on the grid
 		mPosText = new Label(textHolder, SWT.BORDER);
+		mPosText.setFont(appFont);
 		FormData fd_mPosText = new FormData();
+		fd_mPosText.height = 20;
 		fd_mPosText.right = new FormAttachment(0, 50);
 		fd_mPosText.top = new FormAttachment(0);
 		fd_mPosText.left = new FormAttachment(0);
@@ -463,7 +496,9 @@ public class Main
 		
 		// === Number of rooms and doors in the ship
 		shipInfoText = new Label(textHolder, SWT.BORDER);
+		shipInfoText.setFont(appFont);
 		FormData fd_shipInfoText = new FormData();
+		fd_shipInfoText.height = 20;
 		fd_shipInfoText.right = new FormAttachment(0, 185);
 		fd_shipInfoText.top = new FormAttachment(0);
 		fd_shipInfoText.left = new FormAttachment(0, 55);
@@ -471,7 +506,9 @@ public class Main
 		
 		// === Status bar
 		text = new Label(textHolder, SWT.WRAP | SWT.BORDER);
+		text.setFont(appFont);
 		FormData fd_text = new FormData();
+		fd_text.height = 20;
 		fd_text.right = new FormAttachment(100);
 		fd_text.left = new FormAttachment(0, 190);
 		fd_text.top = new FormAttachment(0);
@@ -479,6 +516,7 @@ public class Main
 		
 		Label label_1 = new Label(shell, SWT.SEPARATOR | SWT.HORIZONTAL);
 		label_1.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
+		label_1.setFont(appFont);
 		
 		
 	// === Canvas
@@ -532,16 +570,20 @@ public class Main
 		
 		
 		Label lblTools = new Label(shell, SWT.NONE);
-		lblTools.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		GridData gd_lblTools = new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1);
+		gd_lblTools.minimumWidth = 70;
+		gd_lblTools.widthHint = 70;
+		lblTools.setLayoutData(gd_lblTools);
 		lblTools.setAlignment(SWT.CENTER);
+		lblTools.setFont(appFont);
 		lblTools.setText("Tools");
 		
 	// === Tool bar
 		
 		// === Container - holds all the items on the left side of the screen
 		Composite toolBarHolder = new Composite(shell, SWT.NONE);
-		GridData gd_toolBarHolder = new GridData(SWT.FILL, SWT.FILL, false, true, 1, 2);
-		gd_toolBarHolder.minimumWidth = 60;
+		GridData gd_toolBarHolder = new GridData(SWT.CENTER, SWT.FILL, false, true, 1, 2);
+		gd_toolBarHolder.minimumWidth = 70;
 		gd_toolBarHolder.widthHint = 70;
 		toolBarHolder.setLayoutData(gd_toolBarHolder);
 		GridLayout gl_toolBarHolder = new GridLayout(1, false);
@@ -552,10 +594,15 @@ public class Main
 
 		// === Container -> Tools - tool bar containing the tool icons
 		final ToolBar toolBar = new ToolBar(toolBarHolder, SWT.FLAT | SWT.RIGHT | SWT.VERTICAL);
-		toolBar.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 1, 1));
+		toolBar.setFont(appFont);
+		GridData gd_toolBar = new GridData(SWT.CENTER, SWT.TOP, true, false, 1, 1);
+		gd_toolBar.minimumWidth = 70;
+		gd_toolBar.widthHint = 70;
+		toolBar.setLayoutData(gd_toolBar);
 		
 		// === Container -> Tools -> Pointer
 		final ToolItem tltmPointer = new ToolItem(toolBar, SWT.RADIO);
+		tltmPointer.setWidth(60);
 		tltmPointer.setSelection(true);
 		tltmPointer.setImage(toolsMap.get("pointer"));
 		tltmPointer.setToolTipText("Selection tool"
@@ -569,6 +616,7 @@ public class Main
 		
 		// === Container -> Tools -> Room creation
 		final ToolItem tltmRoom = new ToolItem(toolBar, SWT.RADIO);
+		tltmRoom.setWidth(60);
 		tltmRoom.setToolTipText("Room creation tool"
 								+ShipIO.lineDelimiter+" -Click and drag to create a room"
 								+ShipIO.lineDelimiter+" -Hold down Shift and click to split rooms");
@@ -577,6 +625,7 @@ public class Main
 		
 		// === Container -> Tools -> Door creation
 		final ToolItem tltmDoor = new ToolItem(toolBar, SWT.RADIO);
+		tltmDoor.setWidth(60);
 		tltmDoor.setToolTipText("Door creation tool"
 								+ShipIO.lineDelimiter+" - Hover over an edge of a room and click to place door");
 		tltmDoor.setImage(toolsMap.get("door"));
@@ -584,6 +633,7 @@ public class Main
 		
 		// === Container -> Tools -> Weapon mounting
 		final ToolItem tltmMount = new ToolItem(toolBar, SWT.RADIO);
+		tltmMount.setWidth(60);
 		tltmMount.setToolTipText("Weapon mounting tool"
 									+ShipIO.lineDelimiter+" -Click to place a weapon mount"
 									+ShipIO.lineDelimiter+" -R-click to change the mount's rotation"
@@ -595,6 +645,7 @@ public class Main
 
 		// === Container -> Tools -> System operating slot
 		final ToolItem tltmSystem = new ToolItem(toolBar, SWT.RADIO);
+		tltmSystem.setWidth(60);
 		tltmSystem.setToolTipText("System operating station tool"
 									+ShipIO.lineDelimiter+" - Click to place an operating station (only mannable systems + medbay)"
 									+ShipIO.lineDelimiter+" - R-click to reset the station to default"
@@ -610,35 +661,53 @@ public class Main
 		tltmSystem.setEnabled(false);
 				
 		Label label = new Label(toolBarHolder, SWT.SEPARATOR | SWT.HORIZONTAL);
+		label.setFont(appFont);
 		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		
 		// === Container -> Hull image button
 		final Button btnHull = new Button(toolBarHolder, SWT.NONE);
-		btnHull.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		btnHull.setFont(appFont);
+		GridData gd_btnHull = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
+		gd_btnHull.widthHint = 70;
+		btnHull.setLayoutData(gd_btnHull);
 		btnHull.setEnabled(false);
 		btnHull.setText("Hull");
 		
 		final Button btnShields = new Button(toolBarHolder, SWT.NONE);
+		btnShields.setFont(appFont);
 		btnShields.setToolTipText("Shield is aligned in relation to rooms. Place a room before choosing shield graphic.");
 		btnShields.setEnabled(false);
-		btnShields.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		GridData gd_btnShields = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
+		gd_btnShields.widthHint = 70;
+		btnShields.setLayoutData(gd_btnShields);
 		btnShields.setText("Shields");
 		
 		final Button btnFloor = new Button(toolBarHolder, SWT.NONE);
+		btnFloor.setFont(appFont);
 		btnFloor.setEnabled(false);
-		btnFloor.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		GridData gd_btnFloor = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
+		gd_btnFloor.widthHint = 70;
+		btnFloor.setLayoutData(gd_btnFloor);
 		btnFloor.setText("Floor");
 		
 		final Button btnCloak = new Button(toolBarHolder, SWT.NONE);
+		btnCloak.setFont(appFont);
 		btnCloak.setEnabled(false);
-		btnCloak.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		GridData gd_btnCloak = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
+		gd_btnCloak.widthHint = 70;
+		btnCloak.setLayoutData(gd_btnCloak);
 		btnCloak.setText("Cloak");
 		
 		Label label_2 = new Label(toolBarHolder, SWT.SEPARATOR | SWT.HORIZONTAL);
+		label_2.setFont(appFont);
 		label_2.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		final Button btnShipProperties = new Button(toolBarHolder, SWT.NONE);
-		btnShipProperties.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
+		btnShipProperties.setFont(appFont);
+		GridData gd_btnShipProperties = new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1);
+		gd_btnShipProperties.minimumWidth = 60;
+		gd_btnShipProperties.widthHint = 70;
+		btnShipProperties.setLayoutData(gd_btnShipProperties);
 		btnShipProperties.setText("Properties");
 		btnShipProperties.setEnabled(false);
 
@@ -762,7 +831,6 @@ public class Main
 		// I'm pretty sure I should NOT be using it this way, putting so many conditions in there, but then I can't really think of another way to do it.
 		// Split into more paintControl methods and redraw them separately only when needed to save a bit on performance?
 		canvas.addPaintListener(new PaintListener() {
-			@SuppressWarnings("unused")
 			public void paintControl(PaintEvent e)
 			{
 				Rectangle tempRoom = null;
@@ -773,6 +841,7 @@ public class Main
 		        Point p, pt;
 				
 		        e.gc.setAlpha(255);
+				e.gc.setFont(appFont);
 				
 				if (canvasActive) {
 				// === DRAW SHIP HULL IMAGE
@@ -796,13 +865,21 @@ public class Main
 						if (shieldImage != null && !shieldImage.isDisposed() && loadShield) {
 							if (ship.isPlayer) {
 								// that's pretty alright
-								e.gc.drawImage(shieldImage, pt.x+ship.ellipse.x-shieldImage.getBounds().width/2, pt.y+ship.ellipse.y-shieldImage.getBounds().height/2);
+								//e.gc.drawImage(shieldImage, pt.x+ship.ellipse.x-shieldImage.getBounds().width/2, pt.y+ship.ellipse.y-shieldImage.getBounds().height/2);
+								e.gc.drawImage(shieldImage, shieldEllipse.x, shieldEllipse.y);
 							} else {
-								// seems to be missing some sort of variable, or perhaps wrongly anchored (the latter more plausible)
+								e.gc.drawImage(shieldImage,  0, 0, shieldImage.getBounds().width, shieldImage.getBounds().height,
+										shieldEllipse.x,
+										shieldEllipse.y,
+										shieldEllipse.width, shieldEllipse.height);
+								/*
+								// it appears that there's some sort of arbitrary offset, no idea where it comes from, but now
+								// everything is showing up correctly both in the editor and the game.
 								e.gc.drawImage(shieldImage, 0, 0, shieldImage.getBounds().width, shieldImage.getBounds().height,
 										pt.x+ship.ellipse.x-ship.ellipse.width,
-										pt.y+ship.ellipse.y-ship.ellipse.height,
+										pt.y+ship.ellipse.y-ship.ellipse.height + 110,
 										ship.ellipse.width*2, ship.ellipse.height*2);
+										*/
 							}
 							e.gc.drawPoint(pt.x, pt.y);
 						} else {
@@ -827,7 +904,7 @@ public class Main
 							e.gc.fillRectangle(rm.rect.x, rm.rect.y, rm.rect.width, rm.rect.height);
 							// draw room images
 							if (loadSystem && !ShipIO.isNull(rm.img) && rm.sysImg != null && !rm.sysImg.isDisposed()) {
-								e.gc.drawImage(rm.sysImg, rm.rect.x, rm.rect.y);
+								e.gc.drawImage(rm.sysImg, 0, 0, rm.sysImg.getBounds().width, rm.sysImg.getBounds().height, rm.rect.x, rm.rect.y, rm.rect.width, rm.rect.height);
 							}
 							// draw start-enabled overlay
 							if (!ship.startMap.get(rm.sys) && !rm.sys.equals(Systems.EMPTY)) {
@@ -852,8 +929,9 @@ public class Main
 								e.gc.setAlpha(255);
 							}
 							// draw room id
-							if (debug)
+							if (debug) {
 								e.gc.drawString(""+rm.id, rm.rect.x+5, rm.rect.y+rm.rect.height-17, true);
+							}
 						}
 					}
 					
@@ -1092,7 +1170,32 @@ public class Main
 						c = e.display.getSystemColor(SWT.COLOR_BLUE);
 						e.gc.setForeground(c);
 						c.dispose();
-						e.gc.drawRectangle(ship.imageRect.x, ship.imageRect.y, ship.imageRect.width, ship.imageRect.height);
+						e.gc.drawRectangle(ship.imageRect);
+					
+					// shield selection
+					} else if (showHull && shieldSelected) {
+						e.gc.setAlpha(255);
+						e.gc.setLineWidth(3);
+						c = e.display.getSystemColor(SWT.COLOR_BLUE);
+						e.gc.setForeground(c);
+						c.dispose();
+						e.gc.drawRectangle(shieldEllipse);
+						if (!ship.isPlayer) {
+							e.gc.setLineWidth(2);
+							c = e.display.getSystemColor(SWT.COLOR_CYAN);
+							e.gc.setBackground(c);
+							c.dispose();
+							c = e.display.getSystemColor(SWT.COLOR_BLACK);
+							e.gc.setForeground(c);
+							c.dispose();
+							if (tempRoom == null) tempRoom = new Rectangle(0,0,0,0);
+							tempRoom.x = shieldEllipse.x + shieldEllipse.width-15;
+							tempRoom.y = shieldEllipse.y + shieldEllipse.height-15;
+							tempRoom.width = 15;
+							tempRoom.height = 15;
+							e.gc.fillRectangle(tempRoom);
+							e.gc.drawRectangle(tempRoom);
+						}
 					}
 					
 				// === DOOR CREATION TOOL
@@ -1191,21 +1294,6 @@ public class Main
 						ship.drawShipAnchor(e);
 					}
 					
-					/*
-				// === DRAW TOOL CURSOR ICON
-					if (onCanvas) {
-						if (tltmRoom.getSelection()) {
-							drawToolIcon(e, "room");
-						} else if (tltmDoor.getSelection()) {
-							drawToolIcon(e,"door");
-						} else if (tltmMount.getSelection()) {
-							drawToolIcon(e,"mount");
-						} else if (tltmSystem.getSelection()) {
-							drawToolIcon(e,"system");
-						}
-					}
-					*/
-							
 					if (phantomRect != null && debug) {
 						e.gc.setLineWidth(2);
 						c = e.display.getSystemColor(SWT.COLOR_DARK_MAGENTA);
@@ -1215,8 +1303,23 @@ public class Main
 						e.gc.drawRectangle(phantomRect);
 					}
 					
-					// === Warnings
-					if (ship.isPlayer && false) {
+				// === Pinned indicator
+					e.gc.setAlpha(255);
+					if (selectedRoom != null && selectedRoom.pinned) // room pin indicator
+						e.gc.drawImage(pinImage, selectedRoom.rect.x+3, selectedRoom.rect.y+3);
+					if (selectedDoor != null && selectedDoor.pinned) // door pin indicator
+						e.gc.drawImage(pinImage, (selectedDoor.horizontal) ? selectedDoor.rect.x+8 : selectedDoor.rect.x+7, (selectedDoor.horizontal) ? selectedDoor.rect.y-17 : selectedDoor.rect.y+8);
+					if (selectedMount != null && selectedMount.pinned) // mount pin indicator
+						e.gc.drawImage(pinImage, selectedMount.rect.x-16, selectedMount.rect.y);
+					if (hullSelected && ship.hullPinned) // hull pin indicator
+						e.gc.drawImage(pinImage, ship.imageRect.x+5, ship.imageRect.y+5);
+					if (shieldSelected && ship.shieldPinned) // shield pin indicator
+						e.gc.drawImage(pinImage, shieldEllipse.x+5, shieldEllipse.y+5);
+					
+					
+					// === Warnings 
+					/*
+					if (ship.isPlayer) {
 						for (FTLRoom room : ship.rooms) {
 							if ((room!=null) && ((room.rect.width > 70) || (room.rect.height > 70))) {
 								c = e.display.getSystemColor(SWT.COLOR_RED);
@@ -1234,6 +1337,8 @@ public class Main
 							}
 						}
 					}
+					*/
+					
 				} else {
 					c = e.display.getSystemColor(SWT.COLOR_WHITE);
 					e.gc.setForeground(c);
@@ -1255,8 +1360,6 @@ public class Main
 			public void mouseMove(MouseEvent e) {
 				int x = 0, y = 0;
 
-				// double checking for mouse hover, since on my laptop java didn't seem to detect it
-				//onCanvas = !(Math.abs(mousePos.x-e.x)<1 && Math.abs(mousePos.y-e.y)<1);
 				onCanvas = true;
 				
 				mousePos.x = e.x;
@@ -1266,7 +1369,7 @@ public class Main
 				if (tltmPointer.getSelection() && moveSelected && canvasActive) {
 					
 					// === Move weapon mounts
-					if (selectedMount != null) {
+					if (selectedMount != null && !selectedMount.pinned) {
 						if ((modShift || !leftMouseDown) && dragRoomAnchor.x == 0 && dragRoomAnchor.y == 0) {
 							dragRoomAnchor.x = selectedMount.rect.x + selectedMount.rect.width/2;
 							dragRoomAnchor.y = selectedMount.rect.y + selectedMount.rect.height/2;
@@ -1289,7 +1392,7 @@ public class Main
 						canvas.redraw();
 		
 					// === Move door
-					} else if (selectedDoor != null) {
+					} else if (selectedDoor != null && !selectedDoor.pinned) {
 						phantomRect = new Rectangle(selectedDoor.rect.x, selectedDoor.rect.y, selectedDoor.rect.width, selectedDoor.rect.height);
 						x = e.x;
 						y = e.y;
@@ -1306,7 +1409,7 @@ public class Main
 						canvas.redraw();
 						
 					// === Move room
-					} else if (selectedRoom != null) {
+					} else if (selectedRoom != null && !selectedRoom.pinned) {
 						phantomRect = new Rectangle(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height);
 						x = e.x - dragRoomAnchor.x;
 						y = e.y - dragRoomAnchor.y;
@@ -1344,30 +1447,36 @@ public class Main
 						canvas.redraw();
 						
 					// === Move ship hull
-					} else if (hullSelected) {
-						if (leftMouseDown && !rightMouseDown) {
-							if (!modShift) {
-								ship.imageRect.x = e.x - dragRoomAnchor.x;
-								ship.imageRect.y = e.y - dragRoomAnchor.y;
-							} else {
-								ship.imageRect.x = phantomRect.width + (int)((e.x - phantomRect.x)/10);
-								ship.imageRect.y = phantomRect.height + (int)((e.y - phantomRect.y)/10);
-							}
-						} else if (rightMouseDown) {
-							if (!modShift) {
-								ship.ellipse.x = e.x - dragRoomAnchor.x;
-								ship.ellipse.y = e.y - dragRoomAnchor.y;
-							} else {
-								ship.ellipse.x = (int)((e.x - phantomRect.x)/10);
-								ship.ellipse.y = (int)((e.y - phantomRect.y)/10);
-							}
+					} else if (hullSelected && !ship.hullPinned) {
+						if (!modShift) {
+							ship.imageRect.x = e.x - dragRoomAnchor.x;
+							ship.imageRect.y = e.y - dragRoomAnchor.y;
+						} else {
+							ship.imageRect.x = phantomRect.width + (int)((e.x - phantomRect.x)/10);
+							ship.imageRect.y = phantomRect.height + (int)((e.y - phantomRect.y)/10);
 						}
+						canvas.redraw();
 						
+					// === Move shield
+					} else if (shieldSelected && !ship.shieldPinned) {
+						if (!modShift) {
+							shieldEllipse.x = e.x - dragRoomAnchor.x;
+							shieldEllipse.y = e.y - dragRoomAnchor.y;
+						} else {
+							shieldEllipse.x = phantomRect.width + (e.x - dragRoomAnchor.x)/10;
+							shieldEllipse.y = phantomRect.height + (e.y - dragRoomAnchor.y)/10;
+						}
+						ship.ellipse.x = (shieldEllipse.x + shieldEllipse.width/2) - (ship.findLowBounds().x + ship.computeShipSize().x/2);
+						ship.ellipse.y = (shieldEllipse.y + shieldEllipse.height/2) - (ship.findLowBounds().y + ship.computeShipSize().y/2) - ((ship.isPlayer) ? 0 : 110);
+						ship.ellipse.width = shieldEllipse.width/2;
+						ship.ellipse.height = shieldEllipse.height/2;
+							
 						canvas.redraw();
 					}
 						
-			// === RESIZE ROOM
-				} else if (tltmPointer.getSelection() && resizeSelected && selectedRoom != null && canvasActive) {
+			// === RESIZE
+				// === Room
+				} else if (tltmPointer.getSelection() && resizeSelected && selectedRoom != null && canvasActive && !selectedRoom.pinned) {
 					phantomRect = new Rectangle(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height);
 		
 					x = e.x - dragRoomAnchor.x;
@@ -1411,6 +1520,11 @@ public class Main
 					removeUnalignedDoors();
 					
 					canvas.redraw();
+					
+				// === Shield
+				} else if (shieldSelected && !ship.shieldPinned && resizeSelected) {
+					shieldEllipse.width = e.x - shieldEllipse.x;
+					shieldEllipse.height = e.y - shieldEllipse.y;
 					
 			// === MOVE ANCHOR
 				} else if (moveAnchor && canvasActive) {
@@ -1496,9 +1610,13 @@ public class Main
 				mousePosLastClick.x = e.x;
 				mousePosLastClick.y = e.y;
 				
-				leftMouseDown = e.button == 1;
-				rightMouseDown = e.button == 3;
+				if (e.button == 1)
+					leftMouseDown = true;
+				if (e.button == 3)
+					rightMouseDown = true;
+				
 				onCanvas = true;
+				
 				if (canvasActive) {
 					if (tltmPointer.getSelection() && showAnchor && (e.x >= ship.anchor.x-FTLShip.ANCHOR && ((ship.anchor.x == 0) ? (e.x <= FTLShip.ANCHOR) : ((e.x <= ship.anchor.x)))
 							&& e.y >= ship.anchor.y-FTLShip.ANCHOR && ((ship.anchor.y == 0) ? (e.y <= FTLShip.ANCHOR) : ((e.y <= ship.anchor.y))))) {
@@ -1506,6 +1624,7 @@ public class Main
 					}
 					if (!moveAnchor && tltmPointer.getSelection() && onCanvas) {
 						hullSelected = false;
+						shieldSelected = false;
 						
 						// selection priorities; door > mount > room > hull
 						// cheking if previous selection variable is null prevents selecting multiple objects at once.
@@ -1516,17 +1635,25 @@ public class Main
 						selectedRoom = (showRooms && selectedMount == null && selectedDoor == null) ? getRoomContainingRect(getRectFromClick()) : null;
 						
 						if (showHull && selectedRoom == null && selectedDoor == null && selectedMount == null) {
-							phantomRect = new Rectangle(ship.imageRect.x, ship.imageRect.y, ship.imageRect.width, ship.imageRect.height);
-							hullSelected = phantomRect.contains(mousePos);
-							moveSelected = hullSelected;
+							hullSelected = ship.imageRect.contains(mousePos) && leftMouseDown && !rightMouseDown;
+							shieldSelected = shieldEllipse.contains(mousePos) && !leftMouseDown && rightMouseDown;
+							
+							if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
+							phantomRect.x = shieldEllipse.x + shieldEllipse.width-15;
+							phantomRect.y = shieldEllipse.y + shieldEllipse.height-15;
+							phantomRect.width = 15;
+							phantomRect.height = 15;
+							
+							resizeSelected = shieldSelected && phantomRect.contains(mousePos);
+
+							moveSelected = hullSelected || (shieldSelected && !resizeSelected);
 							if (hullSelected) {
-								if (leftMouseDown) {
-									dragRoomAnchor.x = e.x - ship.imageRect.x;
-									dragRoomAnchor.y = e.y - ship.imageRect.y;
-								} else if (rightMouseDown) {
-									dragRoomAnchor.x = e.x;
-									dragRoomAnchor.y = e.y;
-								}
+								dragRoomAnchor.x = e.x - ship.imageRect.x;
+								dragRoomAnchor.y = e.y - ship.imageRect.y;
+							}
+							if (shieldSelected && moveSelected) {
+								dragRoomAnchor.x = e.x - shieldEllipse.x;
+								dragRoomAnchor.y = e.y - shieldEllipse.y;
 							}
 						}
 						if (selectedRoom != null) {
@@ -1756,7 +1883,7 @@ public class Main
 					}
 					
 					parseRect = getRectFromMouse();
-					if (selectedMount == null && selectedDoor == null && !hullSelected && e.button == 3 && tltmPointer.getSelection() && onCanvas && parseRect !=null  && doesRectOverlap(parseRect, null)) {
+					if (!shieldSelected && selectedMount == null && selectedDoor == null && !hullSelected && e.button == 3 && tltmPointer.getSelection() && onCanvas && parseRect !=null  && doesRectOverlap(parseRect, null)) {
 						menuSystem.setVisible(true);
 						selectedRoom = getRoomContainingRect(parseRect);
 						updateCorners(selectedRoom);
@@ -1797,8 +1924,13 @@ public class Main
 		shell.getDisplay().addFilter(SWT.KeyUp, new Listener() {
 			public void handleEvent(Event e)
 			{
+            	if (modShift && (hullSelected || shieldSelected) && moveSelected) {
+            		hullSelected = false;
+            		shieldSelected = false;
+            		moveSelected = false;
+            	}
             	modShift = false;
-            	if (hullSelected && moveSelected) {
+            	if ((hullSelected || shieldSelected) && moveSelected) {
             		dragRoomAnchor.x = mousePos.x - ship.imageRect.x;
             		dragRoomAnchor.y = mousePos.y - ship.imageRect.y;
             	}
@@ -1810,10 +1942,18 @@ public class Main
             	if (!modShift) {
             		modShift = e.keyCode == SWT.SHIFT;
             		if (hullSelected && moveSelected) {
+            			if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
             			phantomRect.x = mousePos.x;
             			phantomRect.y = mousePos.y;
             			phantomRect.width = ship.imageRect.x;
             			phantomRect.height = ship.imageRect.y;
+            		}
+            		if (shieldSelected && moveSelected) {
+            			if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
+            			phantomRect.x = mousePos.x;
+            			phantomRect.y = mousePos.y;
+            			phantomRect.width = shieldEllipse.x;
+            			phantomRect.height = shieldEllipse.y;
             		}
             	}
             	
@@ -1868,6 +2008,13 @@ public class Main
 	            		showHull = (showHull) ? false : true;
 	            		mntmShowHull.setSelection(showHull);
 	            		canvas.redraw();
+	            	} else if (e.keyCode == '`') {
+	            		if (selectedRoom != null) selectedRoom.pinned = !selectedRoom.pinned;
+	            		if (selectedDoor != null) selectedDoor.pinned = !selectedDoor.pinned;
+	            		if (selectedMount != null) selectedMount.pinned = !selectedMount.pinned;
+	            		if (hullSelected) ship.hullPinned = !ship.hullPinned;
+	            		if (shieldSelected) ship.shieldPinned = !ship.shieldPinned;
+	            		canvas.redraw();
 	            	}
             	}
             }
@@ -1897,8 +2044,8 @@ public class Main
 				if (!ShipIO.isNull(path)) {
 					Main.ship.imagePath = path;
 					
-					Main.ship.cloakPath = path.substring(0, path.lastIndexOf('_')) + "_cloak.png";
-					Main.ship.floorPath = path.substring(0, path.lastIndexOf('_')) + "_floor.png";
+					//Main.ship.cloakPath = path.substring(0, path.lastIndexOf('_')) + "_cloak.png";
+					//Main.ship.floorPath = path.substring(0, path.lastIndexOf('_')) + "_floor.png";
 					
 					ShipIO.loadImage(path, "hull");
 					canvas.redraw();
@@ -1918,6 +2065,16 @@ public class Main
 					Main.ship.shieldPath = path;
 					
 					ShipIO.loadImage(path, "shields");
+					
+					if (ship.isPlayer)
+						if (shieldImage != null && !shieldImage.isDisposed()) {
+							Rectangle temp = shieldImage.getBounds();
+							shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - temp.width/2 + ship.ellipse.x;
+							shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - temp.height/2 + ship.ellipse.y;
+							shieldEllipse.width = temp.width;
+							shieldEllipse.height = temp.height;
+						}
+					
 					canvas.redraw();
 				}
 			}
@@ -2132,11 +2289,11 @@ public class Main
 					tltmSystem.setEnabled(true);
 					btnHull.setEnabled(true);
 					if (ship.rooms.size() > 0) {
-						btnShields.setEnabled(true);
+						btnShields.setEnabled(ship.isPlayer);
 						btnShields.setToolTipText(null);
 					}
 					btnCloak.setEnabled(true);
-					btnFloor.setEnabled(true);
+					btnFloor.setEnabled(ship.isPlayer);
 					btnShipProperties.setEnabled(true);
 					
 					mntmSaveShip.setEnabled(true);
@@ -2170,17 +2327,32 @@ public class Main
 							tltmSystem.setEnabled(true);
 							btnHull.setEnabled(true);
 							if (ship.rooms.size() > 0) {
-								btnShields.setEnabled(true);
+								btnShields.setEnabled(ship.isPlayer);
 								btnShields.setToolTipText(null);
 							}
 							btnCloak.setEnabled(true);
-							btnFloor.setEnabled(true);
+							btnFloor.setEnabled(ship.isPlayer);
 							btnShipProperties.setEnabled(true);
 							
 							mntmSaveShip.setEnabled(true);
 							mntmSaveShipAs.setEnabled(true);
 							mntmExport.setEnabled(true);
 							mntmClose.setEnabled(true);
+							
+							if (ship.isPlayer) {
+								if (shieldImage != null && !shieldImage.isDisposed()) {
+									Rectangle temp = shieldImage.getBounds();
+									shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - temp.width/2 + ship.ellipse.x;
+									shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - temp.height/2 + ship.ellipse.y;
+									shieldEllipse.width = temp.width;
+									shieldEllipse.height = temp.height;
+								}
+							} else {
+								shieldEllipse.width = ship.ellipse.width*2;
+								shieldEllipse.height = ship.ellipse.height*2;
+								shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 + ship.ellipse.x - ship.ellipse.width;
+								shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 + ship.ellipse.y - ship.ellipse.height + 110;
+							}
 							
 							currentPath = null;
 							
@@ -2239,14 +2411,27 @@ public class Main
 					tltmSystem.setEnabled(true);
 					btnHull.setEnabled(true);
 					if (ship.rooms.size() > 0) {
-						btnShields.setEnabled(true);
+						btnShields.setEnabled(ship.isPlayer);
 						btnShields.setToolTipText(null);
 					}
 					btnCloak.setEnabled(true);
-					btnFloor.setEnabled(true);
+					btnFloor.setEnabled(ship.isPlayer);
 					btnShipProperties.setEnabled(true);
-					
-					//currentPath = null;
+
+					if (ship.isPlayer) {
+						if (shieldImage != null && !shieldImage.isDisposed()) {
+							Rectangle temp = shieldImage.getBounds();
+							shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - temp.width/2 + ship.ellipse.x;
+							shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - temp.height/2 + ship.ellipse.y;
+							shieldEllipse.width = temp.width;
+							shieldEllipse.height = temp.height;
+						}
+					} else {
+						shieldEllipse.width = ship.ellipse.width*2;
+						shieldEllipse.height = ship.ellipse.height*2;
+						shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 + ship.ellipse.x - ship.ellipse.width;
+						shieldEllipse.y = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().y/2 + ship.ellipse.y - ship.ellipse.height + 110;
+					}
 
 					mntmSaveShip.setEnabled(true);
 					mntmSaveShipAs.setEnabled(true);

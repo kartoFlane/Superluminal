@@ -96,6 +96,9 @@ public class ShipIO
 // === IMPORTING / LOADING
 // =======================
 
+	/**
+	 * Clears the tree list and updates it.
+	 */
 	public static void loadTree() {
 		TreeItem blueprint;
 
@@ -118,6 +121,9 @@ public class ShipIO
 		}
 	}
 	
+	/**
+	 * Clears the blueprint and name maps, fills then anew and then reloads the tree list.
+	 */
 	public static void reloadBlueprints() {
 		playerBlueprintNames.clear();
 		enemyBlueprintNames.clear();
@@ -130,6 +136,9 @@ public class ShipIO
 		loadTree();
 	}
 	
+	/**
+	 * Used for data preloading, loads ships to a map. Not used, TBS.
+	 */
 	public static void loadData() {
 		if (Main.dataPreloading) {
 			for (String blueprintName : playerBlueprintNames) {
@@ -142,11 +151,10 @@ public class ShipIO
 	}
 	
 	/**
-	 * Load the given ship.
+	 * Loads the given ship.
 	 * @param blueprintName The blueprint name of the ship that is to be loaded.
-	 * @param asActive When set to false, loads the given ship as not active (i.e. it won't be displayed at the main screen, just loaded to the hashmap for easy access)
-	 * NOTE that when data preloading is disabled (preferred option), this paramter won't matter and the given ship will always be loaded as active.
-	 * @return true if operation was completely successful, false if even a single minor error occured.
+	 * @param asActive When set to false, loads the given ship as not active (i.e. it won't be displayed at the main screen, just loaded to the hashmap for easy access). 
+	 * NOTE when data preloading is disabled (preferred option), this paramter won't matter and the given ship will always be loaded as active.
 	 */
 	public static void loadShip(String blueprintName, boolean asActive) {
 		FileReader fr;
@@ -184,10 +192,9 @@ ship:					while(sc.hasNext()) {
 								
 							// === LOAD SHIP LAYOUT
 								shipBeingLoaded.layout = matcher.group(5);
-								loadShipLayout(shipBeingLoaded.blueprintName);
+								loadShipLayout();
 								
 							// === LOAD SHIP IMAGE		
-
 								shipBeingLoaded.imageName = matcher.group(7);
 								shipBeingLoaded.imagePath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + shipBeingLoaded.imageName + "_base.png";
 								shipBeingLoaded.cloakPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + shipBeingLoaded.imageName + "_cloak.png";
@@ -373,13 +380,13 @@ ship:					while(sc.hasNext()) {
 					sc.useDelimiter(Pattern.compile(lineDelimiter));
 
 					pattern = Pattern.compile("(<shipBlueprint name=\")(.*?)(\" layout=\")(.*?)(\" img=\")(.*?)(\">)");
-		scan:		while(sc.hasNext()) {
-						// seek the ship blueprint
+scan:				while(sc.hasNext()) {
 						s = sc.next();
 						
 						if (s.contains("<!--")) ignoreNextTag = true;
+						
 						matcher = pattern.matcher(s);
-						// load section names
+					// load section names
 						if (!ignoreNextTag && matcher.find() && matcher.group(2).equals(blueprintName)) {
 							shipBeingLoaded = new FTLShip();
 							shipBeingLoaded.blueprintName = blueprintName;
@@ -397,10 +404,9 @@ ship:					while(sc.hasNext()) {
 					    	
 					    // === LOAD SHIP LAYOUT
 							shipBeingLoaded.layout = matcher.group(4);
-							loadShipLayout(null);
+							loadShipLayout();
 							
 						// === LOAD SHIP IMAGES
-
 							shipBeingLoaded.imageName = matcher.group(6);
 							shipBeingLoaded.imagePath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + shipBeingLoaded.imageName + "_base.png";
 							shipBeingLoaded.cloakPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + shipBeingLoaded.imageName + "_cloak.png";
@@ -520,7 +526,7 @@ ship:					while(sc.hasNext()) {
 							    		}
 							    	}
 
-									// weapons list
+								// weapons list
 									pattern = Pattern.compile("(<weaponList count=\")(.*?)(\" missiles=\")(.*?)(\">)");
 									matcher = pattern.matcher(s);
 									if (matcher.find()) {
@@ -543,7 +549,7 @@ ship:					while(sc.hasNext()) {
 										}
 									}
 									
-									// drone list
+								// drone list
 									pattern = Pattern.compile("(<droneList count=\")(.*?)(\" drones=\")(.*?)(\">)");
 									matcher = pattern.matcher(s);
 									if (matcher.find()) {
@@ -566,14 +572,14 @@ ship:					while(sc.hasNext()) {
 										}
 									}
 							    	
-									// crew
+								// crew
 							    	pattern = Pattern.compile(".*?(<crewCount amount.*?=.*?\")(.*?)(\" class=\")(.*?)(\"/>.*?)");
 							    	matcher = pattern.matcher(s);
 							    	if (matcher.find()) {
 							    		shipBeingLoaded.crewMap.put(matcher.group(4), Integer.valueOf(matcher.group(2)));
 							    	}
 									
-									// augments
+								// augments
 									pattern = Pattern.compile("(<aug name=\")(.*?)(\"/>)");
 									matcher = pattern.matcher(s);
 									if (matcher.find()) {
@@ -622,12 +628,9 @@ ship:					while(sc.hasNext()) {
 	}
 
 	/**
-	 * 
-	 * @param blueprintName Blueprint name of the ship (the one used in ship list declarations), used to determine the ship to which the data will be assigned.
-	 * Setting this to null will load the default data for the ship being currently loaded.
-	 * @return True if loading was completely successful, false if even a single non-fatal error occured (means some of the data was not loaded due to the error, ex. ship's image may be missing if the file was not found)
+	 * Loads the layout declared for the ship that is currently being loaded.
 	 */
-	public static void loadShipLayout(String blueprintName) {
+	public static void loadShipLayout() {
 		FileReader filer;
 		Scanner scanner;
 		String s;
@@ -1026,38 +1029,42 @@ search:		while(sc.hasNext()) {
 		exp.progressBar.setSelection(10);
 		
 		// shields
-		try {
-			source = new File(Main.ship.shieldPath);
-			destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_shields1.png");
-			if ((dontCheck || !isDefaultResource(destination)) && source.exists()) {
-				destination.mkdirs();
-				if (isNull(Main.ship.shieldOverride)) {
-					java.nio.file.Files.copy(Paths.get(Main.ship.shieldPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-				} else {
-					java.nio.file.Files.copy(Paths.get(Main.ship.shieldOverride), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		if (Main.ship.isPlayer) {
+			try {
+				source = new File(Main.ship.shieldPath);
+				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_shields1.png");
+				if ((dontCheck || !isDefaultResource(destination)) && source.exists()) {
+					destination.mkdirs();
+					if (isNull(Main.ship.shieldOverride)) {
+						java.nio.file.Files.copy(Paths.get(Main.ship.shieldPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+					} else {
+						java.nio.file.Files.copy(Paths.get(Main.ship.shieldOverride), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+					}
+				} else if (!source.exists()) {
+					errors.add("Error: export - shield image not found.");
 				}
-			} else if (!source.exists()) {
+			} catch (FileNotFoundException e) {
 				errors.add("Error: export - shield image not found.");
+			} catch (IOException e) {
 			}
-		} catch (FileNotFoundException e) {
-			errors.add("Error: export - shield image not found.");
-		} catch (IOException e) {
 		}
 		exp.progressBar.setSelection(20);
 		
 		// floor
-		try {
-			source = new File(Main.ship.floorPath);
-			destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_floor.png");
-			if ((dontCheck || !isDefaultResource(destination)) && source.exists()) {
-				destination.mkdirs();
-				java.nio.file.Files.copy(Paths.get(Main.ship.floorPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			} else if (!source.exists()) {
+		if (Main.ship.isPlayer) {
+			try {
+				source = new File(Main.ship.floorPath);
+				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_floor.png");
+				if ((dontCheck || !isDefaultResource(destination)) && source.exists()) {
+					destination.mkdirs();
+					java.nio.file.Files.copy(Paths.get(Main.ship.floorPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+				} else if (!source.exists()) {
+					errors.add("Error: export - floor image not found.");
+				}
+			} catch (FileNotFoundException e) {
 				errors.add("Error: export - floor image not found.");
+			} catch (IOException e) {
 			}
-		} catch (FileNotFoundException e) {
-			errors.add("Error: export - floor image not found.");
-		} catch (IOException e) {
 		}
 		exp.progressBar.setSelection(30);
 		
@@ -1134,17 +1141,16 @@ search:		while(sc.hasNext()) {
 			fw.write(Main.ship.vertical + lineDelimiter);
 			
 			fw.write("ELLIPSE" + lineDelimiter);
-			if (Main.shieldImage != null && !Main.shieldImage.isDisposed()) {
+			if (Main.shieldImage != null && !Main.shieldImage.isDisposed() && Main.ship.isPlayer) {
 				fw.write(Main.shieldImage.getBounds().width/2 + lineDelimiter);
 				fw.write(Main.shieldImage.getBounds().height/2 + lineDelimiter);
 			} else {
-				fw.write(Main.ship.ellipse.width + lineDelimiter);
-				fw.write(Main.ship.ellipse.height + lineDelimiter);
+				fw.write(Main.shieldEllipse.width/2 + lineDelimiter);
+				fw.write(Main.shieldEllipse.height/2 + lineDelimiter);
 			}
 			
 			fw.write(Main.ship.ellipse.x + lineDelimiter);
 			fw.write(Main.ship.ellipse.y + lineDelimiter);
-			
 			
 			SortedSet<FTLRoom> set = new TreeSet<FTLRoom>();
 			set.addAll(Main.ship.rooms);
@@ -1407,10 +1413,11 @@ search:		while(sc.hasNext()) {
 				fw.write("\t" + "<maxPower amount=\""+Main.ship.reactorPower+"\"/>" + lineDelimiter);
 
 			// crew
-				for (String key : Main.ship.crewMap.keySet()) {
+crew:			for (String key : Main.ship.crewMap.keySet()) {
 					if (Main.ship.crewMax==0) {
 						fw.write("\t" + "<crewCount amount=\"0\" max=\"0\" class=\"human\"/>");
 						fw.write(lineDelimiter);
+						break crew;
 					} else {
 						if (Main.ship.crewMap.get(key) > 0) {
 							fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" max=\""+Main.ship.crewMax+"\" class=\""+key+"\"/>");
@@ -1579,15 +1586,6 @@ search:		while(sc.hasNext()) {
 				if (r.sysImg != null && !r.sysImg.isDisposed())
 					r.sysImg.dispose();
 				r.sysImg = null;
-			}
-
-			if (Main.ship.ellipse.width == 0) {
-				Main.ship.ellipse.x = 0;
-				Main.ship.ellipse.y = 0;
-				if (Main.shieldImage != null) {
-					Main.ship.ellipse.width = Main.shieldImage.getBounds().width/2;
-					Main.ship.ellipse.height = Main.shieldImage.getBounds().height/2;
-				}
 			}
 			
             oos.writeObject(Main.ship);

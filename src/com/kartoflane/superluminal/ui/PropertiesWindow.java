@@ -10,106 +10,127 @@ import org.eclipse.swt.widgets.Scale;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.widgets.Text;
 
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.elements.Systems;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.widgets.Spinner;
+import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.ModifyEvent;
 
 
 public class PropertiesWindow
 {
 
 	protected Shell shell;
-	private Text textLevel;
-	private Text textPower;
+	private Spinner textLevel;
+	private Spinner textPower;
 	private int max;
 	private Systems sys;
 	private Scale scaleLevel;
 	private Scale scalePower;
 	private Button btnOk;
 	private Button btnAvailable;
+	private Composite composite;
 
 	public PropertiesWindow(Shell parent)
 	{
 		shell = new Shell(parent, SWT.BORDER | SWT.TITLE);
-		shell.setSize(186, 230);
+		shell.setFont(Main.appFont);
+		shell.setSize(186, 235);
 		shell.setLocation(parent.getLocation().x+100, parent.getLocation().y+100);
+		shell.setLayout(new GridLayout(2, false));
 		
 		Label lblLevel_1 = new Label(shell, SWT.NONE);
-		lblLevel_1.setBounds(10, 10, 47, 15);
+		lblLevel_1.setFont(Main.appFont);
 		lblLevel_1.setText("Level:");
 		
-		scaleLevel = new Scale(shell, SWT.NONE);
-		scaleLevel.setPageIncrement(1);
-		scaleLevel.setMinimum(1);
-		
-		
-		scaleLevel.setMaximum(8);
-		scaleLevel.setBounds(10, 31, 130, 42);
-		
-		textLevel = new Text(shell, SWT.BORDER | SWT.CENTER);
-		textLevel.setBounds(142, 40, 28, 21);
+		textLevel = new Spinner(shell, SWT.BORDER | SWT.CENTER);
+		textLevel.setMinimum(1);
+		textLevel.setMaximum(8);
+		GridData gd_textLevel = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		gd_textLevel.widthHint = 20;
+		textLevel.setLayoutData(gd_textLevel);
+		textLevel.setFont(Main.appFont);
 		textLevel.setTextLimit(1);
 		
+		scaleLevel = new Scale(shell, SWT.NONE);
+		GridData gd_scaleLevel = new GridData(SWT.LEFT, SWT.CENTER, false, false, 5, 2);
+		gd_scaleLevel.heightHint = 40;
+		scaleLevel.setLayoutData(gd_scaleLevel);
+		scaleLevel.setFont(Main.appFont);
+		scaleLevel.setPageIncrement(1);
+		scaleLevel.setMinimum(1);
+		scaleLevel.setMaximum(8);
+		
 		Label lblPower = new Label(shell, SWT.NONE);
-		lblPower.setBounds(10, 79, 75, 15);
+		lblPower.setFont(Main.appFont);
 		lblPower.setText("Power");
 		
-		scalePower = new Scale(shell, SWT.NONE);
-		scalePower.setPageIncrement(1);
-		scalePower.setMaximum(8);
-		scalePower.setBounds(10, 100, 130, 42);
-		
-		textPower = new Text(shell, SWT.BORDER | SWT.CENTER);
-		textPower.setBounds(142, 109, 28, 21);
+		textPower = new Spinner(shell, SWT.BORDER | SWT.CENTER);
+		textPower.setMinimum(1);
+		textPower.setMaximum(8);
+		GridData gd_textPower = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		gd_textPower.widthHint = 20;
+		textPower.setLayoutData(gd_textPower);
+		textPower.setFont(Main.appFont);
 		textPower.setTextLimit(1);
 		
-		btnOk = new Button(shell, SWT.NONE);
-		btnOk.setBounds(10, 167, 75, 25);
-		btnOk.setText("OK");
-		
-		Button btnCancel = new Button(shell, SWT.NONE);
-		btnCancel.setText("Cancel");
-		btnCancel.setBounds(95, 167, 75, 25);
+		scalePower = new Scale(shell, SWT.NONE);
+		GridData gd_scalePower = new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 2);
+		gd_scalePower.heightHint = 40;
+		scalePower.setLayoutData(gd_scalePower);
+		scalePower.setFont(Main.appFont);
+		scalePower.setPageIncrement(1);
+		scalePower.setMaximum(8);
 		
 		btnAvailable = new Button(shell, SWT.CHECK);
+		btnAvailable.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 3, 1));
+		btnAvailable.setFont(Main.appFont);
 		btnAvailable.setToolTipText("When set to true, this system will be available to the player since the beggining of the game.\n"
 											+"When set to false, the player will have to buy the system at a store to unlock it.\n"
 											+"The player won't be able to buy systems that have not been placed on the ship.");
-		btnAvailable.setBounds(10, 148, 160, 16);
 		btnAvailable.setText("Available At Start");
 		
+		composite = new Composite(shell, SWT.NONE);
+		composite.setLayout(new GridLayout(2, false));
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 5, 1));
 		
-		textLevel.addListener(SWT.Verify, new Listener() {
-			public void handleEvent(Event e) {
-				String string = e.text;
-				char[] chars = new char[string.length()];
-				string.getChars(0, chars.length, chars, 0);
-				for (int i = 0; i < chars.length; i++) {
-					if (!('0' <= chars[i] && chars[i] <= '9')) {
-						e.doit = false;
-						return;
-					} else {
-						scaleLevel.setSelection(Integer.valueOf(e.text));
-						scalePower.setMaximum(Integer.valueOf(e.text));
-					}
-				}
+		btnOk = new Button(composite, SWT.NONE);
+		GridData gd_btnOk = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1);
+		gd_btnOk.heightHint = 25;
+		gd_btnOk.widthHint = 80;
+		btnOk.setLayoutData(gd_btnOk);
+		btnOk.setFont(Main.appFont);
+		btnOk.setText("OK");
+		
+		Button btnCancel = new Button(composite, SWT.NONE);
+		GridData gd_btnCancel = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		gd_btnCancel.heightHint = 25;
+		gd_btnCancel.widthHint = 80;
+		btnCancel.setLayoutData(gd_btnCancel);
+		btnCancel.setFont(Main.appFont);
+		btnCancel.setText("Cancel");
+		
+		textLevel.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent arg0) {
+				scaleLevel.setSelection(textLevel.getSelection());
+				scalePower.setMaximum(scaleLevel.getSelection());
+				textPower.setMaximum(scaleLevel.getSelection());
 			}
 		});
 		
-		textPower.addListener(SWT.Verify, new Listener() {
-			public void handleEvent(Event e) {
-				String string = e.text;
-				char[] chars = new char[string.length()];
-				string.getChars(0, chars.length, chars, 0);
-				for (int i = 0; i < chars.length; i++) {
-					if (!('0' <= chars[i] && chars[i] <= '9')) {
-						e.doit = false;
-						return;
-					} else {
-						scalePower.setSelection(Integer.valueOf(e.text));
-					}
-				}
+		textPower.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent arg0) {
+				scalePower.setSelection(textPower.getSelection());
+			}
+		});
+		
+		btnCancel.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				shell.setVisible(false);
 			}
 		});
 		
@@ -125,22 +146,20 @@ public class PropertiesWindow
 			}
 		});
 		
-		btnCancel.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				shell.setVisible(false);
+		scaleLevel.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event event) {
+				textLevel.setSelection(scaleLevel.getSelection());
+				scalePower.setMaximum(scaleLevel.getSelection());
+				textPower.setMaximum(scaleLevel.getSelection());
 			}
 		});
 		
-		scaleLevel.addListener(SWT.Selection, new Listener() {
-			public void handleEvent(Event event) {
-				textLevel.setText(""+scaleLevel.getSelection());
-			}
-		});
 		scalePower.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
-				textPower.setText(""+scalePower.getSelection());
+				textPower.setSelection(scalePower.getSelection());
 			}
 		});
+		
 
         shell.addListener(SWT.Traverse, new Listener() {
         	@Override
@@ -187,12 +206,15 @@ public class PropertiesWindow
 
 		shell.setImage(Main.systemsMap.get(sys));
 		
-		textLevel.setText(""+((level<1)?1:level));
-		textPower.setText(""+power);
+		textLevel.setSelection(((level<1)?1:level));
+		textPower.setSelection(power);
 		scaleLevel.setMaximum(max);
 		scalePower.setMaximum((level<1)?1:level);
 		scaleLevel.setSelection(level);
 		scalePower.setSelection(power);
+		textLevel.setMaximum(scaleLevel.getMaximum());
+		textPower.setMaximum(scalePower.getMaximum());
+		
 		if (!sys.equals(Systems.EMPTY) && Main.ship.isPlayer) {
 			btnAvailable.setSelection(Main.ship.startMap.get(sys));
 			btnAvailable.setEnabled(true);
