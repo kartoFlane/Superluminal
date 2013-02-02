@@ -23,16 +23,17 @@ public class ConfigIO {
 			out = new BufferedWriter(fw);
 			
 			// === WRITE VARIABLES
-			//exporter
+		// === exporter
 			out.write("exportPath = " + Main.exportPath + ShipIO.lineDelimiter);
-			// browser
+		// === browser
 			out.write("dataPath = " + Main.dataPath + ShipIO.lineDelimiter);
 			out.write("resPath = " + Main.resPath + ShipIO.lineDelimiter);
-			// edit
+		// === edit
 			out.write("removeDoor = " + Main.removeDoor + ShipIO.lineDelimiter);
-			out.write("snapMounts = " + Main.snapMounts + ShipIO.lineDelimiter);
-			out.write("snapMountsToHull = " + Main.snapMountsToHull + ShipIO.lineDelimiter);
-			// view
+			//out.write("snapMounts = " + Main.snapMounts + ShipIO.lineDelimiter);
+			//out.write("snapMountsToHull = " + Main.snapMountsToHull + ShipIO.lineDelimiter);
+			out.write("arbitraryPosOverride = " + Main.arbitraryPosOverride + ShipIO.lineDelimiter);
+		// === view
 			out.write("showAnchor = " + Main.showAnchor + ShipIO.lineDelimiter);
 			out.write("showMounts = " + Main.showMounts + ShipIO.lineDelimiter);
 			out.write("showRooms = " + Main.showRooms + ShipIO.lineDelimiter);

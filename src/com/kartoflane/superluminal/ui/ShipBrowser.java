@@ -164,12 +164,10 @@ public class ShipBrowser
 					Main.dataPath = s;
 					dataDir.setText(Main.dataPath);
 					
-					clearTrees();
-					
-					ShipIO.reloadBlueprints();
-
 					// check if the other path is set too
 					if (!isNull(Main.resPath)) {
+						clearTrees();
+						ShipIO.reloadBlueprints();
 						tree.setEnabled(true);
 						ConfigIO.saveConfig();
 					}
@@ -187,6 +185,7 @@ public class ShipBrowser
 					
 					// check if the other path is set too
 					if (!isNull(Main.dataPath)) {
+						ShipIO.reloadBlueprints();
 						tree.setEnabled(true);
 						ConfigIO.saveConfig();
 					}
@@ -240,7 +239,7 @@ public class ShipBrowser
 
 				//Main.ship.updateReactor();
 				
-				if (ShipIO.errors.size() == 0) {
+				if (ShipIO.errors.size() == 0 && Main.ship != null) {
 					Main.print(((Main.ship.shipName!=null)?(Main.ship.shipClass + " - " + Main.ship.shipName):(Main.ship.shipClass)) + " [" + Main.ship.blueprintName + "] loaded successfully.");
 				} else {
 					Main.print("Errors occured during ship loading; some data may be missing.");

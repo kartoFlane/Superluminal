@@ -86,6 +86,7 @@ public class ShipPropertiesWindow extends Dialog
 	private List listAugments;
 	private Spinner spMissiles;
 	private Spinner spDrones;
+	private Spinner spGhost;
 
 	public ShipPropertiesWindow(Shell parent)
 	{
@@ -178,6 +179,7 @@ public class ShipPropertiesWindow extends Dialog
 		spSlug.setMaximum(Main.ship.crewMax);
 		spRock.setMaximum(Main.ship.crewMax);
 		spCrystal.setMaximum(Main.ship.crewMax);
+		spGhost.setMaximum(Main.ship.crewMax);
 		
 		//spMax.setEnabled(!Main.ship.isPlayer);
 		spMax.setIncrement((Main.ship.isPlayer ? 8 : 1));
@@ -188,6 +190,7 @@ public class ShipPropertiesWindow extends Dialog
 		spSlug.setSelection(Main.ship.crewMap.get("slug"));
 		spRock.setSelection(Main.ship.crewMap.get("rock"));
 		spCrystal.setSelection(Main.ship.crewMap.get("crystal"));
+		spGhost.setSelection(Main.ship.crewMap.get("ghost"));
 		
 	// weapons
 		spMissiles.setSelection(Main.ship.missiles);
@@ -739,8 +742,8 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		Group grpCrew = new Group(crewInfoC, SWT.NONE);
 		grpCrew.setFont(Main.appFont);
-		GridLayout gl_grpCrew = new GridLayout(8, false);
-		gl_grpCrew.horizontalSpacing = 11;
+		GridLayout gl_grpCrew = new GridLayout(10, false);
+		gl_grpCrew.horizontalSpacing = 2;
 		grpCrew.setLayout(gl_grpCrew);
 		grpCrew.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 8, 1));
 		grpCrew.setText("Crew");
@@ -755,6 +758,9 @@ search:		for (String s : presetsDr.getItems()) {
 		lblCrewMax.setText("Crew max:");
 		
 		spMax = new Spinner(grpCrew, SWT.BORDER);
+		GridData gd_spMax = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_spMax.widthHint = 5;
+		spMax.setLayoutData(gd_spMax);
 		spMax.setFont(Main.appFont);
 		spMax.setMaximum(8);
 		spMax.setMinimum(0);
@@ -768,6 +774,9 @@ search:		for (String s : presetsDr.getItems()) {
 		lblHuman.setText("Human:");
 		
 		spHuman = new Spinner(grpCrew, SWT.BORDER);
+		GridData gd_spHuman = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_spHuman.widthHint = 5;
+		spHuman.setLayoutData(gd_spHuman);
 		spHuman.setFont(Main.appFont);
 		spHuman.setMaximum(8);
 		
@@ -780,6 +789,9 @@ search:		for (String s : presetsDr.getItems()) {
 		lblEngi.setText("Engi:");
 		
 		spEngi = new Spinner(grpCrew, SWT.BORDER);
+		GridData gd_spEngi = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_spEngi.widthHint = 5;
+		spEngi.setLayoutData(gd_spEngi);
 		spEngi.setFont(Main.appFont);
 		spEngi.setMaximum(8);
 		
@@ -792,8 +804,22 @@ search:		for (String s : presetsDr.getItems()) {
 		lblZoltan.setText("Zoltan:");
 		
 		spZoltan = new Spinner(grpCrew, SWT.BORDER);
+		GridData gd_spZoltan = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_spZoltan.widthHint = 5;
+		spZoltan.setLayoutData(gd_spZoltan);
 		spZoltan.setFont(Main.appFont);
 		spZoltan.setMaximum(8);
+		
+		Label lblGhost = new Label(grpCrew, SWT.NONE);
+		lblGhost.setFont(Main.appFont);
+		lblGhost.setText("Ghost:");
+		
+		spGhost = new Spinner(grpCrew, SWT.BORDER);
+		spGhost.setFont(Main.appFont);
+		spGhost.setMaximum(8);
+		GridData gd_spGhost = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_spGhost.widthHint = 5;
+		spGhost.setLayoutData(gd_spGhost);
 		
 		Label lblMantis = new Label(grpCrew, SWT.NONE);
 		lblMantis.setFont(Main.appFont);
@@ -804,6 +830,9 @@ search:		for (String s : presetsDr.getItems()) {
 		lblMantis.setText("Mantis:");
 		
 		spMantis = new Spinner(grpCrew, SWT.BORDER);
+		GridData gd_spMantis = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_spMantis.widthHint = 5;
+		spMantis.setLayoutData(gd_spMantis);
 		spMantis.setFont(Main.appFont);
 		spMantis.setMaximum(8);
 		
@@ -816,6 +845,9 @@ search:		for (String s : presetsDr.getItems()) {
 		lblSlug.setText("Slug:");
 		
 		spSlug = new Spinner(grpCrew, SWT.BORDER);
+		GridData gd_spSlug = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_spSlug.widthHint = 5;
+		spSlug.setLayoutData(gd_spSlug);
 		spSlug.setFont(Main.appFont);
 		spSlug.setMaximum(8);
 		
@@ -828,6 +860,9 @@ search:		for (String s : presetsDr.getItems()) {
 		lblRock.setText("Rock:");
 		
 		spRock = new Spinner(grpCrew, SWT.BORDER);
+		GridData gd_spRock = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_spRock.widthHint = 5;
+		spRock.setLayoutData(gd_spRock);
 		spRock.setFont(Main.appFont);
 		spRock.setMaximum(8);
 		
@@ -840,8 +875,13 @@ search:		for (String s : presetsDr.getItems()) {
 		lblCrystal.setText("Crystal:");
 		
 		spCrystal = new Spinner(grpCrew, SWT.BORDER);
+		GridData gd_spCrystal = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_spCrystal.widthHint = 5;
+		spCrystal.setLayoutData(gd_spCrystal);
 		spCrystal.setFont(Main.appFont);
 		spCrystal.setMaximum(8);
+		new Label(grpCrew, SWT.NONE);
+		new Label(grpCrew, SWT.NONE);
 		
 		Group grpAugments = new Group(crewInfoC, SWT.NONE);
 		grpAugments.setFont(Main.appFont);
@@ -1167,6 +1207,7 @@ search:		for (String s : presetsDr.getItems()) {
 				Main.ship.crewMap.put("slug", spSlug.getSelection());
 				Main.ship.crewMap.put("rock", spRock.getSelection());
 				Main.ship.crewMap.put("crystal", spCrystal.getSelection());
+				Main.ship.crewMap.put("ghost", spGhost.getSelection());
 				
 				// health & power
 				Main.ship.reactorPower = spReactor.getSelection();
@@ -1209,6 +1250,10 @@ search:		for (String s : presetsDr.getItems()) {
 					aug = aug.substring(aug.lastIndexOf("(")+1, aug.lastIndexOf(")"));
 					Main.ship.augmentSet.add(aug);
 				}
+				
+				ShipIO.fixImgNames();
+				ShipIO.loadWeaponStrips();
+				ShipIO.loadWeaponImages(Main.ship);
 				
 				shell.setVisible(false);
 			}

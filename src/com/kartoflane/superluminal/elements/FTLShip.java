@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.PaintEvent;
@@ -34,15 +36,16 @@ public class FTLShip implements Serializable
 	public boolean weaponsBySet;
 	public boolean dronesBySet;
 	
-	public HashSet<FTLRoom> rooms;
-	public HashSet<FTLDoor> doors;
-	public HashSet<FTLMount> mounts;
+	public Set<FTLRoom> rooms;
+	public Set<FTLDoor> doors;
+	public List<FTLMount> mounts;
 	
 	// hull
 	public String imagePath;
 	public String shieldPath;
 	public String floorPath;
 	public String cloakPath;
+	public String miniPath;
 	
 	public boolean hullPinned;
 	public boolean shieldPinned;
@@ -93,7 +96,7 @@ public class FTLShip implements Serializable
 	public FTLShip() {
 		rooms = new HashSet<FTLRoom>();
 		doors = new HashSet<FTLDoor>();
-		mounts = new HashSet<FTLMount>();
+		mounts = new LinkedList<FTLMount>();
 		
 		weaponSet = new LinkedList<String>();
 		droneSet = new LinkedList<String>();
@@ -132,6 +135,7 @@ public class FTLShip implements Serializable
 		crewMap.put("slug", 0);
 		crewMap.put("rock", 0);
 		crewMap.put("crystal", 0);
+		crewMap.put("ghost", 0);
 		
 		levelMap.put(Systems.ARTILLERY, 0);
 		levelMap.put(Systems.CLOAKING, 0);
@@ -277,22 +281,6 @@ public class FTLShip implements Serializable
 		start.x = end.x - start.x;
 		start.y = end.y - start.y;
 		return start;
-	}
-	
-	/**
-	 * @return FTLRoom closest to the top left corner of the drawing field.
-	 */
-	public FTLRoom findRoomClosestToOrigin() {
-		int x=1000, y=1000;
-		FTLRoom rm = null;
-		for (FTLRoom r : rooms) {
-			if (r!=null && r.rect.x < x && r.rect.y < y) {
-				x = r.rect.x;
-				y = r.rect.y;
-				rm = r;
-			}
-		}
-		return rm;
 	}
 	
 	/** 
