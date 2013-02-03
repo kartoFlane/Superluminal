@@ -239,18 +239,6 @@ public class ShipBrowser
 
 				//Main.ship.updateReactor();
 				
-				if (ShipIO.errors.size() == 0 && Main.ship != null) {
-					Main.print(((Main.ship.shipName!=null)?(Main.ship.shipClass + " - " + Main.ship.shipName):(Main.ship.shipClass)) + " [" + Main.ship.blueprintName + "] loaded successfully.");
-				} else {
-					Main.print("Errors occured during ship loading; some data may be missing.");
-					if (Main.debug) {
-						for (String s : ShipIO.errors) {
-							Main.debug(s);
-						}
-					}
-					
-					ShipIO.errors.clear();
-				}
 				ConfigIO.saveConfig();
 				shell.dispose();
 			}

@@ -360,9 +360,8 @@ public class ExportDialog extends Dialog
 				} else {
 					Main.print("Errors occured during ship exporting.");
 					if (Main.debug) {
-						for (String s : ShipIO.errors) {
-							Main.debug(s);
-						}
+						Main.erDialog.printErrors(ShipIO.errors);
+						ShipIO.errors.clear();
 					}
 				}
 				shell.dispose();

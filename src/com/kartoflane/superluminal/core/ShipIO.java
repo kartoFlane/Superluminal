@@ -64,6 +64,8 @@ public class ShipIO
 	public static Map<String, HashSet<String>> weaponSetMap = new HashMap<String, HashSet<String>>();
 	public static Map<String, HashSet<String>> droneSetMap = new HashMap<String, HashSet<String>>();
 	
+	public static Map<FTLMount, String> mountWeaponMap = new HashMap<FTLMount, String>();
+	
 	static FTLShip shipBeingLoaded;
 	public static String pathDelimiter = System.getProperty("file.separator");
 	public static String lineDelimiter = System.getProperty("line.separator");
@@ -221,7 +223,7 @@ scan:			while(sc.hasNext()) {
 ship:					while(sc.hasNext()) {
 							s = sc.next();
 							if (s.contains("<!--")) ignoreNextTag = true;
-							pattern = Pattern.compile("(.*)(<shipBlueprint name=\")(.*?)(\" layout=\")(.*?)(\" img=\")(.*?)(\">)");
+							pattern = Pattern.compile("(.*)(<shipBlueprint name\\s*?=\\s*?\")(.*?)(\"\\s*?layout\\s*?=\\s*?\")(.*?)(\"\\s*?img\\s*?=\\s*?\")(.*?)(\">)");
 							matcher = pattern.matcher(s);
 							
 							if (matcher.find() && matcher.group(3).equals(blueprintName) && declarationsOmitted < declarationCount) {
@@ -259,14 +261,14 @@ ship:					while(sc.hasNext()) {
 											while(!s.contains("</systemList>")) {
 												s = sc.next();
 												if (s.contains("<!--")) ignoreNextTag = true;
-												pattern = Pattern.compile("(.*?<)(.*?)( power=\")(.*?)(\")(.*?)(room=\")(.*?)(\".*?)");
+												pattern = Pattern.compile("(.*?<)(\\w*?)(\\s*?power\\s*?=\\s*?\")(\\d*?)(\"\\s*?room\\s*?=\\s*?\")(\\d*?)(\".*?)");
 												matcher = pattern.matcher(s);
 												if (matcher.find() && !ignoreNextTag) {
 													power = Integer.valueOf(matcher.group(4));
-													id = Integer.valueOf(matcher.group(8));
+													id = Integer.valueOf(matcher.group(6));
 													sysName = matcher.group(2).toUpperCase();
 													
-													pattern = Pattern.compile("(.*?)(max=\")(.*?)(\".*?)");
+													pattern = Pattern.compile("(.*?)(\\s*?max\\s*?=\\s*?\")(\\d*?)(\".*?)");
 													matcher = pattern.matcher(s);
 													if (matcher.find()) {
 														level = Integer.valueOf(matcher.group(3));
@@ -291,7 +293,7 @@ ship:					while(sc.hasNext()) {
 										
 									// === armaments declaration type 1
 										// weapons list
-										pattern = Pattern.compile("(<weaponList missiles=\")(.*?)(\" load=\")(.*?)(\"/>)");
+										pattern = Pattern.compile("(<weaponList missiles\\s*?=\\s*?\")(\\d*?)(\"\\s*?load\\s*?=\\s*?\")(.*?)(\"/>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.weaponsBySet = true;
@@ -301,7 +303,7 @@ ship:					while(sc.hasNext()) {
 										}
 	
 										// drone list
-										pattern = Pattern.compile("(<droneList drones=\")(.*?)(\" load=\")(.*?)(\"/>)");
+										pattern = Pattern.compile("(<droneList drones\\s*?=\\s*?\")(\\d*?)(\"\\s*?load\\s*?=\\s*?\")(.*?)(\"/>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.dronesBySet = true;
@@ -312,7 +314,7 @@ ship:					while(sc.hasNext()) {
 										
 									// === armaments declaration type 2
 										// weapons list
-										pattern = Pattern.compile("(<weaponList count=\")(.*?)(\" missiles=\")(.*?)(\">)");
+										pattern = Pattern.compile("(<weaponList count\\s*?=\\s*?\")(\\d*?)(\"\\s*?missiles\\s*?=\\s*?\")(\\d*?)(\">)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.weaponsBySet = false;
@@ -324,7 +326,7 @@ ship:					while(sc.hasNext()) {
 	
 												if (s.contains("<!--")) ignoreNextTag = true;
 	
-												pattern = Pattern.compile("(<weapon name=\")(.*?)(\"/>)");
+												pattern = Pattern.compile("(<weapon name\\s*?=\\s*?\")(.*?)(\"/>)");
 												matcher = pattern.matcher(s);
 												if (matcher.find() && !ignoreNextTag) {
 													shipBeingLoaded.weaponSet.add(matcher.group(2));
@@ -335,7 +337,7 @@ ship:					while(sc.hasNext()) {
 										}
 										
 									// drone list
-										pattern = Pattern.compile("(<droneList count=\")(.*?)(\" drones=\")(.*?)(\">)");
+										pattern = Pattern.compile("(<droneList count\\s*?=\\s*?\")(\\d*?)(\" drones\\s*?=\\s*?\")(\\d*?)(\">)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.dronesBySet = false;
@@ -347,7 +349,7 @@ ship:					while(sc.hasNext()) {
 	
 												if (s.contains("<!--")) ignoreNextTag = true;
 	
-												pattern = Pattern.compile("(<drone name=\")(.*?)(\"/>)");
+												pattern = Pattern.compile("(<drone name\\s*?=\\s*?\")(.*?)(\"/>)");
 												matcher = pattern.matcher(s);
 												if (matcher.find() && !ignoreNextTag) {
 													shipBeingLoaded.droneSet.add(matcher.group(2));
@@ -358,49 +360,61 @@ ship:					while(sc.hasNext()) {
 										}
 										
 									// slots
-										pattern = Pattern.compile("(<weaponSlots>)(.*?)(</weaponSlots>)");
+										pattern = Pattern.compile("(<weaponSlots>)(\\d*?)(</weaponSlots>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find())
 											shipBeingLoaded.weaponSlots = Integer.valueOf(matcher.group(2));
 	
-										pattern = Pattern.compile("(<droneSlots>)(.*?)(</droneSlots>)");
+										pattern = Pattern.compile("(<droneSlots>)(\\d*?)(</droneSlots>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find())
 											shipBeingLoaded.droneSlots = Integer.valueOf(matcher.group(2));
 										
 									// hull health
-										pattern = Pattern.compile("(<health amount=\")(.*?)(\"/>)");
+										pattern = Pattern.compile("(<health amount\\s*?=\\s*?\")(\\d*?)(\"/>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.hullHealth = Integer.valueOf(matcher.group(2));
 										}
 										
 									// power
-										pattern = Pattern.compile("(<maxPower amount=\")(.*?)(\"/>)");
+										pattern = Pattern.compile("(<maxPower amount\\s*?=\\s*?\")(\\d*?)(\"/>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.reactorPower = Integer.valueOf(matcher.group(2));
 										}
 										
 									// crew
-										pattern = Pattern.compile("(<crewCount amount.*?=.*?\")(.*?)(\" max=\")(.*?)(\" class=\")(.*?)(\"/>)");
+										pattern = Pattern.compile("(<crewCount amount\\s*?=\\s*?\")(\\d*?)(\"\\s*?max\\s*?=\\s*?\")(\\d*?)(\"\\s*?class\\s*?=\\s*?\")(\\w*?)(\"/>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.crewMax = Integer.valueOf(matcher.group(4));
 											shipBeingLoaded.crewMap.put(matcher.group(6), Integer.valueOf(matcher.group(2)));
 										}
+										
+										pattern = Pattern.compile("(<crewCount amount\\s*?=\\s*?\")(\\d*?)(\"\\s*?class\\s*?=\\s*?\")(\\w*?)(\"/>)");
+										matcher = pattern.matcher(s);
+										if (matcher.find()) {
+											shipBeingLoaded.crewMap.put(matcher.group(4), Integer.valueOf(matcher.group(2)));
+										}
+										
+										pattern = Pattern.compile("(<crewCount amount\\s*?=\\s*?\")(\\d*?)(\"/>)");
+										matcher = pattern.matcher(s);
+										if (matcher.find()) {
+											shipBeingLoaded.crewMap.put("random", Integer.valueOf(matcher.group(2)));
+										}
 									
 									// augments
-										pattern = Pattern.compile("(<aug name=\")(.*?)(\"/>)");
+										pattern = Pattern.compile("(<aug name\\s*?=\\s*?\")(.*?)(\"/>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.augmentSet.add(matcher.group(2));
 										}
 									// overrides
-										pattern = Pattern.compile("(<shieldImage>)(.*?)(/shieldImage>)");
+										pattern = Pattern.compile("(<shieldImage>)(.*?)(</shieldImage>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
-											shipBeingLoaded.shieldOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "shield1.png";
+											shipBeingLoaded.shieldOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_shields1.png";
 										}
 										
 										// TODO boarding AI ?
@@ -433,7 +447,7 @@ ship:					while(sc.hasNext()) {
 					sc = new Scanner(fr);
 					sc.useDelimiter(Pattern.compile(lineDelimiter));
 
-					pattern = Pattern.compile("(<shipBlueprint name=\")(.*?)(\" layout=\")(.*?)(\" img=\")(.*?)(\">)");
+					pattern = Pattern.compile("(<shipBlueprint name\\s*?=\\s*?\")(.*?)(\"\\s*?layout\\s*?=\\s*?\")(.*?)(\"\\s*?img\\s*?=\\s*?\")(.*?)(\">)");
 scan:				while(sc.hasNext()) {
 						s = sc.next();
 						
@@ -504,7 +518,7 @@ scan:				while(sc.hasNext()) {
 												if (s.contains("<!--")) ignoreNextTag = true;
 								    			
 								    			if (!s.contains("artillery") && !ignoreNextTag) {
-									    			pattern = Pattern.compile("(.*?)(<)(.*?)( power=\")(.*?)(\" room=\")(.*?)(\" start=\")(.*?)(\")(.*?)(>|/>)");
+									    			pattern = Pattern.compile("(.*?)(<)(\\w*?)(\\s*?power\\s*?=\\s*?\")(\\d*?)(\"\\s*?room\\s*?=\\s*?\")(\\d*?)(\"\\s*?start\\s*?=\\s*?\")(.*?)(\")(.*?)(>|/>)");
 									    			matcher = pattern.matcher(s);
 									    			if (matcher.find()) {
 									    				debug(matcher.group(3) + " - looking for ID: "+matcher.group(7));
@@ -517,7 +531,7 @@ scan:				while(sc.hasNext()) {
 									    				
 									    				String str = matcher.group(12);
 									    				s = matcher.group(11);
-										    			pattern = Pattern.compile("(img=\")(.*?)(\")");
+										    			pattern = Pattern.compile("(\\s*?img\\s*?=\\s*?\")(.*?)(\")");
 										    			matcher = pattern.matcher(s);
 									    				if (matcher.find()) {
 									    					r.img = matcher.group(2);
@@ -557,7 +571,7 @@ scan:				while(sc.hasNext()) {
 									    						r.dir = Slide.valueOf(matcher.group(3).toUpperCase());
 										    					s = sc.next(); // <number>
 									    					}
-									    					pattern = Pattern.compile("(.*?)(<number>)(.*?)(</number>)");
+									    					pattern = Pattern.compile("(.*?)(<number>)(\\d*?)(</number>)");
 									    					matcher = pattern.matcher(s);
 									    					if (matcher.find()) {
 									    						r.slot = Integer.valueOf(matcher.group(3));
@@ -569,7 +583,7 @@ scan:				while(sc.hasNext()) {
 									    				}
 									    			}
 								    			} else if (!ignoreNextTag) {
-									    			pattern = Pattern.compile("(.*?)(<)(.*?)( power=\")(.*?)(\" room=\")(.*?)(\")(.*?)(>|/>)");
+									    			pattern = Pattern.compile("(.*?)(<)(\\w*?)(\\s*?power\\s*?=\\s*?\")(\\d*?)(\"\\s*?room\\s*?=\\s*?\")(\\d*?)(\")(.*?)(>|/>)");
 									    			matcher = pattern.matcher(s);
 									    			if (matcher.find()) {
 									    				r = shipBeingLoaded.getRoomWithId(Integer.valueOf(matcher.group(7)));
@@ -585,7 +599,7 @@ scan:				while(sc.hasNext()) {
 								    	}
 		
 									// weapons list
-										pattern = Pattern.compile("(<weaponList count=\")(.*?)(\" missiles=\")(.*?)(\">)");
+										pattern = Pattern.compile("(<weaponList count\\s*?=\\s*?\")(\\d*?)(\" missiles\\s*?=\\s*?\")(\\d*?)(\">)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.weaponsBySet = false;
@@ -597,7 +611,7 @@ scan:				while(sc.hasNext()) {
 		
 												if (s.contains("<!--")) ignoreNextTag = true;
 		
-												pattern = Pattern.compile("(<weapon name=\")(.*?)(\"/>)");
+												pattern = Pattern.compile("(<weapon name\\s*?=\\s*?\")(.*?)(\"/>)");
 												matcher = pattern.matcher(s);
 												if (matcher.find() && !ignoreNextTag) {
 													shipBeingLoaded.weaponSet.add(matcher.group(2));
@@ -608,7 +622,7 @@ scan:				while(sc.hasNext()) {
 										}
 										
 									// drone list
-										pattern = Pattern.compile("(<droneList count=\")(.*?)(\" drones=\")(.*?)(\">)");
+										pattern = Pattern.compile("(<droneList count\\s*?=\\s*?\")(\\d*?)(\" drones\\s*?=\\s*?\")(\\d*?)(\">)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.dronesBySet = false;
@@ -620,7 +634,7 @@ scan:				while(sc.hasNext()) {
 		
 												if (s.contains("<!--")) ignoreNextTag = true;
 		
-												pattern = Pattern.compile("(<drone name=\")(.*?)(\"/>)");
+												pattern = Pattern.compile("(<drone name\\s*?=\\s*?\")(.*?)(\"/>)");
 												matcher = pattern.matcher(s);
 												if (matcher.find() && !ignoreNextTag) {
 													shipBeingLoaded.droneSet.add(matcher.group(2));
@@ -629,26 +643,57 @@ scan:				while(sc.hasNext()) {
 												if (s.contains("-->")) ignoreNextTag = false;
 											}
 										}
+										
+									// slots
+										pattern = Pattern.compile("(<weaponSlots>)(\\d*?)(</weaponSlots>)");
+										matcher = pattern.matcher(s);
+										if (matcher.find())
+											shipBeingLoaded.weaponSlots = Integer.valueOf(matcher.group(2));
+	
+										pattern = Pattern.compile("(<droneSlots>)(\\d*?)(</droneSlots>)");
+										matcher = pattern.matcher(s);
+										if (matcher.find())
+											shipBeingLoaded.droneSlots = Integer.valueOf(matcher.group(2));
+										
+									// hull health
+										pattern = Pattern.compile("(<health amount\\s*?=\\s*?\")(\\d*?)(\"/>)");
+										matcher = pattern.matcher(s);
+										if (matcher.find()) {
+											shipBeingLoaded.hullHealth = Integer.valueOf(matcher.group(2));
+										}
+										
+									// power
+										pattern = Pattern.compile("(<maxPower amount\\s*?=\\s*?\")(\\d*?)(\"/>)");
+										matcher = pattern.matcher(s);
+										if (matcher.find()) {
+											shipBeingLoaded.reactorPower = Integer.valueOf(matcher.group(2));
+										}
 								    	
 									// crew
-								    	pattern = Pattern.compile(".*?(<crewCount amount.*?=.*?\")(.*?)(\" class=\")(.*?)(\"/>.*?)");
+								    	pattern = Pattern.compile(".*?(<crewCount amount\\s*?=\\s*?\")(\\d*?)(\" class=\")(\\w*?)(\"/>.*?)");
 								    	matcher = pattern.matcher(s);
 								    	if (matcher.find()) {
 								    		shipBeingLoaded.crewMap.put(matcher.group(4), Integer.valueOf(matcher.group(2)));
 								    	}
 										
+										pattern = Pattern.compile("(<crewCount amount\\s*?=\\s*?\")(\\d*?)(\"/>)");
+										matcher = pattern.matcher(s);
+										if (matcher.find()) {
+											shipBeingLoaded.crewMap.put("random", Integer.valueOf(matcher.group(2)));
+										}
+										
 									// augments
-										pattern = Pattern.compile("(<aug name=\")(.*?)(\"/>)");
+										pattern = Pattern.compile("(<aug name\\s*?=\\s*?\")(.*?)(\"/>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.augmentSet.add(matcher.group(2));
 										}
 										
 									// overrides
-										pattern = Pattern.compile("(<shieldImage>)(.*?)(/shieldImage>)");
+										pattern = Pattern.compile("(<shieldImage>)(.*?)(</shieldImage>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
-											shipBeingLoaded.shieldOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "shield1.png";
+											shipBeingLoaded.shieldOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_shields1.png";
 										}
 									}
 									
@@ -688,13 +733,34 @@ scan:				while(sc.hasNext()) {
 	        
 	        if ((Main.dataPreloading && asActive) || !Main.dataPreloading) {
 	        	Main.ship = shipBeingLoaded;
-	        	fixImgNames();
-	        	loadWeaponImages(Main.ship);
+	        	
+	        	if (!Main.ship.weaponsBySet) {
+		        	fixImgNames();
+		        	loadWeaponImages(Main.ship);
+		        	remapMountsToWeapons();
+	        	}
 	        }
 	        shipBeingLoaded = null;
 		}
 	}
 
+	public static void remapMountsToWeapons() {
+		String wpn = null;
+		int i=-1;
+		if (!Main.ship.weaponsBySet) {
+			mountWeaponMap.clear();
+			
+			for (FTLMount m : Main.ship.mounts) {
+				i++;
+				if (i<Main.ship.weaponSet.size()) {
+					wpn = Main.ship.weaponSet.get(Main.getMountIndex(m));
+					if (wpn != null)
+						mountWeaponMap.put(m, wpn);
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Loads the layout declared for the ship that is currently being loaded.
 	 */
@@ -880,11 +946,14 @@ scan:				while(sc.hasNext()) {
 						errors.add("Error: load ship image - hull image not found.");
 					}
 					// load floor
-					File f = new File(ship.floorPath);
-					if (ship.isPlayer && f.exists() && Main.loadFloor) {
-							Main.floorImage = new Image(Main.shell.getDisplay(), ship.floorPath);
-					} else if (ship.isPlayer && !f.exists()) {
-						errors.add("Error: load ship image - floor image not found.");
+					File f;
+					if (!isNull(ship.floorPath)) {
+						f = new File(ship.floorPath);
+						if (ship.isPlayer && f.exists() && Main.loadFloor) {
+								Main.floorImage = new Image(Main.shell.getDisplay(), ship.floorPath);
+						} else if (ship.isPlayer && !f.exists()) {
+							errors.add("Error: load ship image - floor image not found.");
+						}
 					}
 					// load shield
 					if (Main.loadShield) {
@@ -901,7 +970,7 @@ scan:				while(sc.hasNext()) {
 							if (f.exists()) {
 								Main.shieldImage = new Image(Main.shell.getDisplay(), ship.shieldOverride);
 							} else {
-								errors.add("Error: load ship image - shield override image not found.");
+								errors.add("Error: load ship image - shield override image not found. " + ship.shieldOverride);
 							}
 						}
 					}
@@ -969,7 +1038,7 @@ scan:				while(sc.hasNext()) {
 				} else if (f.exists()) {
 					Main.shieldImage = new Image(Main.shell.getDisplay(), path);
 				} else {
-					errors.add("Error: load image - cloak image not found.");
+					errors.add("Error: load image - shield image not found.");
 				}
 			}
 			
@@ -986,7 +1055,7 @@ scan:				while(sc.hasNext()) {
 				} else if (f.exists()) { 
 					Main.floorImage = new Image(Main.shell.getDisplay(), path);
 				} else {
-					errors.add("Error: load image - cloak image not found.");
+					errors.add("Error: load image - floor image not found.");
 				}
 			}
 		}
@@ -1003,15 +1072,20 @@ scan:				while(sc.hasNext()) {
 		Main.weaponStripMap.clear();
 		
 		path = Main.resPath + pathDelimiter + "img" + pathDelimiter + "weapons" + pathDelimiter;
+		
 		weaponDir = new File(path);
-		for (String name : weaponDir.list()) {
-			if (name.contains("_strip")) {
-				img = name.split("_strip");
-				
-				img[1] = img[1].substring(0, img[1].lastIndexOf("."));
-				
-				Main.weaponStripMap.put(img[0], Integer.valueOf(img[1]));
+		if (weaponDir.exists()) {
+			for (String name : weaponDir.list()) {
+				if (name.contains("_strip")) {
+					img = name.split("_strip");
+					
+					img[1] = img[1].substring(0, img[1].lastIndexOf("."));
+					
+					Main.weaponStripMap.put(img[0], Integer.valueOf(img[1]));
+				}
 			}
+		} else {
+			Main.print("Error: load weapon strips - " + path + " not found.");
 		}
 	}
 	
@@ -1019,9 +1093,34 @@ scan:				while(sc.hasNext()) {
 		FTLItem it = null;
 		for (String blue : Main.ship.weaponSet) {
 			it = getItem(blue);
-			if (it.img.contains("laser_burst_")) it.img = it.img.replace("_burst_", "");
-			if (it.img.contains("laser_heavy")) it.img = it.img.replace("laser_", "");
-			if (it.img.contains("_player")) it.img = it.img.replace("_player", "");
+			if (it != null && !isNull(it.img)) {
+				if (it.img.contains("laser_burst_")) it.img = it.img.replace("_burst_", "");
+				if (it.img.contains("laser_heavy")) it.img = it.img.replace("laser_", "");
+				if (it.img.contains("_player")) it.img = it.img.replace("_player", "");
+			} else if (it != null) {
+				errors.add("Error: fixImgNames - tried to load " + it.blueprint + " as weapon.");
+			}
+		}
+	}
+	
+	public static void updateIndexImgMaps() {
+		Rectangle tempRect = null;
+		FTLMount tempMount = null;
+		for (Integer index : Main.indexImgMapNormal.keySet()) {
+			tempRect = Main.indexImgMapNormal.get(index);
+			tempMount = Main.ship.mounts.get(index);
+			if (tempMount != null) {
+				tempRect.x = tempMount.rect.x + tempMount.rect.width/2 - tempRect.width/2;
+				tempRect.y = tempMount.rect.y + tempMount.rect.height/2 - tempRect.height/2;
+			}
+		}
+		for (Integer index : Main.indexImgMapRotated.keySet()) {
+			tempRect = Main.indexImgMapRotated.get(index);
+			tempMount = Main.ship.mounts.get(index);
+			if (tempMount != null) {
+				tempRect.x = tempMount.rect.x + tempMount.rect.width/2 - tempRect.width/2;
+				tempRect.y = tempMount.rect.y + tempMount.rect.height/2 - tempRect.height/2;
+			}
 		}
 	}
 
@@ -1054,24 +1153,39 @@ scan:				while(sc.hasNext()) {
 			for (String blue : ship.weaponSet) {
 				index++;
 				wpn = getItem(blue);
-				strips = Main.weaponStripMap.get(wpn.img);
-				path = Main.resPath + pathDelimiter + "img" + pathDelimiter + "weapons" + pathDelimiter + wpn.img.toLowerCase() + "_strip" + strips + ".png";
-				
-				if (loadingSwitch) {
-					Main.weaponImgMap.put(blue, SWTResourceManager.getImage(path));
+				if (wpn != null && !isNull(wpn.img)) {
+					if (Main.weaponStripMap.get(wpn.img) != null) {
+						strips = Main.weaponStripMap.get(wpn.img);
+						path = Main.resPath + pathDelimiter + "img" + pathDelimiter + "weapons" + pathDelimiter + wpn.img.toLowerCase() + "_strip" + strips + ".png";
+						
+						if (loadingSwitch) {
+							Main.weaponImgMap.put(blue, SWTResourceManager.getImage(path));
+						} else {
+							temp = Main.weaponImgMap.get(blue);
+							if (temp != null && !temp.isDisposed())
+								temp.dispose();
+							temp = null;
+							
+							Main.weaponImgMap.put(blue, new Image(Main.shell.getDisplay(), path));
+						}
+						
+					// === prepare other variants
+						temp = new Image(Main.shell.getDisplay(), Main.rotate(Main.weaponImgMap.get(blue).getImageData(), SWT.RIGHT));
+						Main.rotated.add(temp);
+						Main.indexImgMapRotated.put(index, new Rectangle(0, 0, temp.getBounds().width, temp.getBounds().height/strips));
+						temp = new Image(Main.shell.getDisplay(), Main.flip(Main.weaponImgMap.get(blue).getImageData(), false));
+						Main.flipped.add(temp);
+						Main.indexImgMapNormal.put(index, new Rectangle(0, 0, temp.getBounds().width/strips, temp.getBounds().height));
+						Main.rotatedFlipped.add(new Image(Main.shell.getDisplay(), Main.flip(Main.rotated.get(index).getImageData(), true)));
+						updateIndexImgMaps();
+					} else {
+						errors.add("Error: load weapon images - tried to load " + blue + ", but has null entry in stripMap. [name of the weapon's image probably did not contain _strip#]");
+					}
+				} else if (wpn != null) {
+					errors.add("Error: load weapon images - tried to load " + blue + " as weapon, has no associated image. [weaponArt property in weapon's declaration points to an image that doesn't exist]");
 				} else {
-					temp = Main.weaponImgMap.get(blue);
-					if (temp != null && !temp.isDisposed())
-						temp.dispose();
-					temp = null;
-					
-					Main.weaponImgMap.put(blue, new Image(Main.shell.getDisplay(), path));
+					errors.add("Error: load weapon images - tried to get item from blueprint " + blue + ", returned null. [item declaration was not loaded from the blueprints.xml]");
 				}
-				
-			// === prepare other variants
-				Main.rotated.add(new Image(Main.shell.getDisplay(), Main.rotate(Main.weaponImgMap.get(blue).getImageData(), SWT.RIGHT)));
-				Main.flipped.add(new Image(Main.shell.getDisplay(), Main.flip(Main.weaponImgMap.get(blue).getImageData(), !Main.ship.isPlayer)));
-				Main.rotatedFlipped.add(new Image(Main.shell.getDisplay(), Main.flip(Main.rotated.get(index).getImageData(), Main.ship.isPlayer)));
 			}
 		} else {
 			// placeholder or default weapon image;
@@ -1132,7 +1246,7 @@ search:		while(sc.hasNext()) {
 			
 			sc.close();
 		} catch (FileNotFoundException e) {
-			Main.debug("Error : default resources list not found.");
+			Main.erDialog.print("Error: default resources list not found in the package.");
 		} finally {
 			sc = null;
 		}
@@ -1176,7 +1290,7 @@ search:		while(sc.hasNext()) {
 		try {
 			source = new File(Main.ship.imagePath);
 			destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_base.png");
-			if ((dontCheck || !isDefaultResource(destination)) && source.exists()) {
+			if ((dontCheck || !isDefaultResource(source)) && source.exists()) {
 				destination.mkdirs();
 				java.nio.file.Files.copy(Paths.get(Main.ship.imagePath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			} else if (!source.exists()) {
@@ -1193,7 +1307,7 @@ search:		while(sc.hasNext()) {
 			try {
 				source = new File(Main.ship.shieldPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_shields1.png");
-				if ((dontCheck || !isDefaultResource(destination)) && source.exists()) {
+				if ((dontCheck || !isDefaultResource(source)) && source.exists()) {
 					destination.mkdirs();
 					if (isNull(Main.ship.shieldOverride)) {
 						java.nio.file.Files.copy(Paths.get(Main.ship.shieldPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -1211,11 +1325,11 @@ search:		while(sc.hasNext()) {
 		exp.progressBar.setSelection(20);
 		
 		// floor
-		if (Main.ship.isPlayer) {
+		if (Main.ship.isPlayer && !isNull(Main.ship.floorPath)) {
 			try {
 				source = new File(Main.ship.floorPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_floor.png");
-				if ((dontCheck || !isDefaultResource(destination)) && source.exists()) {
+				if ((dontCheck || !isDefaultResource(source)) && source.exists()) {
 					destination.mkdirs();
 					java.nio.file.Files.copy(Paths.get(Main.ship.floorPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				} else if (!source.exists()) {
@@ -1229,31 +1343,33 @@ search:		while(sc.hasNext()) {
 		exp.progressBar.setSelection(30);
 		
 		// cloak
-		try {
-			source = new File(Main.ship.cloakPath);
-			destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_cloak.png");
-			if ((dontCheck || !isDefaultResource(destination)) && source.exists()) {
-				destination.mkdirs();
-				if (isNull(Main.ship.cloakOverride)) {
-					java.nio.file.Files.copy(Paths.get(Main.ship.cloakPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-				} else {
-					java.nio.file.Files.copy(Paths.get(Main.ship.cloakOverride), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		if (!isNull(Main.ship.cloakPath)) {
+			try {
+				source = new File(Main.ship.cloakPath);
+				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_cloak.png");
+				if ((dontCheck || !isDefaultResource(source)) && source.exists()) {
+					destination.mkdirs();
+					if (isNull(Main.ship.cloakOverride)) {
+						java.nio.file.Files.copy(Paths.get(Main.ship.cloakPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+					} else {
+						java.nio.file.Files.copy(Paths.get(Main.ship.cloakOverride), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+					}
+				} else if (!source.exists()) {
+					errors.add("Error: export - cloak image not found.");
 				}
-			} else if (!source.exists()) {
+			} catch (FileNotFoundException e) {
 				errors.add("Error: export - cloak image not found.");
+			} catch (IOException e) {
 			}
-		} catch (FileNotFoundException e) {
-			errors.add("Error: export - cloak image not found.");
-		} catch (IOException e) {
 		}
 		exp.progressBar.setSelection(40);
 
 		// miniship
-		if (Main.ship.isPlayer) {
+		if (Main.ship.isPlayer && !isNull(Main.ship.miniPath)) {
 			try {
 				source = new File(Main.ship.miniPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "customizeUI" + pathDelimiter + "miniship_" + Main.ship.imageName + ".png");
-				if ((dontCheck || !isDefaultResource(destination)) && source.exists()) {
+				if ((dontCheck || !isDefaultResource(source)) && source.exists()) {
 					destination.mkdirs();
 					java.nio.file.Files.copy(Paths.get(Main.ship.miniPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				} else if (!source.exists()) {
@@ -1523,8 +1639,13 @@ search:		while(sc.hasNext()) {
 						fw.write(lineDelimiter);
 					} else {
 						if (Main.ship.crewMap.get(key) > 0) {
-							fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" class=\""+key+"\"/>");
-							fw.write(lineDelimiter);
+							if (!key.equals("random")) {
+								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" class=\""+key+"\"/>");
+								fw.write(lineDelimiter);
+							} else {
+								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\"/>");
+								fw.write(lineDelimiter);
+							}
 						}
 					}
 				}
@@ -1598,8 +1719,13 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 						break crew;
 					} else {
 						if (Main.ship.crewMap.get(key) > 0) {
-							fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" max=\""+Main.ship.crewMax+"\" class=\""+key+"\"/>");
-							fw.write(lineDelimiter);
+							if (!key.equals("random")) {
+								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" max=\""+Main.ship.crewMax+"\" class=\""+key+"\"/>");
+								fw.write(lineDelimiter);
+							} else {
+								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\"/>");
+								fw.write(lineDelimiter);
+							}
 						}
 					}
 				}
@@ -1659,7 +1785,7 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 				}	
 			}
 			if (!folder.delete()) {
-				System.out.println("can't delete folder : " + folder);
+				errors.add("Error: can't delete folder: " + folder);
 			}
 		}
 	}
@@ -1668,24 +1794,14 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 		try {
 			FileOutputStream fos = new FileOutputStream((path + pathDelimiter + fileName + ".ftl"));
 			ZipOutputStream zos = new ZipOutputStream(fos);
-			/*
-			ZipEntry ze = null;
-			
-			ze = new ZipEntry("");
-			zos.putNextEntry(ze);
-			zos.closeEntry();
-			
-			ze = new ZipEntry("");
-			zos.putNextEntry(ze);
-			zos.closeEntry();
-			*/
+
 			path = path + pathDelimiter + Main.ship.blueprintName;
 			
 			zipDir(path, zos);
 			
 			zos.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			errors.add("Error: zip to ftl - file not found.");
 		} catch (IOException e) {
 		}
 	}
@@ -1715,7 +1831,7 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 	}
 	
 	public static void loadShipProject(String path) {
-        ObjectInputStream ois;
+        ObjectInputStream ois = null;
 		try {
 			debug(path);
 			ois = new ObjectInputStream(new FileInputStream(path));
@@ -1739,16 +1855,12 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 			
         	fixImgNames();
         	loadWeaponImages(Main.ship);
+        	remapMountsToWeapons();
 			
 			for (FTLRoom r : Main.ship.rooms) {
 				Main.idList.add(r.id);
 			}
-			if (errors.size() == 0) {
-				Main.print("Project loaded successfully.");
-			} else {
-				Main.print("Errors occured during project loading. Some data may be missing");
-			}
-			ois.close();
+			//ois.close();
 		} catch (FileNotFoundException e) {
 			errors.add("Error: load ship project - file not found.");
 		} catch (ClassNotFoundException e) {
@@ -1758,9 +1870,13 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 		} catch (EOFException e) {
 			errors.add("Error: load ship project - end of file reached - file is corrupted, probably due to an error during its saving.");
 		} catch (IOException e) {
-			e.printStackTrace();
 			if (IOdebug)
 				e.printStackTrace();
+		} finally {
+			try {
+				ois.close();
+			} catch (IOException e) {
+			}
 		}
 	}
 	
@@ -1925,7 +2041,7 @@ seek:				    while(!s.contains("</blueprintList>") && sc.hasNext()) {
 				if (matcher.find() && !ignoreNextTag) {
 					if (defaultShips) {
 						enemyBlueprintNames.add(matcher.group(2));
-						matcher.group(2).equals("CRYSTAL_BOMBER");
+						if (matcher.group(2).equals("CRYSTAL_BOMBER")) defaultShips = false;
 					} else {
 						otherBlueprintNames.add(matcher.group(2));
 					}
@@ -1962,19 +2078,20 @@ seek:				    while(!s.contains("</blueprintList>") && sc.hasNext()) {
 				if (s.contains("-->")) ignoreNextTag = false;
 			}
 		} catch (FileNotFoundException e) {
+			Main.print("Error: load declarations - autoBlueprints.xml file not found");
 		}
 		
 		try {
 			fr = new FileReader(Main.dataPath+pathDelimiter+"blueprints.xml");
 			sc = new Scanner(fr);
 			sc.useDelimiter(Pattern.compile(lineDelimiter));
-scan:		while(sc.hasNext()) {
+			while(sc.hasNext()) {
 				s = sc.next();
 
 			// weapons
 				pattern = Pattern.compile("(<weaponBlueprint name=\")(.*?)(\">)");
 				matcher = pattern.matcher(s);
-				if (matcher.find()) {
+				if (matcher.find() && !matcher.group(2).equals("CRYSTAL_1") && !matcher.group(2).equals("ARTILLERY_FED")) { // the two are not intended to be loaded, they have no images
 					tempItem = new FTLItem();
 					tempItem.blueprint = matcher.group(2);
 					
@@ -1993,8 +2110,13 @@ scan:		while(sc.hasNext()) {
 							
 							pattern = Pattern.compile("(<weaponArt>)(.*?)(</weaponArt>)");
 							matcher = pattern.matcher(s);
-							if (matcher.find())
+							if (matcher.find()) {
 								tempItem.img = matcher.group(2);
+								if (tempItem.img.contains("bomb")) {
+									String[] wpn = tempItem.img.split("_");
+									tempItem.img = wpn[0] + "launcher_" + wpn[1];
+								}
+							}
 						}
 						weaponMap.put(tempItem.blueprint, tempItem);
 					}
@@ -2064,13 +2186,13 @@ scan:		while(sc.hasNext()) {
 						if (s.contains("-->")) ignoreNextTag = false;
 					}
 					playerBlueprintNames.remove("PLAYER_SHIP_EASY");
-					break scan;
 				}
 			}
 			
 			loadWeaponStrips();
 			
 		} catch (FileNotFoundException e) {
+			Main.print("Error: load declarations - blueprints.xml file not found");
 		}
 	}
 	
@@ -2088,7 +2210,7 @@ scan:		while(sc.hasNext()) {
 			it = augMap.get(b);
 			if (it.blueprint.equals(blueprint)) return it;
 		}
-		return it;
+		return null;
 	}
 	
 	public static void zipDir(String source, ZipOutputStream zos)

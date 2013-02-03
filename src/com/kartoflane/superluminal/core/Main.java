@@ -26,6 +26,7 @@ import com.kartoflane.superluminal.elements.FTLRoom;
 import com.kartoflane.superluminal.elements.FTLShip;
 import com.kartoflane.superluminal.elements.Slide;
 import com.kartoflane.superluminal.elements.Systems;
+import com.kartoflane.superluminal.ui.ErrorDialog;
 import com.kartoflane.superluminal.ui.ExportDialog;
 import com.kartoflane.superluminal.ui.NewShipWindow;
 import com.kartoflane.superluminal.ui.PropertiesWindow;
@@ -69,6 +70,7 @@ public class Main
 	public static PropertiesWindow sysDialog;
 	public static ExportDialog exDialog;
 	public static MessageBox box;
+	public static ErrorDialog erDialog;
 	
 		// === Preferences
 		// ship explorer
@@ -76,7 +78,7 @@ public class Main
 	public static String resPath = "null";
 		// edit menu
 	public static boolean removeDoor = true;
-	public static boolean snapMounts = false;
+	public static boolean snapMounts = true;
 	public static boolean snapMountsToHull = true;
 	public static boolean arbitraryPosOverride = true;
 		// view menu
@@ -112,7 +114,7 @@ public class Main
 	public static boolean allowRoomPlacement = true;
 	
 		// === Internal
-	public static boolean debug = false;
+	public static boolean debug = true;
 	/**
 	 * when set to true, all ship data is pre-loaded into hashmaps/sets when the ship browser is opened for the first time.
 	 * no need to do this, only one ship is being used at any given time.
@@ -147,8 +149,12 @@ public class Main
 	public static Image cloakImage = null;
 	public static Image tempImage;
 	public static Image pinImage = null;
+	public static Image tickImage = null;
+	public static Image crossImage = null;
 	public static Map<String, Integer> weaponStripMap = new HashMap<String, Integer>();
 	public static Map<String, Image> weaponImgMap = new HashMap<String, Image>();
+	public static Map<Integer, Rectangle> indexImgMapRotated = new HashMap<Integer, Rectangle>();
+	public static Map<Integer, Rectangle> indexImgMapNormal = new HashMap<Integer, Rectangle>();
 	
 		// === Weapon image maps
 	// it's probably better to just prepare all the images at once when loaded, instead of creating them as neccessary...
@@ -194,23 +200,17 @@ public class Main
 	private Text txtX;
 	private Text txtY;
 	private Label mPosText;
+	private Button btnHull;
+	private Button btnShields;
+	private Button btnFloor;
+	private Button btnCloak;
+	private Button btnMiniship;
 	
 	// =================================================================================================== //
 	
 	/*
 	 * === TODO
 	 * 
-	 * === DONE
-	 * - NEW - weapon mounts now display image of the weapon that is associated with that mount, should be displaying exactly as it is going to in the game. However, due to the way
-	 * the image modifications are done, transparency on those images is lost, and sometimes there are weird bugs/artifacts caused by the transformation.
-	 * - FIX - a couple other potentially annoying bugs that have now escaped my memory. 
-	 * - NEW - it is now possible to choose the miniship graphic for player ships.
-	 * - FIX/NEW - it is now possible to override shield graphic in default ships with another default shield graphic, without having to include the imagee in the .ftl package. Just choose the image you want with the "Shield" button. (ex. Engi Cruiser with Kestrel's shield graphic)
-	 * - NEW - arbitrary position setting. Menu -> Edit -> Arbitrary Override allows to set whether you want to allow movement of pinned elements using this method
-	 * - FIX - fixed a bug where it was possible to resize shield selection on player ships.
-	 * - FIX - modded ships should now be loaded properly - the latest modification will always be loaded (the one nearest to the end of the file), which is the one that the game uses.
-	 * - FIX - fixed placeholder shield alignment on ships when there's no shield image loaded.
-	 * - NEW - ghost crew
 	 * =========================================================================
 	 * - gibs -> male okienko gdzie ustawiasz kat (ko³o ze wskaznikiem), predkosc liniowa i katowa (slidery)
 	 * - gibs -> ujemne angular velocity obraca w lewa strone
@@ -272,14 +272,16 @@ public class Main
 		}
 		
 		createContents();
-		ShipIO.fetchShipNames();
+		
+		if (!ShipIO.isNull(dataPath) && !ShipIO.isNull(resPath))
+			ShipIO.fetchShipNames();
 		
 		shell.setMinimumSize(GRID_W*35, GRID_H*35);
 		shell.open();
 		
 		sysDialog = new PropertiesWindow(shell);
 		shipDialog = new ShipPropertiesWindow(shell);
-		
+		erDialog = new ErrorDialog(shell);
 		
 		display.timerExec(INTERVAL, new Runnable() {
 			public void run() {
@@ -366,6 +368,8 @@ public class Main
 		toolsMap.put("system", tempImage);
 		
 		pinImage = SWTResourceManager.getImage(Main.class, "/img/pin.png");
+		tickImage = SWTResourceManager.getImage(Main.class, "/img/check.png");
+		crossImage = SWTResourceManager.getImage(Main.class, "/img/cross.png");
 
 	// === Menu bar
 		
@@ -440,6 +444,11 @@ public class Main
 		mntmView.setText("View");
 		Menu menu_7 = new Menu(mntmView);
 		mntmView.setMenu(menu_7);
+		
+		MenuItem mntmOpenErrorsConsole = new MenuItem(menu_7, SWT.NONE);
+		mntmOpenErrorsConsole.setText("Open Errors Console");
+		
+		new MenuItem(menu_7, SWT.SEPARATOR);
 		
 		// === View -> Show anchor
 		final MenuItem mntmShowAnchor = new MenuItem(menu_7, SWT.CHECK);
@@ -682,7 +691,7 @@ public class Main
 		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		
 		// === Container -> Hull image button
-		final Button btnHull = new Button(toolBarHolder, SWT.NONE);
+		btnHull = new Button(toolBarHolder, SWT.NONE);
 		btnHull.setFont(appFont);
 		GridData gd_btnHull = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
 		gd_btnHull.widthHint = 70;
@@ -690,7 +699,7 @@ public class Main
 		btnHull.setEnabled(false);
 		btnHull.setText("Hull");
 		
-		final Button btnShields = new Button(toolBarHolder, SWT.NONE);
+		btnShields = new Button(toolBarHolder, SWT.NONE);
 		btnShields.setFont(appFont);
 		btnShields.setToolTipText("Shield is aligned in relation to rooms. Place a room before choosing shield graphic.");
 		btnShields.setEnabled(false);
@@ -699,7 +708,7 @@ public class Main
 		btnShields.setLayoutData(gd_btnShields);
 		btnShields.setText("Shields");
 		
-		final Button btnFloor = new Button(toolBarHolder, SWT.NONE);
+		btnFloor = new Button(toolBarHolder, SWT.NONE);
 		btnFloor.setFont(appFont);
 		btnFloor.setEnabled(false);
 		GridData gd_btnFloor = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
@@ -707,7 +716,7 @@ public class Main
 		btnFloor.setLayoutData(gd_btnFloor);
 		btnFloor.setText("Floor");
 		
-		final Button btnCloak = new Button(toolBarHolder, SWT.NONE);
+		btnCloak = new Button(toolBarHolder, SWT.NONE);
 		btnCloak.setFont(appFont);
 		btnCloak.setEnabled(false);
 		GridData gd_btnCloak = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
@@ -715,7 +724,7 @@ public class Main
 		btnCloak.setLayoutData(gd_btnCloak);
 		btnCloak.setText("Cloak");
 		
-		final Button btnMiniship = new Button(toolBarHolder, SWT.NONE);
+		btnMiniship = new Button(toolBarHolder, SWT.NONE);
 		btnMiniship.setEnabled(false);
 		btnMiniship.setFont(appFont);
 		GridData gd_btnMiniship = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
@@ -911,19 +920,52 @@ public class Main
 				FTLRoom tempFTLRoom = null;
 		        Color c;
 		        Point p, pt;
+				Image rotatedImg = null;
+				Image flippedImg = null;
 				
 		        e.gc.setAlpha(255);
 				e.gc.setFont(appFont);
 				
 				if (canvasActive) {
+					// === DRAW SHIELD IMAGE
+					if (showHull) {
+						// find geometrical center of the ship's rooms
+						if (ship.rooms.size() > 0) {
+							p = ship.findLowBounds();
+							pt = ship.findHighBounds();
+						} else {
+							p = new Point(ship.imageRect.x, ship.imageRect.y);
+							pt = new Point(ship.imageRect.width, ship.imageRect.height);
+						}
+						pt.x = (p.x+pt.x)/2;
+						pt.y = (p.y+pt.y)/2;
+						
+						if (shieldImage != null && !shieldImage.isDisposed() && loadShield) {
+							if (ship.isPlayer) {
+								e.gc.drawImage(shieldImage, shieldEllipse.x, shieldEllipse.y);
+							} else {
+								e.gc.drawImage(shieldImage,  0, 0, shieldImage.getBounds().width, shieldImage.getBounds().height,
+										shieldEllipse.x,
+										shieldEllipse.y,
+										shieldEllipse.width, shieldEllipse.height);
+							}
+							e.gc.drawPoint(pt.x, pt.y);
+					// if no shield graphic is loaded or the image doesn't exist, draw a placeholder
+						} else {
+							c = e.display.getSystemColor(SWT.COLOR_DARK_BLUE);
+							e.gc.setBackground(c);
+							e.gc.setAlpha(36);
+							e.gc.fillOval(shieldEllipse.x, shieldEllipse.y, shieldEllipse.width, shieldEllipse.height);
+							e.gc.setAlpha(255);
+							c.dispose();
+						}
+					}
 					// === DRAW ALREADY PLACES MOUNTS
 						if (showMounts) {
 							//int index = 0;
 							int strips = 0;
 							FTLItem it = null;
 							FTLMount m = null;
-							Image rotatedImg = null;
-							Image flippedImg = null;
 							
 							for (int i=0; i < ship.mounts.size(); i++) {
 								m = ship.mounts.get(i);
@@ -1007,37 +1049,6 @@ public class Main
 							e.gc.drawImage(hullImage, ship.imageRect.x, ship.imageRect.y);
 						if (floorImage != null && !floorImage.isDisposed() && loadFloor)
 							e.gc.drawImage(floorImage, ship.imageRect.x, ship.imageRect.y);
-						
-						// find geometrical center of the ship's rooms
-						if (ship.rooms.size() > 0) {
-							p = ship.findLowBounds();
-							pt = ship.findHighBounds();
-						} else {
-							p = new Point(ship.imageRect.x, ship.imageRect.y);
-							pt = new Point(ship.imageRect.width, ship.imageRect.height);
-						}
-						pt.x = (p.x+pt.x)/2;
-						pt.y = (p.y+pt.y)/2;
-						
-						if (shieldImage != null && !shieldImage.isDisposed() && loadShield) {
-							if (ship.isPlayer) {
-								e.gc.drawImage(shieldImage, shieldEllipse.x, shieldEllipse.y);
-							} else {
-								e.gc.drawImage(shieldImage,  0, 0, shieldImage.getBounds().width, shieldImage.getBounds().height,
-										shieldEllipse.x,
-										shieldEllipse.y,
-										shieldEllipse.width, shieldEllipse.height);
-							}
-							e.gc.drawPoint(pt.x, pt.y);
-					// if no shield graphic is loaded or the image doesn't exist, draw a placeholder
-						} else {
-							c = e.display.getSystemColor(SWT.COLOR_DARK_BLUE);
-							e.gc.setBackground(c);
-							e.gc.setAlpha(36);
-							e.gc.fillOval(shieldEllipse.x, shieldEllipse.y, shieldEllipse.width, shieldEllipse.height);
-							e.gc.setAlpha(255);
-							c.dispose();
-						}
 					}
 					
 				// === DRAW ALREADY PLACED ROOMS (INSIDES)
@@ -1193,9 +1204,25 @@ public class Main
 								e.gc.drawRectangle(tempDoor);
 								
 							// mount highlight
-							} else if (showMounts && tempMount != null && !moveSelected && !resizeSelected) {
+							} else if (showMounts && !moveSelected && !resizeSelected) {
 								e.gc.setLineWidth(3);
-								e.gc.drawRectangle(tempMount.rect);
+								if (!doImagesContain(mousePos) || ship.weaponsBySet) {
+									if (tempMount != null)
+										e.gc.drawRectangle(tempMount.rect);
+								} else {
+									tempMount = getMountFromImage(mousePos);
+									if (tempMount != null && tempMount.rotate) {
+										tempRoom = indexImgMapRotated.get(getMountIndex(tempMount));
+										tempRoom.x = tempMount.rect.x + tempMount.rect.width/2 - tempRoom.width/2;
+										tempRoom.y = tempMount.rect.y + tempMount.rect.height/2 - tempRoom.height/2;
+										e.gc.drawRectangle(tempRoom);
+									} else if (tempMount != null) {
+										tempRoom = indexImgMapNormal.get(getMountIndex(tempMount));
+										tempRoom.x = tempMount.rect.x + tempMount.rect.width/2 - tempRoom.width/2;
+										tempRoom.y = tempMount.rect.y + tempMount.rect.height/2 - tempRoom.height/2;
+										e.gc.drawRectangle(tempRoom);
+									}
+								}
 								
 							// highlight already placed rooms
 							} else if (showRooms && tempRoom != null && tempFTLRoom != null && !moveSelected && !resizeSelected) {
@@ -1281,30 +1308,32 @@ public class Main
 						FTLMount m = selectedMount;
 						if (i < ship.weaponSet.size()) {
 							it = ShipIO.getItem(ship.weaponSet.get(i));
-							strips = weaponStripMap.get(it.img);
-							
-							//if (selectedMount.mirror && selectedMount.rotate) temp = rotatedFlipped.get(i);
-	
-							c = e.display.getSystemColor(SWT.COLOR_BLUE);
-							e.gc.setForeground(c);
-							c.dispose();
-							e.gc.setAlpha(255);
-							e.gc.setLineWidth(3);
-							
-							if (!selectedMount.rotate) { // normal
-								temp = weaponImgMap.get(it.blueprint);
-								e.gc.drawImage(temp, 0, 0, temp.getBounds().width/strips, temp.getBounds().height,
-										m.rect.x+m.rect.width/2-temp.getBounds().width/strips/2,
-										m.rect.y+m.rect.height/2-temp.getBounds().height/2,
-										temp.getBounds().width/strips,
-										temp.getBounds().height);
-							} else { // rotated
-								temp = rotated.get(i);
-								if (temp != null)
-									e.gc.drawRectangle(m.rect.x+m.rect.width/2-temp.getBounds().width/2,
-										m.rect.y+m.rect.height/2-temp.getBounds().height/strips/2,
-										temp.getBounds().width,
-										temp.getBounds().height/strips);
+							if (it != null && !ShipIO.isNull(it.img)) {
+								strips = weaponStripMap.get(it.img);
+								
+								//if (selectedMount.mirror && selectedMount.rotate) temp = rotatedFlipped.get(i);
+		
+								c = e.display.getSystemColor(SWT.COLOR_BLUE);
+								e.gc.setForeground(c);
+								c.dispose();
+								e.gc.setAlpha(255);
+								e.gc.setLineWidth(3);
+								
+								if (!selectedMount.rotate) { // normal
+									temp = weaponImgMap.get(it.blueprint);
+									if (temp != null)
+										e.gc.drawRectangle(m.rect.x+m.rect.width/2-temp.getBounds().width/strips/2,
+											m.rect.y+m.rect.height/2-temp.getBounds().height/2,
+											temp.getBounds().width/strips,
+											temp.getBounds().height);
+								} else { // rotated
+									temp = rotated.get(i);
+									if (temp != null)
+										e.gc.drawRectangle(m.rect.x+m.rect.width/2-temp.getBounds().width/2,
+											m.rect.y+m.rect.height/2-temp.getBounds().height/strips/2,
+											temp.getBounds().width,
+											temp.getBounds().height/strips);
+								}
 							}
 						}
 						
@@ -1495,29 +1524,6 @@ public class Main
 						e.gc.drawImage(pinImage, ship.imageRect.x+5, ship.imageRect.y+5);
 					if (shieldSelected && ship.shieldPinned) // shield pin indicator
 						e.gc.drawImage(pinImage, shieldEllipse.x+5, shieldEllipse.y+5);
-					
-					
-					// === Warnings 
-					/*
-					if (ship.isPlayer) {
-						for (FTLRoom room : ship.rooms) {
-							if ((room!=null) && ((room.rect.width > 70) || (room.rect.height > 70))) {
-								c = e.display.getSystemColor(SWT.COLOR_RED);
-								e.gc.setForeground(c);
-								c.dispose();
-								c = e.display.getSystemColor(SWT.COLOR_WHITE);
-								e.gc.setBackground(c);
-								c.dispose();
-								Font font = new Font(shell.getDisplay(), "Helvetica", 10, SWT.BOLD);
-								e.gc.setFont(font);
-								e.gc.setAlpha(255);
-								e.gc.drawString("WARNING: Player ships cannot have rooms bigger than 2x2. The game will crash.", 10, 10, false);
-								font.dispose();
-								break;
-							}
-						}
-					}
-					*/
 					
 				} else {
 					c = e.display.getSystemColor(SWT.COLOR_WHITE);
@@ -1813,7 +1819,10 @@ public class Main
 						// cheking if previous selection variable is null prevents selecting multiple objects at once.
 						selectedDoor = (showRooms) ? wallToDoor(getDoorFromMouse()) : null;
 
-						selectedMount = (showMounts && selectedDoor == null) ? getMountFromMouse() : null;
+						if (showMounts && selectedDoor == null) {
+							selectedMount = getMountFromImage(mousePosLastClick);
+							selectedMount = selectedMount == null ? getMountFromMouse() : selectedMount;
+						}
 						
 						selectedRoom = (showRooms && selectedMount == null && selectedDoor == null) ? getRoomContainingRect(getRectFromClick()) : null;
 						
@@ -1848,7 +1857,7 @@ public class Main
 					}
 					
 					if (tltmPointer.getSelection() && onCanvas && e.button == 1) {
-						if (selectedMount != null && selectedMount.rect.contains(mousePosLastClick)) {
+						if (selectedMount != null && (doImagesContain(mousePosLastClick) || selectedMount.rect.contains(mousePosLastClick))) {
 							moveSelected = true;
 						} if (selectedRoom != null && selectedRoom.rect.contains(mousePos)) {
 							if (corners[0].contains(mousePosLastClick) || corners[1].contains(mousePosLastClick) || corners[2].contains(mousePosLastClick) || corners[3].contains(mousePosLastClick)) {
@@ -1914,6 +1923,7 @@ public class Main
 									selectedMount.rotate = (!modShift && e.button == 3) ? !selectedMount.rotate : selectedMount.rotate;
 									selectedMount.rect.width = (selectedMount.rotate) ? (FTLMount.MOUNT_WIDTH) : (FTLMount.MOUNT_HEIGHT);
 									selectedMount.rect.height = (selectedMount.rotate) ? (FTLMount.MOUNT_HEIGHT) : (FTLMount.MOUNT_WIDTH);
+									ShipIO.updateIndexImgMaps();
 								}
 							} else if (leftMouseDown && !modShift && e.button == 3 && onCanvas) { // reset the position
 								ship.updateMount(selectedMount);
@@ -2237,6 +2247,7 @@ public class Main
 					ShipIO.loadImage(path, "hull");
 					canvas.redraw();
 				}
+				updateButtonImg();
 			}
 		});
 		
@@ -2247,10 +2258,12 @@ public class Main
 				dialog.setFilterExtensions(filterExtensions);
 				dialog.setFilterPath(resPath);
 				String path = dialog.open();
+				Main.ship.shieldOverride = null;
 				
 				if (!ShipIO.isNull(path)) {
 					if (ShipIO.isDefaultResource(new File(path))) {
 						Main.ship.shieldOverride = path;
+						Main.debug("is default resource: " + path);
 					}
 					
 					Main.ship.shieldPath = path;
@@ -2265,6 +2278,8 @@ public class Main
 							shieldEllipse.width = temp.width;
 							shieldEllipse.height = temp.height;
 						}
+					
+					updateButtonImg();
 					
 					canvas.redraw();
 				}
@@ -2285,6 +2300,7 @@ public class Main
 					ShipIO.loadImage(path, "cloak");
 					canvas.redraw();
 				}
+				updateButtonImg();
 			}
 		});
 		
@@ -2302,6 +2318,7 @@ public class Main
 					ShipIO.loadImage(path, "floor");
 					canvas.redraw();
 				}
+				updateButtonImg();
 			}
 		});
 		
@@ -2317,6 +2334,7 @@ public class Main
 				if (!ShipIO.isNull(path)) {
 					Main.ship.miniPath = path;
 				}
+				updateButtonImg();
 			}
 		});
 		
@@ -2557,6 +2575,7 @@ public class Main
 					btnFloor.setEnabled(ship.isPlayer);
 					btnMiniship.setEnabled(ship.isPlayer);
 					btnShipProperties.setEnabled(true);
+					updateButtonImg();
 					
 					mntmSaveShip.setEnabled(true);
 					mntmSaveShipAs.setEnabled(true);
@@ -2596,6 +2615,7 @@ public class Main
 							btnFloor.setEnabled(ship.isPlayer);
 							btnMiniship.setEnabled(ship.isPlayer);
 							btnShipProperties.setEnabled(true);
+							updateButtonImg();
 							
 							mntmSaveShip.setEnabled(true);
 							mntmSaveShipAs.setEnabled(true);
@@ -2603,12 +2623,17 @@ public class Main
 							mntmClose.setEnabled(true);
 							
 							if (ship.isPlayer) {
-								if (shieldImage != null && !shieldImage.isDisposed()) {
+								if (loadShield && shieldImage != null && !shieldImage.isDisposed()) {
 									Rectangle temp = shieldImage.getBounds();
 									shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - temp.width/2 + ship.ellipse.x;
 									shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - temp.height/2 + ship.ellipse.y;
 									shieldEllipse.width = temp.width;
 									shieldEllipse.height = temp.height;
+								} else {
+									shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - ship.ellipse.width + ship.ellipse.x;
+									shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - ship.ellipse.height + ship.ellipse.y;
+									shieldEllipse.width = ship.ellipse.width*2;
+									shieldEllipse.height = ship.ellipse.height*2;
 								}
 							} else {
 								shieldEllipse.width = ship.ellipse.width*2;
@@ -2620,6 +2645,15 @@ public class Main
 							currentPath = null;
 							
 							canvas.redraw();
+						}
+						if (ShipIO.errors.size() == 0 && Main.ship != null) {
+							Main.print(((Main.ship.shipName!=null)?(Main.ship.shipClass + " - " + Main.ship.shipName):(Main.ship.shipClass)) + " [" + Main.ship.blueprintName + "] loaded successfully.");
+						} else if (ShipIO.errors.size() > 0) {
+							Main.print("Errors occured during ship loading; some data may be missing.");
+							Main.erDialog.printErrors(ShipIO.errors);
+							Main.erDialog.open();
+							
+							ShipIO.errors.clear();
 						}
 					}
 				});
@@ -2681,14 +2715,20 @@ public class Main
 					btnFloor.setEnabled(ship.isPlayer);
 					btnMiniship.setEnabled(ship.isPlayer);
 					btnShipProperties.setEnabled(true);
+					updateButtonImg();
 
 					if (ship.isPlayer) {
-						if (shieldImage != null && !shieldImage.isDisposed()) {
+						if (loadShield && shieldImage != null && !shieldImage.isDisposed()) {
 							Rectangle temp = shieldImage.getBounds();
 							shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - temp.width/2 + ship.ellipse.x;
 							shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - temp.height/2 + ship.ellipse.y;
 							shieldEllipse.width = temp.width;
 							shieldEllipse.height = temp.height;
+						} else {
+							shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - ship.ellipse.width + ship.ellipse.x;
+							shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - ship.ellipse.height + ship.ellipse.y;
+							shieldEllipse.width = ship.ellipse.width*2;
+							shieldEllipse.height = ship.ellipse.height*2;
 						}
 					} else {
 						shieldEllipse.width = ship.ellipse.width*2;
@@ -2703,6 +2743,15 @@ public class Main
 					mntmClose.setEnabled(true);
 					
 					canvas.redraw();
+				}
+				
+				if (ShipIO.errors.size() == 0) {
+					Main.print("Project loaded successfully.");
+				} else {
+					Main.print("Errors occured during project loading. Some data may be missing");
+					Main.erDialog.printErrors(ShipIO.errors);
+					Main.erDialog.open();
+					ShipIO.errors.clear();
 				}
 			}
 		});
@@ -2727,7 +2776,12 @@ public class Main
 				floorImage = null;
 				ship = null;
 				idList.clear();
+				clearButtonImg();
 				currentPath = null;
+				shieldEllipse.x = 0;
+				shieldEllipse.y = 0;
+				shieldEllipse.width = 0;
+				shieldEllipse.height = 0;
 
 				canvasActive = false;
 				
@@ -2774,6 +2828,13 @@ public class Main
 		});
 	
 	// === VIEW MENU
+		
+		mntmOpenErrorsConsole.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				erDialog.open();
+			}
+		});
 
 		mntmShowAnchor.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
@@ -3095,17 +3156,72 @@ public class Main
 	//=================
 	// === MOUNT RELATED
 	
-	public FTLMount getMountFromMouse() {
-		for (FTLMount m : ship.mounts) {
-			if (m.rect.contains(mousePos)) {
-				return m;
+	public static FTLMount getMountFromImage(Point p) {
+		for (Integer index : indexImgMapNormal.keySet()) {
+			if (indexImgMapNormal.get(index).contains(p)) {
+				return ship.mounts.get(index);
+			}
+		}
+		for (Integer index : indexImgMapRotated.keySet()) {
+			if (indexImgMapRotated.get(index).contains(p)) {
+				return ship.mounts.get(index);
 			}
 		}
 		return null;
 	}
 	
+	public static boolean doImagesContain(Point p) {
+		boolean result = false;
+		for (Integer index : indexImgMapNormal.keySet()) {
+			result = indexImgMapNormal.get(index).contains(p);
+			if (result) break;
+		}
+		if (!result) {
+			for (Integer index : indexImgMapRotated.keySet()) {
+				result = indexImgMapRotated.get(index).contains(p);
+				if (result) break;
+			}
+		}
+		return result;
+	}
+	
+	public static int getMountIndex(FTLMount m) {
+		int i = -1;
+		for (FTLMount mt : ship.mounts) {
+			i++;
+			if (mt == m) break;
+		}
+		return i;
+	}
+	
+	public static FTLMount getMountFromMouse() {
+		for (FTLMount m : ship.mounts) {
+			if (m.rect.contains(mousePos)) {
+				return m;
+			}
+		}
+		
+		return null;
+	}
+	
 	//=========================
 	// === AUXILIARY / LAZYNESS
+	
+	public void clearButtonImg() {
+		btnHull.setImage(null);
+		btnShields.setImage(null);
+		btnFloor.setImage(null);
+		btnCloak.setImage(null);
+		btnMiniship.setImage(null);
+	}
+	
+	public void updateButtonImg() {
+		btnHull.setImage((ShipIO.isNull(ship.imagePath) ? crossImage : tickImage));
+		btnShields.setImage((ShipIO.isNull(ship.shieldPath) ? crossImage : tickImage));
+		btnFloor.setImage((ShipIO.isNull(ship.floorPath) ? crossImage : tickImage));
+		btnCloak.setImage((ShipIO.isNull(ship.cloakPath) ? crossImage : tickImage));
+		btnMiniship.setImage((ShipIO.isNull(ship.miniPath) ? crossImage : tickImage));
+	}
 	
 	public void updateSelectedPosText() {
 		if (canvasActive) {

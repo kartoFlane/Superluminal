@@ -87,6 +87,7 @@ public class ShipPropertiesWindow extends Dialog
 	private Spinner spMissiles;
 	private Spinner spDrones;
 	private Spinner spGhost;
+	private Spinner spRandom;
 
 	public ShipPropertiesWindow(Shell parent)
 	{
@@ -101,25 +102,10 @@ public class ShipPropertiesWindow extends Dialog
 		shell.layout();
 		shell.setLocation(Main.shell.getLocation().x+100, Main.shell.getLocation().y+50);
 		
+		clearData();
+		
 	// === Update information
 	// ship info
-		if (!ShipIO.isNull(Main.ship.shipName))
-			textName.setText(Main.ship.shipName);
-		if (!ShipIO.isNull(Main.ship.layout))
-			textLayout.setText(Main.ship.layout);
-		if (!ShipIO.isNull(Main.ship.shipClass))
-			textClass.setText(Main.ship.shipClass);
-		if (!ShipIO.isNull(Main.ship.imageName))
-			textImage.setText(Main.ship.imageName);
-		if (!ShipIO.isNull(Main.ship.descr))
-			textDesc.setText(Main.ship.descr);
-		/*
-		if (!ShipIO.isNull(Main.ship.cloakOverride))
-			textCloakO.setText(Main.ship.cloakOverride);
-		if (!ShipIO.isNull(Main.ship.shieldOverride))
-			textShieldO.setText(Main.ship.shieldOverride);
-		 */
-		
 		textName.setEnabled(Main.ship.isPlayer);
 		if (!ShipIO.isNull(Main.ship.shipName))
 			textName.setText(Main.ship.shipName);
@@ -132,13 +118,6 @@ public class ShipPropertiesWindow extends Dialog
 		textDesc.setEnabled(Main.ship.isPlayer);
 		if (!ShipIO.isNull(Main.ship.descr))
 			textDesc.setText(Main.ship.descr);
-
-		/*
-		if (!ShipIO.isNull(Main.ship.cloakOverride))
-			textCloakO.setText(Main.ship.cloakOverride);
-		if (!ShipIO.isNull(Main.ship.shieldOverride))
-			textShieldO.setText(Main.ship.shieldOverride);
-		*/
 		
 	// power & health
 		
@@ -180,17 +159,19 @@ public class ShipPropertiesWindow extends Dialog
 		spRock.setMaximum(Main.ship.crewMax);
 		spCrystal.setMaximum(Main.ship.crewMax);
 		spGhost.setMaximum(Main.ship.crewMax);
+		spRandom.setMaximum(Main.ship.crewMax);
 		
 		//spMax.setEnabled(!Main.ship.isPlayer);
 		spMax.setIncrement((Main.ship.isPlayer ? 8 : 1));
 		spHuman.setSelection(Main.ship.crewMap.get("human"));
 		spEngi.setSelection(Main.ship.crewMap.get("engi"));
-		spZoltan.setSelection(Main.ship.crewMap.get("zoltan"));
+		spZoltan.setSelection(Main.ship.crewMap.get("energy"));
 		spMantis.setSelection(Main.ship.crewMap.get("mantis"));
 		spSlug.setSelection(Main.ship.crewMap.get("slug"));
 		spRock.setSelection(Main.ship.crewMap.get("rock"));
 		spCrystal.setSelection(Main.ship.crewMap.get("crystal"));
 		spGhost.setSelection(Main.ship.crewMap.get("ghost"));
+		spRandom.setSelection(Main.ship.crewMap.get("random"));
 		
 	// weapons
 		spMissiles.setSelection(Main.ship.missiles);
@@ -210,6 +191,7 @@ public class ShipPropertiesWindow extends Dialog
 			weapons.setEnabled(false);
 			listWeapons.setEnabled(false);
 			
+			
 			int sel = -1;
 search:		for (String s : presets.getItems()) {
 				sel++;
@@ -220,6 +202,7 @@ search:		for (String s : presets.getItems()) {
 			
 			presets.select(sel);
 		} else {
+			presets.select(-1);
 			presets.setEnabled(false);
 			categories.setEnabled(true);
 			weapons.setEnabled(true);
@@ -262,6 +245,7 @@ search:		for (String s : presetsDr.getItems()) {
 			
 			presetsDr.select(sel);
 		} else {
+			presetsDr.select(-1);
 			presetsDr.setEnabled(false);
 			categoriesDr.setEnabled(true);
 			drones.setEnabled(true);
@@ -278,10 +262,12 @@ search:		for (String s : presetsDr.getItems()) {
 		
 	// augments
 		listAugments.removeAll();
+		
 		FTLItem it = null;
 		for (String s : Main.ship.augmentSet) {
 			it = ShipIO.getItem(s);
-			listAugments.add(it.name + " (" + it.blueprint + ")");
+			if (it != null)
+				listAugments.add(it.name + " (" + it.blueprint + ")");
 		}
 		
 		
@@ -293,9 +279,54 @@ search:		for (String s : presetsDr.getItems()) {
 		}
 	}
 
+	// BOOKMARK clear
 	/**
-	 * Create contents of the dialog.
+	 * Resets fields to default values, so that there won't be any data from previous ship remaining.
 	 */
+	public void clearData() {
+		textName.setText("");
+		textClass.setText("");
+		textLayout.setText("");
+		textImage.setText("");
+		textDesc.setText("");
+
+		lblPilotInfo.setText("0 / 0");
+		lblDoorsInfo.setText("0 / 0");
+		lblSensorsInfo.setText("0 / 0");
+		
+		lblWeaponsInfo.setText("0 / 0");
+		lblShieldsInfo.setText("0 / 0");
+		lblEnginesInfo.setText("0 / 0");
+		lblOxygenInfo.setText("0 / 0");
+		lblMedbayInfo.setText("0 / 0");
+		
+		lblDronesInfo.setText("0 / 0");
+		lblCloakInfo.setText("0 / 0");
+		lblTeleInfo.setText("0 / 0");
+		lblArtilleryInfo.setText("0 / 0");
+		
+		lblReqPower.setText("0");
+		lblReqStart.setText("0");
+		
+		spHuman.setSelection(0);
+		spEngi.setSelection(0);
+		spZoltan.setSelection(0);
+		spMantis.setSelection(0);
+		spSlug.setSelection(0);
+		spRock.setSelection(0);
+		spCrystal.setSelection(0);
+		spGhost.setSelection(0);
+		spRandom.setSelection(0);
+		
+		spMissiles.setSelection(0);
+		spSlots.setSelection(0);
+		spMaxWeapons.setSelection(0);
+		spDrones.setSelection(0);
+		spSlotsDr.setSelection(0);
+		spMaxDrones.setSelection(0);
+	}
+	
+	
 	private void createContents()
 	{
 		shell = new Shell(getParent(), SWT.BORDER | SWT.TITLE);
@@ -752,7 +783,7 @@ search:		for (String s : presetsDr.getItems()) {
 		lblCrewMax.setFont(Main.appFont);
 		GridData gd_lblCrewMax = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
 		gd_lblCrewMax.minimumWidth = 60;
-		gd_lblCrewMax.widthHint = 60;
+		gd_lblCrewMax.widthHint = 55;
 		lblCrewMax.setLayoutData(gd_lblCrewMax);
 		lblCrewMax.setToolTipText("Only affects enemy ships.");
 		lblCrewMax.setText("Crew max:");
@@ -769,7 +800,7 @@ search:		for (String s : presetsDr.getItems()) {
 		lblHuman.setFont(Main.appFont);
 		GridData gd_lblHuman = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
 		gd_lblHuman.minimumWidth = 50;
-		gd_lblHuman.widthHint = 50;
+		gd_lblHuman.widthHint = 42;
 		lblHuman.setLayoutData(gd_lblHuman);
 		lblHuman.setText("Human:");
 		
@@ -811,6 +842,9 @@ search:		for (String s : presetsDr.getItems()) {
 		spZoltan.setMaximum(8);
 		
 		Label lblGhost = new Label(grpCrew, SWT.NONE);
+		GridData gd_lblGhost = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_lblGhost.widthHint = 47;
+		lblGhost.setLayoutData(gd_lblGhost);
 		lblGhost.setFont(Main.appFont);
 		lblGhost.setText("Ghost:");
 		
@@ -825,7 +859,7 @@ search:		for (String s : presetsDr.getItems()) {
 		lblMantis.setFont(Main.appFont);
 		GridData gd_lblMantis = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
 		gd_lblMantis.minimumWidth = 60;
-		gd_lblMantis.widthHint = 60;
+		gd_lblMantis.widthHint = 55;
 		lblMantis.setLayoutData(gd_lblMantis);
 		lblMantis.setText("Mantis:");
 		
@@ -840,7 +874,7 @@ search:		for (String s : presetsDr.getItems()) {
 		lblSlug.setFont(Main.appFont);
 		GridData gd_lblSlug = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
 		gd_lblSlug.minimumWidth = 50;
-		gd_lblSlug.widthHint = 50;
+		gd_lblSlug.widthHint = 42;
 		lblSlug.setLayoutData(gd_lblSlug);
 		lblSlug.setText("Slug:");
 		
@@ -880,8 +914,21 @@ search:		for (String s : presetsDr.getItems()) {
 		spCrystal.setLayoutData(gd_spCrystal);
 		spCrystal.setFont(Main.appFont);
 		spCrystal.setMaximum(8);
-		new Label(grpCrew, SWT.NONE);
-		new Label(grpCrew, SWT.NONE);
+		
+		Label lblRandom = new Label(grpCrew, SWT.NONE);
+		lblRandom.setFont(Main.appFont);
+		lblRandom.setToolTipText("Only works on enemy ships; defaults to humans on player ships.");
+		GridData gd_lblRandom = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_lblRandom.widthHint = 47;
+		lblRandom.setLayoutData(gd_lblRandom);
+		lblRandom.setText("Random:");
+		
+		spRandom = new Spinner(grpCrew, SWT.BORDER);
+		spRandom.setFont(Main.appFont);
+		spRandom.setToolTipText("Only works on enemy ships; defaults to humans on player ships.");
+		GridData gd_spRandom = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_spRandom.widthHint = 5;
+		spRandom.setLayoutData(gd_spRandom);
 		
 		Group grpAugments = new Group(crewInfoC, SWT.NONE);
 		grpAugments.setFont(Main.appFont);
@@ -1202,12 +1249,13 @@ search:		for (String s : presetsDr.getItems()) {
 				Main.ship.crewMax = spMax.getSelection();
 				Main.ship.crewMap.put("human", spHuman.getSelection());
 				Main.ship.crewMap.put("engi", spEngi.getSelection());
-				Main.ship.crewMap.put("zoltan", spZoltan.getSelection());
+				Main.ship.crewMap.put("energy", spZoltan.getSelection());
 				Main.ship.crewMap.put("mantis", spMantis.getSelection());
 				Main.ship.crewMap.put("slug", spSlug.getSelection());
 				Main.ship.crewMap.put("rock", spRock.getSelection());
 				Main.ship.crewMap.put("crystal", spCrystal.getSelection());
 				Main.ship.crewMap.put("ghost", spGhost.getSelection());
+				Main.ship.crewMap.put("random", spRandom.getSelection());
 				
 				// health & power
 				Main.ship.reactorPower = spReactor.getSelection();
@@ -1254,6 +1302,7 @@ search:		for (String s : presetsDr.getItems()) {
 				ShipIO.fixImgNames();
 				ShipIO.loadWeaponStrips();
 				ShipIO.loadWeaponImages(Main.ship);
+	        	ShipIO.remapMountsToWeapons();
 				
 				shell.setVisible(false);
 			}
@@ -1308,8 +1357,38 @@ search:		for (String s : presetsDr.getItems()) {
 				spSlug.setMaximum(spMax.getSelection());
 				spRock.setMaximum(spMax.getSelection());
 				spCrystal.setMaximum(spMax.getSelection());
+				spGhost.setMaximum(spMax.getSelection());
+				spRandom.setMaximum(spMax.getSelection());
 			}
 		});
+		
+		ModifyListener listener = (new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				int sum = spRandom.getSelection() + spMantis.getSelection() + spHuman.getSelection() + spSlug.getSelection() + spEngi.getSelection()
+						+ spRock.getSelection() + spCrystal.getSelection() + spZoltan.getSelection() + spGhost.getSelection();
+				int newMax = spMax.getSelection() - sum;
+				
+				spHuman.setMaximum(spHuman.getSelection()+newMax);
+				spEngi.setMaximum(spEngi.getSelection()+newMax);
+				spZoltan.setMaximum(spZoltan.getSelection()+newMax);
+				spMantis.setMaximum(spMantis.getSelection()+newMax);
+				spSlug.setMaximum(spSlug.getSelection()+newMax);
+				spRock.setMaximum(spRock.getSelection()+newMax);
+				spCrystal.setMaximum(spCrystal.getSelection()+newMax);
+				spGhost.setMaximum(spGhost.getSelection()+newMax);
+				spRandom.setMaximum(spRandom.getSelection()+newMax);
+			}
+		});
+
+		spMantis.addModifyListener(listener);
+		spHuman.addModifyListener(listener);
+		spSlug.addModifyListener(listener);
+		spZoltan.addModifyListener(listener);
+		spEngi.addModifyListener(listener);
+		spRock.addModifyListener(listener);
+		spCrystal.addModifyListener(listener);
+		spGhost.addModifyListener(listener);
+		spRandom.addModifyListener(listener);
 
 		listAugments.addMouseListener(new MouseAdapter() {
 			public void mouseDoubleClick(MouseEvent e) {

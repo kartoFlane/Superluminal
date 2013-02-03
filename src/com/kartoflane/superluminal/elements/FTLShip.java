@@ -67,14 +67,14 @@ public class FTLShip implements Serializable
 	public String descr;
 	public int vertical = 0;
 	
-	public int hullHealth = 30;
-	public int reactorPower = 8;
-	public int weaponSlots = 4;
-	public int droneSlots = 2;
+	public int hullHealth = 0;
+	public int reactorPower = 0;
+	public int weaponSlots = 0;
+	public int droneSlots = 0;
 	
 	// === player specific
-	public int weaponCount = 4;
-	public int droneCount = 2;
+	public int weaponCount = 0;
+	public int droneCount = 0;
 	public String cloakOverride;
 	public String shieldOverride;
 	
@@ -82,8 +82,8 @@ public class FTLShip implements Serializable
 	public int crewMax = 8;
 	
 	// ===
-	public int missiles = 5;
-	public int drones = 5;
+	public int missiles = 0;
+	public int drones = 0;
 	
 	public LinkedList<String> weaponSet;
 	public LinkedList<String> droneSet;
@@ -111,15 +111,15 @@ public class FTLShip implements Serializable
 		offset = new Point(0,0);
 		anchor = new Point(0,0);
 		vertical = 0;
-		hullHealth = 30;
-		reactorPower = 8;
-		weaponSlots = 4;
-		droneSlots = 2;
-		weaponCount = 4;
-		droneCount = 2;
+		hullHealth = 0;
+		reactorPower = 0;
+		weaponSlots = 0;
+		droneSlots = 0;
+		weaponCount = 0;
+		droneCount = 0;
 		crewMax = 8;
-		missiles = 5;
-		drones = 5;
+		missiles = 0;
+		drones = 0;
 		
 		hullPinned = false;
 		shieldPinned = false;
@@ -130,12 +130,13 @@ public class FTLShip implements Serializable
 		
 		crewMap.put("human", 0);
 		crewMap.put("engi", 0);
-		crewMap.put("zoltan", 0);
+		crewMap.put("energy", 0);
 		crewMap.put("mantis", 0);
 		crewMap.put("slug", 0);
 		crewMap.put("rock", 0);
 		crewMap.put("crystal", 0);
 		crewMap.put("ghost", 0);
+		crewMap.put("random", 0);
 		
 		levelMap.put(Systems.ARTILLERY, 0);
 		levelMap.put(Systems.CLOAKING, 0);
