@@ -25,6 +25,7 @@ public class ConfigIO {
 			// === WRITE VARIABLES
 		// === exporter
 			out.write("exportPath = " + Main.exportPath + ShipIO.lineDelimiter);
+			out.write("projectPath = " + Main.projectPath + ShipIO.lineDelimiter);
 		// === browser
 			out.write("dataPath = " + Main.dataPath + ShipIO.lineDelimiter);
 			out.write("resPath = " + Main.resPath + ShipIO.lineDelimiter);
@@ -38,6 +39,8 @@ public class ConfigIO {
 			out.write("showMounts = " + Main.showMounts + ShipIO.lineDelimiter);
 			out.write("showRooms = " + Main.showRooms + ShipIO.lineDelimiter);
 			out.write("showHull = " + Main.showHull + ShipIO.lineDelimiter);
+			out.write("showFloor = " + Main.showFloor + ShipIO.lineDelimiter);
+			out.write("showShield = " + Main.showShield + ShipIO.lineDelimiter);
 			out.write("loadFloor = " + Main.loadFloor + ShipIO.lineDelimiter);
 			out.write("loadShield = " + Main.loadShield + ShipIO.lineDelimiter);
 			out.write("loadSystem = " + Main.loadSystem + ShipIO.lineDelimiter);
@@ -89,10 +92,7 @@ scan:	while(sc.hasNext()) {
 
 		return s;
 	}
-	
-	/**
-	 * Lazy
-	 */
+
 	public static boolean getBoolean(String name) {
 		return Boolean.valueOf(ConfigIO.scourFor(name));
 	}

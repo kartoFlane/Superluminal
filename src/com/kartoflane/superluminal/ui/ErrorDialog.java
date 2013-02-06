@@ -101,6 +101,7 @@ public class ErrorDialog
 	
 	public void print(String s) {
 		errors.setText(errors.getText() + (!errors.getText().equals("") ? ShipIO.lineDelimiter : "") + s);
+		shell.setVisible(true);
 	}
 	
 	public void printErrors(Set<String> errorSet) {

@@ -88,6 +88,8 @@ public class ShipPropertiesWindow extends Dialog
 	private Spinner spDrones;
 	private Spinner spGhost;
 	private Spinner spRandom;
+	private Spinner spMinSec;
+	private Spinner spMaxSec;
 
 	public ShipPropertiesWindow(Shell parent)
 	{
@@ -119,6 +121,11 @@ public class ShipPropertiesWindow extends Dialog
 		if (!ShipIO.isNull(Main.ship.descr))
 			textDesc.setText(Main.ship.descr);
 		
+		spMaxSec.setEnabled(!Main.ship.isPlayer);
+		spMaxSec.setSelection(Main.ship.maxSec);
+		spMinSec.setEnabled(!Main.ship.isPlayer);
+		spMinSec.setSelection(Main.ship.minSec);
+		
 	// power & health
 		
 		lblPilotInfo.setText(Main.ship.powerMap.get(Systems.PILOT) + " / " + Main.ship.levelMap.get(Systems.PILOT));
@@ -134,7 +141,8 @@ public class ShipPropertiesWindow extends Dialog
 		lblCloakInfo.setText(Main.ship.powerMap.get(Systems.CLOAKING) + " / " + Main.ship.levelMap.get(Systems.CLOAKING));
 		lblArtilleryInfo.setText(Main.ship.powerMap.get(Systems.ARTILLERY) + " / " + Main.ship.levelMap.get(Systems.ARTILLERY));
 		
-		int i = 0,j = 0;
+		int i = 0, j = 0;
+		
 		for (Systems s : Main.ship.levelMap.keySet()) {
 			if (Main.isSystemAssigned(s) && !s.equals(Systems.EMPTY) && !s.equals(Systems.PILOT) && !s.equals(Systems.DOORS) && !s.equals(Systems.SENSORS))
 				i += Main.ship.levelMap.get(s);
@@ -318,6 +326,9 @@ search:		for (String s : presetsDr.getItems()) {
 		spGhost.setSelection(0);
 		spRandom.setSelection(0);
 		
+		spMinSec.setSelection(0);
+		spMaxSec.setSelection(0);
+		
 		spMissiles.setSelection(0);
 		spSlots.setSelection(0);
 		spMaxWeapons.setSelection(0);
@@ -410,25 +421,49 @@ search:		for (String s : presetsDr.getItems()) {
 		lblDescription.setFont(Main.appFont);
 		lblDescription.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
 		lblDescription.setText("Description:");
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
+		
+		Composite composite_3 = new Composite(shipInfoC, SWT.NONE);
+		composite_3.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 3, 3));
+		GridLayout gl_composite_3 = new GridLayout(2, false);
+		gl_composite_3.marginWidth = 0;
+		composite_3.setLayout(gl_composite_3);
+		
+		Label label_2 = new Label(composite_3, SWT.SEPARATOR | SWT.HORIZONTAL);
+		label_2.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		
+		Label lblMinSec = new Label(composite_3, SWT.NONE);
+		lblMinSec.setFont(Main.appFont);
+		lblMinSec.setText("Min. Sector");
+		
+		spMinSec = new Spinner(composite_3, SWT.BORDER);
+		spMinSec.setFont(Main.appFont);
+		GridData gd_spMinSec = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		gd_spMinSec.heightHint = 14;
+		spMinSec.setLayoutData(gd_spMinSec);
+		
+		Label lblMaxSec = new Label(composite_3, SWT.NONE);
+		lblMaxSec.setFont(Main.appFont);
+		lblMaxSec.setText("Max Sector");
+		
+		spMaxSec = new Spinner(composite_3, SWT.BORDER);
+		spMaxSec.setFont(Main.appFont);
+		GridData gd_spMaxSec = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		gd_spMaxSec.heightHint = 14;
+		spMaxSec.setLayoutData(gd_spMaxSec);
+		
+		Label label_4 = new Label(composite_3, SWT.SEPARATOR | SWT.HORIZONTAL);
+		label_4.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));
 		
 		textDesc = new Text(shipInfoC, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL | SWT.MULTI);
 		textDesc.setFont(Main.appFont);
 		GridData gd_textDesc = new GridData(SWT.FILL, SWT.FILL, false, true, 2, 5);
 		gd_textDesc.widthHint = 212;
 		textDesc.setLayoutData(gd_textDesc);
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
-		new Label(shipInfoC, SWT.NONE);
 		
 		Label lblMissiles = new Label(shipInfoC, SWT.NONE);
 		lblMissiles.setFont(Main.appFont);
-		GridData gd_lblMissiles = new GridData(SWT.LEFT, SWT.CENTER, false, true, 2, 1);
+		GridData gd_lblMissiles = new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1);
+		gd_lblMissiles.heightHint = 14;
 		gd_lblMissiles.widthHint = 70;
 		lblMissiles.setLayoutData(gd_lblMissiles);
 		lblMissiles.setText("Missiles:");
@@ -437,6 +472,7 @@ search:		for (String s : presetsDr.getItems()) {
 		spMissiles.setFont(Main.appFont);
 		spMissiles.setMaximum(99);
 		GridData gd_spMissiles = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		gd_spMissiles.heightHint = 14;
 		gd_spMissiles.minimumWidth = 20;
 		gd_spMissiles.widthHint = 20;
 		spMissiles.setLayoutData(gd_spMissiles);
@@ -452,6 +488,7 @@ search:		for (String s : presetsDr.getItems()) {
 		spDrones.setMaximum(99);
 		spDrones.setFont(Main.appFont);
 		GridData gd_spDrones = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		gd_spDrones.heightHint = 14;
 		gd_spDrones.minimumWidth = 20;
 		gd_spDrones.widthHint = 20;
 		spDrones.setLayoutData(gd_spDrones);
@@ -467,6 +504,7 @@ search:		for (String s : presetsDr.getItems()) {
 		spHealth.setMaximum(99);
 		spHealth.setFont(Main.appFont);
 		GridData gd_spHealth = new GridData(SWT.RIGHT, SWT.BOTTOM, true, false, 1, 1);
+		gd_spHealth.heightHint = 14;
 		gd_spHealth.widthHint = 20;
 		gd_spHealth.minimumWidth = 20;
 		spHealth.setLayoutData(gd_spHealth);
@@ -1222,28 +1260,8 @@ search:		for (String s : presetsDr.getItems()) {
 				Main.ship.layout = textLayout.getText();
 				Main.ship.imageName = textImage.getText();
 
-				/*
-				// cloak override
-				Main.ship.cloakOverride = textCloakO.getText();
-				
-				// shield override
-				if (Main.loadShield && ShipIO.isNull(textShieldO.getText()) && !ShipIO.isNull(Main.ship.shieldOverride)) {
-					if (!ShipIO.loadingSwitch && Main.shieldImage != null && !Main.shieldImage.isDisposed() )
-						Main.shieldImage.dispose();
-					Main.shieldImage = null;
-					String sub = Main.ship.imageName;
-					
-					if (sub.contains("_2"))
-						sub = sub.substring(0, sub.lastIndexOf("_"));
-					if (ShipIO.loadingSwitch) {
-						Main.shieldImage = SWTResourceManager.getImage(Main.resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship" + ShipIO.pathDelimiter + sub + "_shields1.png");
-					} else {
-						Main.shieldImage = new Image(Main.shell.getDisplay(), Main.resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship" + ShipIO.pathDelimiter + sub + "_shields1.png");
-					}
-				} else if (!ShipIO.isNull(textShieldO.getText())) {
-					Main.ship.shieldOverride = textShieldO.getText();
-				}
-				*/
+				Main.ship.minSec = spMinSec.getSelection();
+				Main.ship.maxSec = spMaxSec.getSelection();
 				
 				// crew
 				Main.ship.crewMax = spMax.getSelection();
@@ -1359,6 +1377,18 @@ search:		for (String s : presetsDr.getItems()) {
 				spCrystal.setMaximum(spMax.getSelection());
 				spGhost.setMaximum(spMax.getSelection());
 				spRandom.setMaximum(spMax.getSelection());
+			}
+		});
+		
+		spMinSec.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				spMaxSec.setMinimum(spMinSec.getSelection());
+			}
+		});
+		
+		spMaxSec.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				spMinSec.setMaximum(spMaxSec.getSelection());
 			}
 		});
 		

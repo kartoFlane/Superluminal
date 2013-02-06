@@ -40,11 +40,13 @@ public class FTLShip implements Serializable
 	public Set<FTLDoor> doors;
 	public List<FTLMount> mounts;
 	
-	// hull
+	// === Images
+		// hull
 	public String imagePath;
 	public String shieldPath;
 	public String floorPath;
 	public String cloakPath;
+		// miniship
 	public String miniPath;
 	
 	public boolean hullPinned;
@@ -55,7 +57,7 @@ public class FTLShip implements Serializable
 	 */
 	public Point anchor;
 	
-	// FTL in-game ship information
+	// === FTL in-game ship information
 	public Point offset;
 	public Rectangle ellipse;
 	public Rectangle imageRect;
@@ -80,6 +82,8 @@ public class FTLShip implements Serializable
 	
 	// === enemy specific
 	public int crewMax = 8;
+	public int minSec = 0;
+	public int maxSec = 0;
 	
 	// ===
 	public int missiles = 0;
@@ -105,6 +109,9 @@ public class FTLShip implements Serializable
 		powerMap = new HashMap<Systems, Integer>();
 		levelMap = new HashMap<Systems, Integer>();
 		startMap = new HashMap<Systems, Boolean>();
+		
+		minSec = 0;
+		maxSec = 0;
 		
 		ellipse = new Rectangle(0,0,0,0);
 		imageRect = new Rectangle(0,0,0,0);
@@ -205,9 +212,10 @@ public class FTLShip implements Serializable
 	/**
 	 * Update positions of elements of the ship (that's rooms, doors, etc) relative to the anchor.
 	 * Should be used in the following way:<br>
-	 * 	&nbsp&nbsp&nbsp&nbsp| var1 = (new anchor for the ship);<br>
-	 * 	&nbsp&nbsp&nbsp&nbsp| ship.updateElements(var1, AxisFlag);<br>
-	 * 	&nbsp&nbsp&nbsp&nbsp| ship.anchor = var1;<br>
+	 * 
+	 * 	var1 = (new anchor for the ship);<br>
+	 * 	ship.updateElements(var1, AxisFlag);<br>
+	 * 	ship.anchor = var1;<br>
 	 * 
 	 * @param newAnchor the new anchor that the ship is going to use.
 	 * @param flag used to state which component of position is be updated.
@@ -254,14 +262,7 @@ public class FTLShip implements Serializable
 	public void updateMount(FTLMount m) {
 		m.rect.x = (Main.hullImage != null) ? (anchor.x + offset.x*35 + Main.mountRect.x) : (Main.mountRect.x);
 		m.rect.y = (Main.hullImage != null) ? (anchor.y + offset.y*35 + Main.mountRect.y) : (Main.mountRect.y);
-		/*
-		if (Main.snapMountsToHull) {
-			m.rect.x = (Main.hullImage != null) ? (anchor.x + offset.x*35 + Main.mountRect.x) : (Main.mountRect.x);
-			m.rect.y = (Main.hullImage != null) ? (anchor.y + offset.y*35 + Main.mountRect.y) : (Main.mountRect.y);
-		} else {
-			m.rect.x = (Main.hullImage != null) ? (anchor.x + offset.x*35 + Main.mountRect.x) : (Main.mountRect.x);
-			m.rect.y = (Main.hullImage != null) ? (anchor.y + offset.y*35 + Main.mountRect.y) : (Main.mountRect.y);
-		}*/
+		
 		m.pos.x = m.rect.x + m.rect.width - imageRect.x;
 		m.pos.y = m.rect.y + m.rect.height - imageRect.y;
 		
@@ -289,7 +290,7 @@ public class FTLShip implements Serializable
 	 * @return Point consisting of lowest x and y values at which the ship's rooms start.
 	 */
 	public Point findLowBounds() {
-		int x=1000, y=1000;
+		int x=2000, y=2000;
 		for (FTLRoom r : rooms) {
 			if (r!=null && r.rect.x <= x) {
 				x = r.rect.x;
@@ -324,27 +325,19 @@ public class FTLShip implements Serializable
 	
 	public int findLeftRoom(FTLDoor d) {
 		for (FTLRoom r : rooms) {
-			if (r.rect.intersects(d.rect)) {
-				if (r.rect.intersects(d.rect) && ((d.horizontal && r.rect.y < d.rect.y) || (!d.horizontal && r.rect.x < d.rect.x))) {
-					//debug("left: ("+d.rect.x/35 + ", "+d.rect.y/35 + ") -> " + r.id);
-					return r.id;
-				}
+			if (r.rect.intersects(d.rect) && ((d.horizontal && r.rect.y < d.rect.y) || (!d.horizontal && r.rect.x < d.rect.x))) {
+				return r.id;
 			}
 		}
-		//debug("left: ("+d.rect.x/35 + ", "+d.rect.y/35 + ") -> " + -1);
 		return -1;
 	}
 	
 	public int findRightRoom(FTLDoor d) {
 		for (FTLRoom r : rooms) {
-			if (r.rect.intersects(d.rect)) {
-				if (r.rect.intersects(d.rect) && ((d.horizontal && r.rect.y > d.rect.y) || (!d.horizontal && r.rect.x > d.rect.x))) {
-					//debug("right: ("+d.rect.x/35 + ", "+d.rect.y/35 + ") -> " + r.id);
-					return r.id;
-				}
+			if (r.rect.intersects(d.rect) && ((d.horizontal && r.rect.y > d.rect.y) || (!d.horizontal && r.rect.x > d.rect.x))) {
+				return r.id;
 			}
 		}
-		//debug("right: ("+d.rect.x/35 + ", "+d.rect.y/35 + ") -> " + -1);
 		return -1;
 	}
 	
@@ -404,4 +397,39 @@ public class FTLShip implements Serializable
 			i++;
 		}
 	}
+	
+	/*
+	public void updateBounds() {
+		// low bounds
+		int x=2000, y=2000;
+		for (FTLRoom r : rooms) {
+			if (r!=null && r.rect.x <= x) {
+				x = r.rect.x;
+			}
+			if (r!=null && r.rect.y <= y) {
+				y = r.rect.y;
+			}
+		}
+		
+		x=(y==1000) ? 0 : x;
+		y=(y==1000) ? 0 : y;
+		
+		lowBounds.x = x;
+		lowBounds.y = y;
+		
+		x = 0;
+		y = 0;
+		
+		for (FTLRoom r : rooms) {
+			if (r!=null && r.rect.x+r.rect.width >= x) {
+				x = r.rect.x+r.rect.width;
+			}
+			if (r!=null && r.rect.y+r.rect.height >= y) {
+				y = r.rect.y+r.rect.height;
+			}
+		}
+		highBounds.x = x;
+		highBounds.y = y;
+	}
+	*/
 }

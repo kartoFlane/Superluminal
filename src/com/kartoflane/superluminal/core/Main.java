@@ -1,6 +1,10 @@
 package com.kartoflane.superluminal.core;
 
+import java.awt.AWTException;
+import java.awt.Desktop;
+import java.awt.Robot;
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -11,7 +15,6 @@ import org.eclipse.swt.events.*;
 import org.eclipse.swt.widgets.*;
 import org.eclipse.wb.swt.SWTResourceManager;
 import org.eclipse.swt.graphics.*;
-
 
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.GridData;
@@ -39,7 +42,7 @@ public class Main
 	/**
 	 * Frequency of canvas redrawing (if constantRedraw == true)
 	 */
-	private final static int INTERVAL = 33;
+	private final static int INTERVAL = 25;
 	/**
 	 * Size of corner indicators on currently selected room
 	 */
@@ -48,12 +51,12 @@ public class Main
 	 * Width of the drawing area, in grid cells
 	 */
 	public static int GRID_W = 26;
-	public static final int GRID_W_MAX = 26;
+	public static int GRID_W_MAX = 30;
 	/**
 	 * Height of the drawing area, in grid cells
 	 */
 	public static int GRID_H = 20;
-	public static final int GRID_H_MAX = 20;
+	public static int GRID_H_MAX = 24;
 	
 	public final static int REACTOR_MAX_PLAYER = 25;
 	public final static int REACTOR_MAX_ENEMY = 32;
@@ -64,7 +67,7 @@ public class Main
 	
 		// === Important objects
 	public static Shell shell;
-	private static Canvas canvas;
+	public static Canvas canvas;
 	public static FTLShip ship;
 	public static ShipPropertiesWindow shipDialog;
 	public static PropertiesWindow sysDialog;
@@ -86,13 +89,16 @@ public class Main
 	public static boolean showMounts = true;
 	public static boolean showRooms = true;
 	public static boolean showHull = true;
+	public static boolean showFloor = true;
+	public static boolean showShield = true;
 	public static boolean loadFloor = true;
 	public static boolean loadShield = true;
 	public static boolean loadSystem = true;
+	public static boolean constantRedraw = true;
 		// export dialog
 	public static String exportPath = "null";
 		// other
-	public static boolean constantRedraw = true;
+	public static String projectPath = "null";
 	
 		// ===  Mouse related
 	public static Point mousePos = new Point(0,0);
@@ -110,11 +116,12 @@ public class Main
 	private static boolean shieldSelected = false;
 	public static boolean canvasActive = false;
 	public static boolean modShift = false;
+	public static boolean modAlt = false;
 	public static boolean moveAnchor = false;
 	public static boolean allowRoomPlacement = true;
 	
 		// === Internal
-	public static boolean debug = true;
+	public static boolean debug = false;
 	/**
 	 * when set to true, all ship data is pre-loaded into hashmaps/sets when the ship browser is opened for the first time.
 	 * no need to do this, only one ship is being used at any given time.
@@ -190,13 +197,11 @@ public class Main
 
 	// === GUI elements' variables, for use in listeners and functions that reference them
 	private static Menu menuSystem;
-	private static Label helpIcon;
+	//private static Label helpIcon;
 	private static Label text;
 	private static Label mGridPosText;
 	private static Label shipInfoText;
 	public static MenuItem mntmClose;
-
-	public static Font appFont = (SWTResourceManager.getFont("Segoe UI", 9, SWT.NORMAL));
 	private Text txtX;
 	private Text txtY;
 	private Label mPosText;
@@ -205,11 +210,40 @@ public class Main
 	private Button btnFloor;
 	private Button btnCloak;
 	private Button btnMiniship;
+	private Label canvasBg;
+	private Canvas bgCanvas;
+	private FormData fd_canvas;
+	private FormData fd_bgCanvas;
+	private boolean shellStateChange;
+	
+	private MenuItem mntmUnload;
+	private MenuItem mntmShowFile;
+	private Menu menu_imageBtns;
+	private Button sourceBtn;
+	private MenuItem mntmPath;
+
+	private MenuItem mntmShowFloor;
+	private MenuItem mntmShowShield;
+	private Button btnCloaked;
+	private Button btnPirate;
+	private Button btnXminus;
+	private Button btnXplus;
+	private Button btnYminus;
+	private Button btnYplus;
+	private MenuItem mntmConToPlayer;
+	private MenuItem mntmConToEnemy;
+	
+	public static Font appFont = (SWTResourceManager.getFont("Segoe UI", 9, SWT.NORMAL));
 	
 	// =================================================================================================== //
 	
 	/*
 	 * === TODO
+	 * 
+	 * Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
+	 * 
+	 * ======
+	 * Pirate version of ships viewable, similar to cloak?
 	 * 
 	 * =========================================================================
 	 * - gibs -> male okienko gdzie ustawiasz kat (ko³o ze wskaznikiem), predkosc liniowa i katowa (slidery)
@@ -234,19 +268,25 @@ public class Main
 	{
 		final Display display = Display.getDefault();
 		
+		shell = new Shell(SWT.SHELL_TRIM | SWT.BORDER);
+		shell.setLayout(new GridLayout(2, false));
+		shell.setText(APPNAME + " - Ship Editor");
+		shell.setLocation(100,50);
+		
+		// resize the window as to not exceed screen dimensions, with maximum size being defined by GRID_W_MAX and GRID_H_MAX
+		GRID_W = ((int) ((display.getBounds().width-35))/35);
+		GRID_H = ((int) ((display.getBounds().height-150))/35);
+		GRID_W = (GRID_W > GRID_W_MAX) ? GRID_W_MAX : GRID_W;
+		GRID_H = (GRID_H > GRID_H_MAX) ? GRID_H_MAX : GRID_H;
+		
 		// create config file if it doesn't exist already
 		if (!ConfigIO.configExists()) {
 			ConfigIO.saveConfig();
 		}
 		
-		// resize the window as to not exceed screen dimensions, with maximum size being defined by GRID_W_MAX and GRID_H_MAX
-		GRID_W = ((int) (display.getClientArea().width * 0.7)/35);
-		GRID_H = ((int) (display.getClientArea().height * 0.8)/35);
-		GRID_W = (GRID_W > GRID_W_MAX) ? GRID_W_MAX : GRID_W;
-		GRID_H = (GRID_H > GRID_H_MAX) ? GRID_H_MAX : GRID_H;
-		
 		// load values from config
 		exportPath = ConfigIO.scourFor("exportPath");
+		projectPath = ConfigIO.scourFor("projectPath");
 		dataPath = ConfigIO.scourFor("dataPath");
 		resPath = ConfigIO.scourFor("resPath");
 		removeDoor = ConfigIO.getBoolean("removeDoor");
@@ -255,6 +295,8 @@ public class Main
 		showMounts = ConfigIO.getBoolean("showMounts");
 		showRooms = ConfigIO.getBoolean("showRooms");
 		showHull = ConfigIO.getBoolean("showHull");
+		showFloor = ConfigIO.getBoolean("showFloor");
+		showShield = ConfigIO.getBoolean("showShield");
 		snapMounts = ConfigIO.getBoolean("snapMounts");
 		snapMountsToHull = ConfigIO.getBoolean("snapMountsToHull");
 		loadFloor = ConfigIO.getBoolean("loadFloor");
@@ -272,6 +314,7 @@ public class Main
 		}
 		
 		createContents();
+		shell.setFont(appFont);
 		
 		if (!ShipIO.isNull(dataPath) && !ShipIO.isNull(resPath))
 			ShipIO.fetchShipNames();
@@ -283,11 +326,37 @@ public class Main
 		shipDialog = new ShipPropertiesWindow(shell);
 		erDialog = new ErrorDialog(shell);
 		
+		shell.addControlListener(new ControlAdapter() {
+			public void controlResized(ControlEvent e) {
+				GRID_W = ((int) ((canvasBg.getBounds().width))/35);
+				GRID_H = ((int) ((canvasBg.getBounds().height))/35);
+				fd_canvas.right.offset = GRID_W*35;
+				fd_canvas.bottom.offset = GRID_H*35;
+				canvas.setSize(GRID_W*35, GRID_H*35);
+				fd_bgCanvas.right.offset = GRID_W*35;
+				fd_bgCanvas.bottom.offset = GRID_H*35;
+				bgCanvas.setSize(GRID_W*35, GRID_H*35);
+			}
+		});
+		
+		shellStateChange = shell.getMaximized();
+		
 		display.timerExec(INTERVAL, new Runnable() {
 			public void run() {
 				if (canvas.isDisposed()) return;
 
 				if (canvasActive) {
+					if (shellStateChange != shell.getMaximized()) {
+						shellStateChange = shell.getMaximized();
+						GRID_W = ((int) ((canvasBg.getBounds().width))/35);
+						GRID_H = ((int) ((canvasBg.getBounds().height))/35);
+						fd_canvas.right.offset = GRID_W*35;
+						fd_canvas.bottom.offset = GRID_H*35;
+						canvas.setSize(GRID_W*35, GRID_H*35);
+						fd_bgCanvas.right.offset = GRID_W*35;
+						fd_bgCanvas.bottom.offset = GRID_H*35;
+						bgCanvas.setSize(GRID_W*35, GRID_H*35);
+					}
 					if (constantRedraw && onCanvas)
 						canvas.redraw();
 					
@@ -309,25 +378,8 @@ public class Main
 
 	protected void createContents()
 	{
-		shell = new Shell(SWT.BORDER | SWT.CLOSE | SWT.TITLE | SWT.MIN);
-		shell.setText(APPNAME + " - Ship Editor");
-		shell.setFont(appFont);
-		
 		highlightColor = shell.getDisplay().getSystemColor(SWT.COLOR_GREEN);
-		shell.setLayout(new GridLayout(2, false));
-		
-		// Info label
-		helpIcon = new Label(shell, SWT.NONE);
-		helpIcon.setFont(appFont);
-		helpIcon.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
 		tempImage = SWTResourceManager.getImage(Main.class, "/org/eclipse/jface/dialogs/images/help.gif");
-		helpIcon.setImage(SWTResourceManager.getImage(Main.class, "/img/message_info.gif"));
-		helpIcon.setToolTipText(" -Use the Q, W, E, A, S keys to quickly select the tools (use Alt+[Key] for the first press)."
-			+ShipIO.lineDelimiter+" -Press Delete or Shift+D to delete selected object (except hull and shields)"
-			+ShipIO.lineDelimiter+" -Click on the anchor and hold to move the entire ship around"
-			+ShipIO.lineDelimiter+" -Press down Shift key while dragging the anchor to move only the anchor w/o moving the ship"
-			+ShipIO.lineDelimiter+" -R-click on the anchor and drag to set the vertical offset of the ship");
-					
 		
 	// === Load images to a map for easy access
 		
@@ -355,7 +407,7 @@ public class Main
 		systemsMap.put(Systems.CLOAKING, tempImage);
 		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.ARTILLERY.toString().toLowerCase()+"_overlay.png");
 		systemsMap.put(Systems.ARTILLERY, tempImage);
-				
+		
 		tempImage = SWTResourceManager.getImage(Main.class, "/img/room.png");
 		toolsMap.put("room", tempImage);
 		tempImage = SWTResourceManager.getImage(Main.class, "/img/door.png");
@@ -380,124 +432,621 @@ public class Main
 		
 		MenuItem mntmFile = new MenuItem(menu, SWT.CASCADE);
 		mntmFile.setText("File");
-		Menu menu_1 = new Menu(mntmFile);
-		mntmFile.setMenu(menu_1);
+		Menu menu_file = new Menu(mntmFile);
+		mntmFile.setMenu(menu_file);
 	
 		// === File -> New ship
-		final MenuItem mntmNewShip = new MenuItem(menu_1, SWT.NONE);
+		final MenuItem mntmNewShip = new MenuItem(menu_file, SWT.NONE);
 		mntmNewShip.setText("New Ship \tCtrl + N");
 		
 		// === File -> Load ship
-		new MenuItem(menu_1, SWT.SEPARATOR);
-		final MenuItem mntmLoadShip = new MenuItem(menu_1, SWT.NONE);
+		new MenuItem(menu_file, SWT.SEPARATOR);
+		final MenuItem mntmLoadShip = new MenuItem(menu_file, SWT.NONE);
 		mntmLoadShip.setText("Load Ship...\tCtrl + L");
 		
 		// === File -> Open project
-		final MenuItem mntmLoadShipProject = new MenuItem(menu_1, SWT.NONE);
+		final MenuItem mntmLoadShipProject = new MenuItem(menu_file, SWT.NONE);
 		mntmLoadShipProject.setText("Open Project...\tCtrl + O");
 
-		new MenuItem(menu_1, SWT.SEPARATOR);
+		new MenuItem(menu_file, SWT.SEPARATOR);
 		
 		// === File -> Save project
-		final MenuItem mntmSaveShip = new MenuItem(menu_1, SWT.NONE);
+		final MenuItem mntmSaveShip = new MenuItem(menu_file, SWT.NONE);
 		mntmSaveShip.setText("Save Project \tCtrl + S");
 		mntmSaveShip.setEnabled(false);
 		
 		// === File -> Save project as
-		final MenuItem mntmSaveShipAs = new MenuItem(menu_1, SWT.NONE);
+		final MenuItem mntmSaveShipAs = new MenuItem(menu_file, SWT.NONE);
 		mntmSaveShipAs.setText("Save Project As...");
 		mntmSaveShipAs.setEnabled(false);
 		
 		// === File -> Export ship
-		final MenuItem mntmExport = new MenuItem(menu_1, SWT.NONE);
+		final MenuItem mntmExport = new MenuItem(menu_file, SWT.NONE);
 		mntmExport.setText("Export Ship... \tCtrl + E");
 		mntmExport.setEnabled(false);
 		
-		new MenuItem(menu_1, SWT.SEPARATOR);
+		new MenuItem(menu_file, SWT.SEPARATOR);
 		
 		// === File -> Close project
-		mntmClose = new MenuItem(menu_1, SWT.NONE);
+		mntmClose = new MenuItem(menu_file, SWT.NONE);
 		mntmClose.setText("Close Project");
 		mntmClose.setEnabled(false);
-			
-
+		
 	// === Edit menu
 		
 		MenuItem mntmEdit = new MenuItem(menu, SWT.CASCADE);
 		mntmEdit.setText("Edit");
-		Menu menu_2 = new Menu(mntmEdit);
-		mntmEdit.setMenu(menu_2);
+		Menu menu_edit = new Menu(mntmEdit);
+		mntmEdit.setMenu(menu_edit);
 		
 		// === Edit -> Automatic door clean
-		MenuItem mntmRemoveDoors = new MenuItem(menu_2, SWT.CHECK);
+		MenuItem mntmRemoveDoors = new MenuItem(menu_edit, SWT.CHECK);
 		mntmRemoveDoors.setSelection(true);
 		mntmRemoveDoors.setText("Automatic Door Cleanup");
 		mntmRemoveDoors.setSelection(removeDoor);
 		
-		MenuItem mntmArbitraryPositionOverride = new MenuItem(menu_2, SWT.CHECK);
+		MenuItem mntmArbitraryPositionOverride = new MenuItem(menu_edit, SWT.CHECK);
 		mntmArbitraryPositionOverride.setText("Arbitrary Position Overrides Pin");
 		mntmArbitraryPositionOverride.setSelection(arbitraryPosOverride);
+		
+		new MenuItem(menu_edit, SWT.SEPARATOR);
+		
+		mntmConToPlayer = new MenuItem(menu_edit, SWT.NONE);
+		mntmConToPlayer.setEnabled(false);
+		mntmConToPlayer.setText("Convert To Player");
+		
+		mntmConToEnemy = new MenuItem(menu_edit, SWT.NONE);
+		mntmConToEnemy.setEnabled(false);
+		mntmConToEnemy.setText("Convert To Enemy");
 		
 	// === View menu
 		
 		MenuItem mntmView = new MenuItem(menu, SWT.CASCADE);
 		mntmView.setText("View");
-		Menu menu_7 = new Menu(mntmView);
-		mntmView.setMenu(menu_7);
+		Menu menu_view = new Menu(mntmView);
+		mntmView.setMenu(menu_view);
 		
-		MenuItem mntmOpenErrorsConsole = new MenuItem(menu_7, SWT.NONE);
+		// === View -> Errors console
+		MenuItem mntmOpenErrorsConsole = new MenuItem(menu_view, SWT.NONE);
 		mntmOpenErrorsConsole.setText("Open Errors Console");
 		
-		new MenuItem(menu_7, SWT.SEPARATOR);
+		new MenuItem(menu_view, SWT.SEPARATOR);
 		
 		// === View -> Show anchor
-		final MenuItem mntmShowAnchor = new MenuItem(menu_7, SWT.CHECK);
+		final MenuItem mntmShowAnchor = new MenuItem(menu_view, SWT.CHECK);
 		mntmShowAnchor.setText("Show Anchor \t&1");
 		mntmShowAnchor.setSelection(showAnchor);
 		
 		// === View -> Show mounts
-		final MenuItem mntmShowMounts = new MenuItem(menu_7, SWT.CHECK);
+		final MenuItem mntmShowMounts = new MenuItem(menu_view, SWT.CHECK);
 		mntmShowMounts.setText("Show Mounts \t&2");
 		mntmShowMounts.setSelection(showMounts);
 		
 		// === View -> show rooms
-		final MenuItem mntmShowRooms = new MenuItem(menu_7, SWT.CHECK);
+		final MenuItem mntmShowRooms = new MenuItem(menu_view, SWT.CHECK);
 		mntmShowRooms.setText("Show Rooms And Doors \t&3");
 		mntmShowRooms.setSelection(showRooms);
 		
-		// === View -> show hull
-		final MenuItem mntmShowHull = new MenuItem(menu_7, SWT.CHECK);
-		mntmShowHull.setText("Show Graphics \t&4");
+		// === View -> graphics
+		MenuItem mntmGraphics = new MenuItem(menu_view, SWT.CASCADE);
+		mntmGraphics.setText("Graphics");
+		
+		Menu menu_graphics = new Menu(mntmGraphics);
+		mntmGraphics.setMenu(menu_graphics);
+		
+		// === View -> graphics -> show hull
+		final MenuItem mntmShowHull = new MenuItem(menu_graphics, SWT.CHECK);
+		mntmShowHull.setText("Show Hull \t&4");
 		mntmShowHull.setSelection(showHull);
 		
-		new MenuItem(menu_7, SWT.SEPARATOR);
+		// === View -> graphics -> show floor
+		mntmShowFloor = new MenuItem(menu_graphics, SWT.CHECK);
+		mntmShowFloor.setText("Show Floor\t&5");
+		mntmShowFloor.setSelection(showFloor);
+		
+		// === View -> graphics -> show shield
+		mntmShowShield = new MenuItem(menu_graphics, SWT.CHECK);
+		mntmShowShield.setText("Show Shield\t&6");
+		mntmShowShield.setSelection(showShield);
+		
+		new MenuItem(menu_view, SWT.SEPARATOR);
 		
 		// === View -> load floor
-		final MenuItem mntmLoadFloorGraphic = new MenuItem(menu_7, SWT.CHECK);
+		final MenuItem mntmLoadFloorGraphic = new MenuItem(menu_view, SWT.CHECK);
 		mntmLoadFloorGraphic.setText("Load Floor Graphic");
 		mntmLoadFloorGraphic.setSelection(loadFloor);
 		
 		// === View -> load shield
-		final MenuItem mntmLoadShieldGraphic = new MenuItem(menu_7, SWT.CHECK);
+		final MenuItem mntmLoadShieldGraphic = new MenuItem(menu_view, SWT.CHECK);
 		mntmLoadShieldGraphic.setText("Load Shield Graphic");
 		mntmLoadShieldGraphic.setSelection(loadShield);
 		
 		// === View -> load system graphic
-		MenuItem mntmLoadSystem = new MenuItem(menu_7, SWT.CHECK);
+		MenuItem mntmLoadSystem = new MenuItem(menu_view, SWT.CHECK);
 		mntmLoadSystem.setText("Load System Graphics");
 		mntmLoadSystem.setSelection(loadSystem);
 		
-		new MenuItem(menu_7, SWT.SEPARATOR);
+		new MenuItem(menu_view, SWT.SEPARATOR);
 		
-		final MenuItem mntmConstantRedraw = new MenuItem(menu_7, SWT.CHECK);
+		// === View -> constant redraw
+		final MenuItem mntmConstantRedraw = new MenuItem(menu_view, SWT.CHECK);
 		mntmConstantRedraw.setText("Constant Redraw");
 		mntmConstantRedraw.setSelection(constantRedraw);
 		
-	// === Text Info Fields
+	// === Tool bar
+		
+		// === Container - holds all the items on the left side of the screen
+		Composite toolBarHolder = new Composite(shell, SWT.NONE);
+		GridData gd_toolBarHolder = new GridData(SWT.LEFT, SWT.CENTER, true, false, 2, 1);
+		gd_toolBarHolder.minimumHeight = -1;
+		gd_toolBarHolder.minimumWidth = -1;
+		toolBarHolder.setLayoutData(gd_toolBarHolder);
+		GridLayout gl_toolBarHolder = new GridLayout(2, false);
+		gl_toolBarHolder.marginWidth = 0;
+		gl_toolBarHolder.marginHeight = 0;
+		toolBarHolder.setLayout(gl_toolBarHolder);
+
+		// === Container -> Tools - tool bar containing the tool icons
+		final ToolBar toolBar = new ToolBar(toolBarHolder, SWT.NONE);
+		toolBar.setFont(appFont);
+		GridData gd_toolBar = new GridData(SWT.LEFT, SWT.FILL, false, false, 1, 1);
+		gd_toolBar.minimumHeight = -1;
+		gd_toolBar.minimumWidth = -1;
+		toolBar.setLayoutData(gd_toolBar);
+		
+		// === Container -> Tools -> Pointer
+		final ToolItem tltmPointer = new ToolItem(toolBar, SWT.RADIO);
+		tltmPointer.setWidth(60);
+		tltmPointer.setSelection(true);
+		tltmPointer.setImage(toolsMap.get("pointer"));
+		tltmPointer.setToolTipText("Selection tool"
+									+ShipIO.lineDelimiter+" -Click to selet an object"
+									+ShipIO.lineDelimiter+" -Click and hold to move the object around"
+									+ShipIO.lineDelimiter+" -For rooms, click on a corner and drag to resize the room" 
+									+ShipIO.lineDelimiter+" -Right-click to assign a system to the selected room"
+									+ShipIO.lineDelimiter+" -Double click on a room to set its' system's level and power"
+									+ShipIO.lineDelimiter+" -For weapon mounts, hull and shields, press down Shift for precision mode");
+		
+		// === Container -> Tools -> Room creation
+		final ToolItem tltmRoom = new ToolItem(toolBar, SWT.RADIO);
+		tltmRoom.setWidth(60);
+		tltmRoom.setToolTipText("Room creation tool"
+								+ShipIO.lineDelimiter+" -Click and drag to create a room"
+								+ShipIO.lineDelimiter+" -Hold down Shift and click to split rooms");
+		tltmRoom.setImage(toolsMap.get("room"));
+		
+		// === Container -> Tools -> Door creation
+		final ToolItem tltmDoor = new ToolItem(toolBar, SWT.RADIO);
+		tltmDoor.setWidth(60);
+		tltmDoor.setToolTipText("Door creation tool"
+								+ShipIO.lineDelimiter+" - Hover over an edge of a room and click to place door");
+		tltmDoor.setImage(toolsMap.get("door"));
+		
+		// === Container -> Tools -> Weapon mounting
+		final ToolItem tltmMount = new ToolItem(toolBar, SWT.RADIO);
+		tltmMount.setWidth(60);
+		tltmMount.setToolTipText("Weapon mounting tool"
+									+ShipIO.lineDelimiter+" -Click to place a weapon mount"
+									+ShipIO.lineDelimiter+" -Right-click to change the mount's rotation"
+									+ShipIO.lineDelimiter+" -Shift-click to mirror the mount along its axis"
+									+ShipIO.lineDelimiter+" -Shift-right-click to change the direction in which the weapon opens"
+									+ShipIO.lineDelimiter+" (the last three also work with Selection Tool)");
+		tltmMount.setImage(toolsMap.get("mount"));
+
+		// === Container -> Tools -> System operating slot
+		final ToolItem tltmSystem = new ToolItem(toolBar, SWT.RADIO);
+		tltmSystem.setWidth(60);
+		tltmSystem.setToolTipText("System operating station tool"
+									+ShipIO.lineDelimiter+" - Click to place an operating station (only mannable systems + medbay)"
+									+ShipIO.lineDelimiter+" - Right-click to reset the station to default"
+									+ShipIO.lineDelimiter+" - Shift-click to change facing of the station");
+		tltmSystem.setImage(toolsMap.get("system"));
+
+		tltmPointer.setEnabled(false);
+		tltmRoom.setEnabled(false);
+		tltmDoor.setEnabled(false);
+		tltmMount.setEnabled(false);
+		tltmSystem.setEnabled(false);
+		
+		// === Container -> buttonComposite
+		Composite composite = new Composite(toolBarHolder, SWT.NONE);
+		GridData gd_composite = new GridData(SWT.FILL, SWT.TOP, true, false, 1, 1);
+		gd_composite.heightHint = 30;
+		gd_composite.minimumWidth = -1;
+		gd_composite.minimumHeight = -1;
+		composite.setLayoutData(gd_composite);
+		GridLayout gl_composite = new GridLayout(13, false);
+		gl_composite.marginTop = 2;
+		gl_composite.marginHeight = 0;
+		composite.setLayout(gl_composite);
+		
+		Label label = new Label(composite, SWT.SEPARATOR | SWT.VERTICAL);
+		label.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1));
+		
+		// === Container -> buttonComposite -> Hull image button
+		btnHull = new Button(composite, SWT.NONE);
+		GridData gd_btnHull = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_btnHull.widthHint = 70;
+		btnHull.setLayoutData(gd_btnHull);
+		btnHull.setFont(appFont);
+		btnHull.setEnabled(false);
+		btnHull.setText("Hull");
+
+		// === Container -> buttonComposite -> shield image button
+		btnShields = new Button(composite, SWT.NONE);
+		GridData gd_btnShields = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_btnShields.widthHint = 70;
+		btnShields.setLayoutData(gd_btnShields);
+		btnShields.setFont(appFont);
+		btnShields.setToolTipText("Shield is aligned in relation to rooms. Place a room before choosing shield graphic.");
+		btnShields.setEnabled(false);
+		btnShields.setText("Shields");
+
+		// === Container -> buttonComposite -> floor image button
+		btnFloor = new Button(composite, SWT.NONE);
+		GridData gd_btnFloor = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_btnFloor.widthHint = 70;
+		btnFloor.setLayoutData(gd_btnFloor);
+		btnFloor.setFont(appFont);
+		btnFloor.setEnabled(false);
+		btnFloor.setText("Floor");
+
+		// === Container -> buttonComposite -> cloak image button
+		btnCloak = new Button(composite, SWT.NONE);
+		GridData gd_btnCloak = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_btnCloak.widthHint = 70;
+		btnCloak.setLayoutData(gd_btnCloak);
+		btnCloak.setSize(70, 25);
+		btnCloak.setFont(appFont);
+		btnCloak.setEnabled(false);
+		btnCloak.setText("Cloak");
+
+		// === Container -> buttonComposite -> miniship image button
+		btnMiniship = new Button(composite, SWT.NONE);
+		GridData gd_btnMiniship = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_btnMiniship.widthHint = 70;
+		btnMiniship.setLayoutData(gd_btnMiniship);
+		btnMiniship.setSize(70, 25);
+		btnMiniship.setEnabled(false);
+		btnMiniship.setFont(appFont);
+		btnMiniship.setText("MiniShip");
+		
+		// === Container -> buttonComposite -> Popup Menu
+		menu_imageBtns = new Menu(shell);
+		btnHull.setMenu(menu_imageBtns);
+		btnShields.setMenu(menu_imageBtns);
+		btnFloor.setMenu(menu_imageBtns);
+		btnCloak.setMenu(menu_imageBtns);
+		btnMiniship.setMenu(menu_imageBtns);
+		
+		mntmPath = new MenuItem(menu_imageBtns, SWT.NONE);
+		mntmPath.setEnabled(false);
+		
+		new MenuItem(menu_imageBtns, SWT.SEPARATOR);
+
+		// === Container -> buttonComposite -> Popup Menu -> Reset Path
+		mntmUnload = new MenuItem(menu_imageBtns, SWT.NONE);
+		mntmUnload.setText("Unload Image");
+
+		// === Container -> buttonComposite -> Popup Menu -> Show File
+		mntmShowFile = new MenuItem(menu_imageBtns, SWT.NONE);
+		mntmShowFile.setText("Show Directory");
+		
+		Label label_1 = new Label(composite, SWT.SEPARATOR | SWT.VERTICAL);
+		label_1.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1));
+		
+		// === Container -> Properties
+		final Button btnShipProperties = new Button(composite, SWT.NONE);
+		btnShipProperties.setFont(appFont);
+		btnShipProperties.setText("Properties");
+		btnShipProperties.setEnabled(false);
+		
+		Label label_2 = new Label(composite, SWT.SEPARATOR | SWT.VERTICAL);
+		label_2.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1));
+		
+		// === Container -> set position composite
+		Composite coSetPosition = new Composite(composite, SWT.NONE);
+		coSetPosition.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1));
+		GridLayout gl_coSetPosition = new GridLayout(7, false);
+		gl_coSetPosition.marginWidth = 0;
+		gl_coSetPosition.marginHeight = 0;
+		coSetPosition.setLayout(gl_coSetPosition);
+		
+		// === Cotnainer -> set position composite -> X
+		Label lblX = new Label(coSetPosition, SWT.NONE);
+		lblX.setFont(appFont);
+		GridData gd_lblX = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_lblX.horizontalIndent = 5;
+		lblX.setLayoutData(gd_lblX);
+		lblX.setText("X:");
+
+		// === Cotnainer -> set position composite -> X buttons container
+		Composite setPosXBtnsCo = new Composite(coSetPosition, SWT.NONE);
+		GridLayout gl_setPosXBtnsCo = new GridLayout(2, false);
+		gl_setPosXBtnsCo.horizontalSpacing = 0;
+		gl_setPosXBtnsCo.verticalSpacing = 0;
+		gl_setPosXBtnsCo.marginWidth = 0;
+		gl_setPosXBtnsCo.marginHeight = 0;
+		setPosXBtnsCo.setLayout(gl_setPosXBtnsCo);
+		setPosXBtnsCo.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1));
+
+		// === Cotnainer -> set position composite -> X buttons container -> X minus
+		btnXminus = new Button(setPosXBtnsCo, SWT.CENTER);
+		btnXminus.setToolTipText("Subtract 35");
+		btnXminus.setEnabled(false);
+		GridData gd_btnXminus = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
+		gd_btnXminus.widthHint = 18;
+		btnXminus.setLayoutData(gd_btnXminus);
+		btnXminus.setFont(appFont);
+		btnXminus.setText("-");
+		btnXminus.setBounds(0, 0, 18, 25);
+
+		// === Cotnainer -> set position composite -> X buttons container -> X plus
+		btnXplus = new Button(setPosXBtnsCo, SWT.CENTER);
+		btnXplus.setToolTipText("Add 35");
+		btnXplus.setEnabled(false);
+		GridData gd_btnXplus = new GridData(SWT.CENTER, SWT.FILL, true, true, 1, 1);
+		gd_btnXplus.widthHint = 18;
+		btnXplus.setLayoutData(gd_btnXplus);
+		btnXplus.setBounds(0, 0, 75, 25);
+		btnXplus.setFont(appFont);
+		btnXplus.setText("+");
+
+		// === Cotnainer -> set position composite -> X text field
+		txtX = new Text(coSetPosition, SWT.BORDER);
+		txtX.setEnabled(false);
+		txtX.setFont(appFont);
+		txtX.setTextLimit(4);
+		GridData gd_txtX = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		gd_txtX.widthHint = 40;
+		txtX.setLayoutData(gd_txtX);
+
+		// === Cotnainer -> set position composite -> Y
+		Label lblY = new Label(coSetPosition, SWT.NONE);
+		GridData gd_lblY = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_lblY.horizontalIndent = 5;
+		lblY.setLayoutData(gd_lblY);
+		lblY.setFont(appFont);
+		lblY.setText("Y:");
+
+		// === Cotnainer -> set position composite -> Y buttons container
+		Composite setPosYBtnsCo = new Composite(coSetPosition, SWT.NONE);
+		GridLayout gl_setPosYBtnsCo = new GridLayout(2, false);
+		gl_setPosYBtnsCo.verticalSpacing = 0;
+		gl_setPosYBtnsCo.marginWidth = 0;
+		gl_setPosYBtnsCo.marginHeight = 0;
+		gl_setPosYBtnsCo.horizontalSpacing = 0;
+		setPosYBtnsCo.setLayout(gl_setPosYBtnsCo);
+
+		// === Cotnainer -> set position composite -> Y buttons container -> Y minus
+		btnYminus = new Button(setPosYBtnsCo, SWT.CENTER);
+		btnYminus.setToolTipText("Subtract 35");
+		GridData gd_btnYminus = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
+		gd_btnYminus.widthHint = 18;
+		btnYminus.setLayoutData(gd_btnYminus);
+		btnYminus.setFont(appFont);
+		btnYminus.setText("-");
+		btnYminus.setEnabled(false);
+
+		// === Cotnainer -> set position composite -> Y buttons container -> Y plus
+		btnYplus = new Button(setPosYBtnsCo, SWT.CENTER);
+		btnYplus.setToolTipText("Add 35");
+		GridData gd_btnYplus = new GridData(SWT.CENTER, SWT.FILL, true, true, 1, 1);
+		gd_btnYplus.widthHint = 18;
+		btnYplus.setLayoutData(gd_btnYplus);
+		btnYplus.setFont(appFont);
+		btnYplus.setText("+");
+		btnYplus.setEnabled(false);
+
+		// === Cotnainer -> set position composite -> Y text field
+		txtY = new Text(coSetPosition, SWT.BORDER);
+		txtY.setEnabled(false);
+		txtY.setFont(appFont);
+		txtY.setTextLimit(4);
+		GridData gd_txtY = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
+		gd_txtY.widthHint = 40;
+		txtY.setLayoutData(gd_txtY);
+		new Label(coSetPosition, SWT.NONE);
+		
+		Label label_3 = new Label(composite, SWT.SEPARATOR | SWT.RIGHT);
+		label_3.setLayoutData(new GridData(SWT.RIGHT, SWT.FILL, false, true, 1, 1));
+
+		// === Cotnainer -> state buttons composite
+		Composite stateBtnsCo = new Composite(composite, SWT.NONE);
+		GridLayout gl_stateBtnsCo = new GridLayout(2, false);
+		gl_stateBtnsCo.marginWidth = 0;
+		gl_stateBtnsCo.verticalSpacing = 0;
+		gl_stateBtnsCo.marginHeight = 0;
+		stateBtnsCo.setLayout(gl_stateBtnsCo);
+		stateBtnsCo.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1));
+
+		// === Cotnainer -> state buttons composite -> cloaked
+		btnCloaked = new Button(stateBtnsCo, SWT.TOGGLE | SWT.CENTER);
+		btnCloaked.setEnabled(false);
+		btnCloaked.setFont(appFont);
+		btnCloaked.setImage(SWTResourceManager.getImage(Main.class, "/img/smallsys/smallcloak.png"));
+		btnCloaked.setToolTipText("View the cloaked version.");
+		GridData gd_btnCloaked = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
+		gd_btnCloaked.widthHint = 30;
+		btnCloaked.setLayoutData(gd_btnCloaked);
+
+		// === Cotnainer -> state buttons composite -> pirate
+		btnPirate = new Button(stateBtnsCo, SWT.TOGGLE | SWT.CENTER);
+		btnPirate.setEnabled(false);
+		btnPirate.setFont(appFont);
+		btnPirate.setToolTipText("View the pirate version.");
+		GridData gd_btnPirate = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
+		gd_btnPirate.widthHint = 30;
+		btnPirate.setLayoutData(gd_btnPirate);
+		btnPirate.setImage(SWTResourceManager.getImage(Main.class, "/img/pirate.png"));
+		
+		// Info label
+		/*
+		helpIcon = new Label(toolBarHolder, SWT.NONE);
+		helpIcon.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, false, 1, 1));
+		helpIcon.setFont(appFont);
+		helpIcon.setImage(SWTResourceManager.getImage(Main.class, "/img/message_info.gif"));
+		helpIcon.setToolTipText(" -Use the Q, W, E, A, S keys to quickly select the tools (use Alt+[Key] for the first press)."
+			+ShipIO.lineDelimiter+" -Press Delete or Shift+D to delete selected object (except hull and shields)"
+			+ShipIO.lineDelimiter+" -Click on the anchor and hold to move the entire ship around"
+			+ShipIO.lineDelimiter+" -Press down Shift key while dragging the anchor to move only the anchor w/o moving the ship"
+			+ShipIO.lineDelimiter+" -Right-click on the anchor and drag to set the vertical offset of the ship");
+		*/
+		
+	// === Canvas
+		
+		Composite canvasHolder = new Composite(shell, SWT.NONE);
+		canvasHolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 4));
+		canvasHolder.setLayout(new FormLayout());
+		
+		// Main screen where ships are displayed
+		canvas = new Canvas(canvasHolder, SWT.NONE | SWT.TRANSPARENT | SWT.BORDER | SWT.DOUBLE_BUFFERED);
+		Color c = new Color(shell.getDisplay(), 96, 96, 96);
+		canvas.setBackground(c);
+		c.dispose();
+		fd_canvas = new FormData();
+		fd_canvas.bottom = new FormAttachment(0, GRID_H*35);
+		fd_canvas.right = new FormAttachment(0, GRID_W*35);
+		fd_canvas.top = new FormAttachment(0);
+		fd_canvas.left = new FormAttachment(0);
+		canvas.setLayoutData(fd_canvas);
+		
+		// canvas supposed to handle drawing of non-dynamic elements of the display (hull, grid, shields, etc), but not really used (only draws grid, IIRC)
+		// REMINDER to be scrapped, find a dedicated 2d graphical library and use that
+		bgCanvas = new Canvas(canvasHolder, SWT.NONE | SWT.BORDER);
+		c = new Color(shell.getDisplay(), 96, 96, 96);
+		bgCanvas.setBackground(c);
+		c.dispose();
+		fd_bgCanvas = new FormData();
+		fd_bgCanvas.bottom = new FormAttachment(0, GRID_H*35);
+		fd_bgCanvas.right = new FormAttachment(0, GRID_W*35);
+		fd_bgCanvas.top = new FormAttachment(0);
+		fd_bgCanvas.left = new FormAttachment(0);
+		bgCanvas.setLayoutData(fd_bgCanvas);
+		
+		canvasBg = new Label(canvasHolder, SWT.NONE);
+		c = canvas.getDisplay().getSystemColor((SWT.COLOR_DARK_GRAY));
+		canvasBg.setBackground(c);
+		c.dispose();
+		FormData fd_canvasBg = new FormData();
+		fd_canvasBg.bottom = new FormAttachment(100);
+		fd_canvasBg.right = new FormAttachment(100);
+		fd_canvasBg.top = new FormAttachment(0);
+		fd_canvasBg.left = new FormAttachment(0);
+		canvasBg.setLayoutData(fd_canvasBg);
+		
+	// === System assignment context menu
+			
+		// === Systems
+		menuSystem = new Menu(canvas);
+			
+		// === Systems -> Empty
+		final MenuItem mntmEmpty = new MenuItem(menuSystem, SWT.RADIO);
+		mntmEmpty.setSelection(true);
+		mntmEmpty.setText("None");
+		
+		// === Systems -> Systems
+		MenuItem mntmSystems = new MenuItem(menuSystem, SWT.CASCADE);
+		mntmSystems.setText("Systems");
+		Menu menu_systems = new Menu(mntmSystems);
+		mntmSystems.setMenu(menu_systems);
+
+		// === Systems -> Systems -> Oxygen
+		final MenuItem mntmOxygen = new MenuItem(menu_systems, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smalloxygen.png");
+		mntmOxygen.setImage(tempImage);
+		mntmOxygen.setText("Oxygen");
+
+		// === Systems -> Systems -> Medbay
+		final MenuItem mntmMedbay = new MenuItem(menu_systems, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallmedbay.png");
+		mntmMedbay.setImage(tempImage);
+		mntmMedbay.setText("Medbay");
+
+		// === Systems -> Systems -> Shields
+		final MenuItem mntmShields = new MenuItem(menu_systems, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallshields.png");
+		mntmShields.setImage(tempImage);
+		mntmShields.setText("Shields");
+
+		// === Systems -> Systems -> Weapons
+		final MenuItem mntmWeapons = new MenuItem(menu_systems, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallweapons.png");
+		mntmWeapons.setImage(tempImage);
+		mntmWeapons.setText("Weapons");
+
+		// === Systems -> Systems -> Engines
+		final MenuItem mntmEngines = new MenuItem(menu_systems, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallengines.png");
+		mntmEngines.setImage(tempImage);
+		mntmEngines.setText("Engines");
+
+		// === Systems -> Subsystems
+		MenuItem mntmSubsystems = new MenuItem(menuSystem, SWT.CASCADE);
+		mntmSubsystems.setText("Subsystems");
+		Menu menu_subsystems = new Menu(mntmSubsystems);
+		mntmSubsystems.setMenu(menu_subsystems);
+
+		// === Systems -> Subsystems -> Pilot
+		final MenuItem mntmPilot = new MenuItem(menu_subsystems, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallpilot.png");
+		mntmPilot.setImage(tempImage);
+		mntmPilot.setText("Pilot");
+
+		// === Systems -> Subsystems -> Doors
+		final MenuItem mntmDoors = new MenuItem(menu_subsystems, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smalldoor.png");
+		mntmDoors.setImage(tempImage);
+		mntmDoors.setText("Doors");
+
+		// === Systems -> Subsystems -> Sensors
+		final MenuItem mntmSensors = new MenuItem(menu_subsystems, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallsensors.png");
+		mntmSensors.setImage(tempImage);
+		mntmSensors.setText("Sensors");
+
+		// === Systems -> Special
+		MenuItem mntmSpecial = new MenuItem(menuSystem, SWT.CASCADE);
+		mntmSpecial.setText("Special");
+		Menu menu_special = new Menu(mntmSpecial);
+		mntmSpecial.setMenu(menu_special);
+
+		// === Systems -> Special -> Drones
+		final MenuItem mntmDrones = new MenuItem(menu_special, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smalldrones.png");
+		mntmDrones.setImage(tempImage);
+		mntmDrones.setText("Drones");
+
+		// === Systems -> Special -> Teleporter
+		final MenuItem mntmTeleporter = new MenuItem(menu_special, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallteleporter.png");
+		mntmTeleporter.setImage(tempImage);
+		mntmTeleporter.setText("Teleporter");
+
+		// === Systems -> Special -> Cloaking
+		final MenuItem mntmCloaking = new MenuItem(menu_special, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallcloak.png");
+		mntmCloaking.setImage(tempImage);
+		mntmCloaking.setText("Cloaking");
+
+		// === Systems -> Special -> Artillery
+		final MenuItem mntmArtillery = new MenuItem(menu_special, SWT.RADIO);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallartillery.png");
+		mntmArtillery.setImage(tempImage);
+		mntmArtillery.setText("Artillery");
+		
+		new MenuItem(menuSystem, SWT.SEPARATOR);
+		
+		// === Systems -> Set System Image
+		final MenuItem mntmSysImage = new MenuItem(menuSystem, SWT.NONE);
+		mntmSysImage.setEnabled(false);
+		mntmSysImage.setText("Set System Image...");
+		
+		// === Text Info Fields
 		
 		Composite textHolder = new Composite(shell, SWT.NONE);
-		GridData gd_textHolder = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
-		gd_textHolder.heightHint = 14;
+		GridData gd_textHolder = new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1);
+		gd_textHolder.heightHint = 18;
 		textHolder.setLayoutData(gd_textHolder);
 		textHolder.setLayout(new FormLayout());
 		
@@ -505,7 +1054,7 @@ public class Main
 		mGridPosText = new Label(textHolder, SWT.BORDER | SWT.CENTER);
 		mGridPosText.setFont(appFont);
 		FormData fd_mGridPosText = new FormData();
-		fd_mGridPosText.height = 20;
+		fd_mGridPosText.bottom = new FormAttachment(100);
 		fd_mGridPosText.top = new FormAttachment(0);
 		fd_mGridPosText.left = new FormAttachment(0);
 		mGridPosText.setLayoutData(fd_mGridPosText);
@@ -524,7 +1073,7 @@ public class Main
 		fd_mGridPosText.right = new FormAttachment(shipInfoText, -84);
 		shipInfoText.setFont(appFont);
 		FormData fd_shipInfoText = new FormData();
-		fd_shipInfoText.height = 20;
+		fd_shipInfoText.bottom = new FormAttachment(100);
 		fd_shipInfoText.top = new FormAttachment(0);
 		fd_shipInfoText.left = new FormAttachment(0, 129);
 		shipInfoText.setLayoutData(fd_shipInfoText);
@@ -534,401 +1083,29 @@ public class Main
 		fd_shipInfoText.right = new FormAttachment(text, -6);
 		text.setFont(appFont);
 		FormData fd_text = new FormData();
-		fd_text.height = 20;
+		fd_text.bottom = new FormAttachment(100);
 		fd_text.right = new FormAttachment(100);
 		fd_text.left = new FormAttachment(0, 265);
 		fd_text.top = new FormAttachment(0);
 		text.setLayoutData(fd_text);
+		new Label(shell, SWT.NONE);
 		
-		Label label_1 = new Label(shell, SWT.SEPARATOR | SWT.HORIZONTAL);
-		label_1.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
-		label_1.setFont(appFont);
-		
-		
-	// === Canvas
-		
-		Composite canvasHolder = new Composite(shell, SWT.NONE);
-		GridData gd_canvasHolder = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 4);
-		gd_canvasHolder.widthHint = GRID_W*35+35;
-		gd_canvasHolder.heightHint = GRID_H*35+35;
-		canvasHolder.setLayoutData(gd_canvasHolder);
-		canvasHolder.setLayout(new FormLayout());
-		
-		// Main screen where ships are displayed
-		canvas = new Canvas(canvasHolder, SWT.NONE | SWT.TRANSPARENT | SWT.BORDER | SWT.DOUBLE_BUFFERED);
-		Color c = new Color(shell.getDisplay(), 96, 96, 96);
-		canvas.setBackground(c);
-		c.dispose();
-		FormData fd_canvas = new FormData();
-		fd_canvas.height = GRID_H*35;
-		fd_canvas.width = GRID_W*35;
-		fd_canvas.bottom = new FormAttachment(0, GRID_H*35);
-		fd_canvas.right = new FormAttachment(0, GRID_W*35);
-		fd_canvas.top = new FormAttachment(0);
-		fd_canvas.left = new FormAttachment(0);
-		canvas.setLayoutData(fd_canvas);
-		
-		// canvas supposed to handle drawing of non-dynamic elements of the display (hull, grid, shields, etc), but not really used (only draws grid, IIRC)
-		// REMINDER to be scrapped, find a dedicated 2d graphical library and use that
-		Canvas bgCanvas = new Canvas(canvasHolder, SWT.NONE | SWT.BORDER);
-		c = new Color(shell.getDisplay(), 96, 96, 96);
-		bgCanvas.setBackground(c);
-		c.dispose();
-		FormData fd_bgCanvas = new FormData();
-		fd_bgCanvas.height = GRID_H*35;
-		fd_bgCanvas.width = GRID_W*35;
-		fd_bgCanvas.bottom = new FormAttachment(0, GRID_H*35);
-		fd_bgCanvas.right = new FormAttachment(0, GRID_W*35);
-		fd_bgCanvas.top = new FormAttachment(0);
-		fd_bgCanvas.left = new FormAttachment(0);
-		bgCanvas.setLayoutData(fd_bgCanvas);
-		
-		Label canvasBg = new Label(canvasHolder, SWT.NONE);
-		c = canvas.getDisplay().getSystemColor((SWT.COLOR_DARK_GRAY));
-		canvasBg.setBackground(c);
-		c.dispose();
-		FormData fd_canvasBg = new FormData();
-		fd_canvasBg.bottom = new FormAttachment(100);
-		fd_canvasBg.right = new FormAttachment(100);
-		fd_canvasBg.top = new FormAttachment(0);
-		fd_canvasBg.left = new FormAttachment(0);
-		canvasBg.setLayoutData(fd_canvasBg);
-		
-		
-		Label lblTools = new Label(shell, SWT.NONE);
-		GridData gd_lblTools = new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1);
-		gd_lblTools.minimumWidth = 70;
-		gd_lblTools.widthHint = 70;
-		lblTools.setLayoutData(gd_lblTools);
-		lblTools.setAlignment(SWT.CENTER);
-		lblTools.setFont(appFont);
-		lblTools.setText("Tools");
-		
-	// === Tool bar
-		
-		// === Container - holds all the items on the left side of the screen
-		Composite toolBarHolder = new Composite(shell, SWT.NONE);
-		GridData gd_toolBarHolder = new GridData(SWT.CENTER, SWT.FILL, false, true, 1, 2);
-		gd_toolBarHolder.minimumWidth = 70;
-		gd_toolBarHolder.widthHint = 70;
-		toolBarHolder.setLayoutData(gd_toolBarHolder);
-		GridLayout gl_toolBarHolder = new GridLayout(1, false);
-		gl_toolBarHolder.horizontalSpacing = 0;
-		gl_toolBarHolder.marginWidth = 0;
-		gl_toolBarHolder.marginHeight = 0;
-		toolBarHolder.setLayout(gl_toolBarHolder);
-
-		// === Container -> Tools - tool bar containing the tool icons
-		final ToolBar toolBar = new ToolBar(toolBarHolder, SWT.FLAT | SWT.RIGHT | SWT.VERTICAL);
-		toolBar.setFont(appFont);
-		GridData gd_toolBar = new GridData(SWT.CENTER, SWT.TOP, true, false, 1, 1);
-		gd_toolBar.minimumWidth = 70;
-		gd_toolBar.widthHint = 70;
-		toolBar.setLayoutData(gd_toolBar);
-		
-		// === Container -> Tools -> Pointer
-		final ToolItem tltmPointer = new ToolItem(toolBar, SWT.RADIO);
-		tltmPointer.setWidth(60);
-		tltmPointer.setSelection(true);
-		tltmPointer.setImage(toolsMap.get("pointer"));
-		tltmPointer.setToolTipText("Selection tool"
-									+ShipIO.lineDelimiter+" -Click to selet an object"
-									+ShipIO.lineDelimiter+" -Click and hold to move the object around"
-									+ShipIO.lineDelimiter+" -For rooms, click on a corner and drag to resize the room" 
-									+ShipIO.lineDelimiter+" -R-click to assign a system to the selected room"
-									+ShipIO.lineDelimiter+" -Double click on a room to set its' system's level and power"
-									+ShipIO.lineDelimiter+" -For weapon mounts, hull and shields, press down Shift for precision mode");
-		tltmPointer.setText("&Q");
-		
-		// === Container -> Tools -> Room creation
-		final ToolItem tltmRoom = new ToolItem(toolBar, SWT.RADIO);
-		tltmRoom.setWidth(60);
-		tltmRoom.setToolTipText("Room creation tool"
-								+ShipIO.lineDelimiter+" -Click and drag to create a room"
-								+ShipIO.lineDelimiter+" -Hold down Shift and click to split rooms");
-		tltmRoom.setImage(toolsMap.get("room"));
-		tltmRoom.setText("&W");
-		
-		// === Container -> Tools -> Door creation
-		final ToolItem tltmDoor = new ToolItem(toolBar, SWT.RADIO);
-		tltmDoor.setWidth(60);
-		tltmDoor.setToolTipText("Door creation tool"
-								+ShipIO.lineDelimiter+" - Hover over an edge of a room and click to place door");
-		tltmDoor.setImage(toolsMap.get("door"));
-		tltmDoor.setText("&E");
-		
-		// === Container -> Tools -> Weapon mounting
-		final ToolItem tltmMount = new ToolItem(toolBar, SWT.RADIO);
-		tltmMount.setWidth(60);
-		tltmMount.setToolTipText("Weapon mounting tool"
-									+ShipIO.lineDelimiter+" -Click to place a weapon mount"
-									+ShipIO.lineDelimiter+" -R-click to change the mount's rotation"
-									+ShipIO.lineDelimiter+" -Shift-click to mirror the mount along its axis"
-									+ShipIO.lineDelimiter+" -Shift-R-click to change the direction in which the weapon opens"
-									+ShipIO.lineDelimiter+" (the last three also work with Selection Tool)");
-		tltmMount.setImage(toolsMap.get("mount"));
-		tltmMount.setText("&A");
-
-		// === Container -> Tools -> System operating slot
-		final ToolItem tltmSystem = new ToolItem(toolBar, SWT.RADIO);
-		tltmSystem.setWidth(60);
-		tltmSystem.setToolTipText("System operating station tool"
-									+ShipIO.lineDelimiter+" - Click to place an operating station (only mannable systems + medbay)"
-									+ShipIO.lineDelimiter+" - R-click to reset the station to default"
-									+ShipIO.lineDelimiter+" - Shift-click to change facing of the station");
-		tltmSystem.setImage(toolsMap.get("system"));
-		tltmSystem.setText("&S");
-		
-		
-		tltmPointer.setEnabled(false);
-		tltmRoom.setEnabled(false);
-		tltmDoor.setEnabled(false);
-		tltmMount.setEnabled(false);
-		tltmSystem.setEnabled(false);
-				
-		Label label = new Label(toolBarHolder, SWT.SEPARATOR | SWT.HORIZONTAL);
-		label.setFont(appFont);
-		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
-		
-		// === Container -> Hull image button
-		btnHull = new Button(toolBarHolder, SWT.NONE);
-		btnHull.setFont(appFont);
-		GridData gd_btnHull = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
-		gd_btnHull.widthHint = 70;
-		btnHull.setLayoutData(gd_btnHull);
-		btnHull.setEnabled(false);
-		btnHull.setText("Hull");
-		
-		btnShields = new Button(toolBarHolder, SWT.NONE);
-		btnShields.setFont(appFont);
-		btnShields.setToolTipText("Shield is aligned in relation to rooms. Place a room before choosing shield graphic.");
-		btnShields.setEnabled(false);
-		GridData gd_btnShields = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
-		gd_btnShields.widthHint = 70;
-		btnShields.setLayoutData(gd_btnShields);
-		btnShields.setText("Shields");
-		
-		btnFloor = new Button(toolBarHolder, SWT.NONE);
-		btnFloor.setFont(appFont);
-		btnFloor.setEnabled(false);
-		GridData gd_btnFloor = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
-		gd_btnFloor.widthHint = 70;
-		btnFloor.setLayoutData(gd_btnFloor);
-		btnFloor.setText("Floor");
-		
-		btnCloak = new Button(toolBarHolder, SWT.NONE);
-		btnCloak.setFont(appFont);
-		btnCloak.setEnabled(false);
-		GridData gd_btnCloak = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
-		gd_btnCloak.widthHint = 70;
-		btnCloak.setLayoutData(gd_btnCloak);
-		btnCloak.setText("Cloak");
-		
-		btnMiniship = new Button(toolBarHolder, SWT.NONE);
-		btnMiniship.setEnabled(false);
-		btnMiniship.setFont(appFont);
-		GridData gd_btnMiniship = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
-		gd_btnMiniship.widthHint = 70;
-		btnMiniship.setLayoutData(gd_btnMiniship);
-		btnMiniship.setText("MiniShip");
-		
-		Label label_2 = new Label(toolBarHolder, SWT.SEPARATOR | SWT.HORIZONTAL);
-		label_2.setFont(appFont);
-		label_2.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		
-		final Button btnShipProperties = new Button(toolBarHolder, SWT.NONE);
-		btnShipProperties.setFont(appFont);
-		GridData gd_btnShipProperties = new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1);
-		gd_btnShipProperties.minimumWidth = 60;
-		gd_btnShipProperties.widthHint = 70;
-		btnShipProperties.setLayoutData(gd_btnShipProperties);
-		btnShipProperties.setText("Properties");
-		btnShipProperties.setEnabled(false);
-		
-		Label label_3 = new Label(toolBarHolder, SWT.SEPARATOR | SWT.HORIZONTAL);
-		GridData gd_label_3 = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
-		gd_label_3.widthHint = 70;
-		label_3.setLayoutData(gd_label_3);
-		
-		Composite coSetPosition = new Composite(toolBarHolder, SWT.NONE);
-		GridLayout gl_coSetPosition = new GridLayout(2, false);
-		gl_coSetPosition.marginWidth = 0;
-		gl_coSetPosition.marginHeight = 0;
-		coSetPosition.setLayout(gl_coSetPosition);
-		GridData gd_coSetPosition = new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1);
-		gd_coSetPosition.heightHint = 86;
-		gd_coSetPosition.widthHint = 70;
-		coSetPosition.setLayoutData(gd_coSetPosition);
-		
-		Label lblSelectedItem = new Label(coSetPosition, SWT.CENTER);
-		lblSelectedItem.setFont(appFont);
-		GridData gd_lblSelectedItem = new GridData(SWT.CENTER, SWT.CENTER, false, false, 2, 2);
-		gd_lblSelectedItem.widthHint = 70;
-		lblSelectedItem.setLayoutData(gd_lblSelectedItem);
-		lblSelectedItem.setText("Selected\r\nItem pos.:");
-		
-		Label lblX = new Label(coSetPosition, SWT.NONE);
-		lblX.setFont(appFont);
-		GridData gd_lblX = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_lblX.horizontalIndent = 5;
-		lblX.setLayoutData(gd_lblX);
-		lblX.setText("X:");
-		
-		txtX = new Text(coSetPosition, SWT.BORDER);
-		txtX.setEnabled(false);
-		txtX.setFont(appFont);
-		txtX.setTextLimit(4);
-		txtX.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1));
-		
-		Label lblY = new Label(coSetPosition, SWT.NONE);
-		GridData gd_lblY = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblY.horizontalIndent = 5;
-		lblY.setLayoutData(gd_lblY);
-		lblY.setFont(appFont);
-		lblY.setText("Y:");
-		
-		txtY = new Text(coSetPosition, SWT.BORDER);
-		txtY.setEnabled(false);
-		txtY.setFont(appFont);
-		txtY.setTextLimit(4);
-		txtY.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		
-	// === System assignment context menu
-			
-		// === Systems
-		menuSystem = new Menu(canvas);
-			
-		// === Systems -> Empty
-		final MenuItem mntmEmpty = new MenuItem(menuSystem, SWT.RADIO);
-		mntmEmpty.setSelection(true);
-		mntmEmpty.setText("None");
-		
-		// === Systems -> Systems
-		MenuItem mntmSystems = new MenuItem(menuSystem, SWT.CASCADE);
-		mntmSystems.setText("Systems");
-		Menu menu_3 = new Menu(mntmSystems);
-		mntmSystems.setMenu(menu_3);
-
-		// === Systems -> Systems -> Oxygen
-		final MenuItem mntmOxygen = new MenuItem(menu_3, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smalloxygen.png");
-		mntmOxygen.setImage(tempImage);
-		mntmOxygen.setText("Oxygen");
-
-		// === Systems -> Systems -> Medbay
-		final MenuItem mntmMedbay = new MenuItem(menu_3, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallmedbay.png");
-		mntmMedbay.setImage(tempImage);
-		mntmMedbay.setText("Medbay");
-
-		// === Systems -> Systems -> Shields
-		final MenuItem mntmShields = new MenuItem(menu_3, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallshields.png");
-		mntmShields.setImage(tempImage);
-		mntmShields.setText("Shields");
-
-		// === Systems -> Systems -> Weapons
-		final MenuItem mntmWeapons = new MenuItem(menu_3, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallweapons.png");
-		mntmWeapons.setImage(tempImage);
-		mntmWeapons.setText("Weapons");
-
-		// === Systems -> Systems -> Engines
-		final MenuItem mntmEngines = new MenuItem(menu_3, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallengines.png");
-		mntmEngines.setImage(tempImage);
-		mntmEngines.setText("Engines");
-
-		// === Systems -> Subsystems
-		MenuItem mntmSubsystems = new MenuItem(menuSystem, SWT.CASCADE);
-		mntmSubsystems.setText("Subsystems");
-		Menu menu_4 = new Menu(mntmSubsystems);
-		mntmSubsystems.setMenu(menu_4);
-
-		// === Systems -> Subsystems -> Pilot
-		final MenuItem mntmPilot = new MenuItem(menu_4, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallpilot.png");
-		mntmPilot.setImage(tempImage);
-		mntmPilot.setText("Pilot");
-
-		// === Systems -> Subsystems -> Doors
-		final MenuItem mntmDoors = new MenuItem(menu_4, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smalldoor.png");
-		mntmDoors.setImage(tempImage);
-		mntmDoors.setText("Doors");
-
-		// === Systems -> Subsystems -> Sensors
-		final MenuItem mntmSensors = new MenuItem(menu_4, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallsensors.png");
-		mntmSensors.setImage(tempImage);
-		mntmSensors.setText("Sensors");
-
-		// === Systems -> Special
-		MenuItem mntmSpecial = new MenuItem(menuSystem, SWT.CASCADE);
-		mntmSpecial.setText("Special");
-		Menu menu_5 = new Menu(mntmSpecial);
-		mntmSpecial.setMenu(menu_5);
-
-		// === Systems -> Special -> Drones
-		final MenuItem mntmDrones = new MenuItem(menu_5, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smalldrones.png");
-		mntmDrones.setImage(tempImage);
-		mntmDrones.setText("Drones");
-
-		// === Systems -> Special -> Teleporter
-		final MenuItem mntmTeleporter = new MenuItem(menu_5, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallteleporter.png");
-		mntmTeleporter.setImage(tempImage);
-		mntmTeleporter.setText("Teleporter");
-
-		// === Systems -> Special -> Cloaking
-		final MenuItem mntmCloaking = new MenuItem(menu_5, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallcloak.png");
-		mntmCloaking.setImage(tempImage);
-		mntmCloaking.setText("Cloaking");
-
-		// === Systems -> Special -> Artillery
-		final MenuItem mntmArtillery = new MenuItem(menu_5, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallartillery.png");
-		mntmArtillery.setImage(tempImage);
-		mntmArtillery.setText("Artillery");
-		
-		new MenuItem(menuSystem, SWT.SEPARATOR);
-		
-		// === Systems -> Set System Image
-		final MenuItem mntmSysImage = new MenuItem(menuSystem, SWT.NONE);
-		mntmSysImage.setEnabled(false);
-		mntmSysImage.setText("Set System Image...");
-				
-				
 		shell.pack();
-		shell.setMinimumSize(shell.getSize());
+		//shell.setMinimumSize(shell.getSize());
 		
 	//=============================================================
 	//=== LISTENERS
 		// === BOOKMARK: PAINT
-		
-		// the method used to draw stuff on the main display.
-		// I'm pretty sure I should NOT be using it this way, putting so many conditions in there, but then I can't really think of another way to do it.
-		// Split into more paintControl methods and redraw them separately only when needed to save a bit on performance?
-		canvas.addPaintListener(new PaintListener() {
+		bgCanvas.addPaintListener(new PaintListener() {
 			public void paintControl(PaintEvent e)
 			{
-				Rectangle tempRoom = null;
-				Rectangle tempDoor = null;
-				FTLMount tempMount = null;
-				FTLRoom tempFTLRoom = null;
-		        Color c;
-		        Point p, pt;
-				Image rotatedImg = null;
-				Image flippedImg = null;
-				
-		        e.gc.setAlpha(255);
-				e.gc.setFont(appFont);
+				Color c;
+				Point p;
+				Point pt;
 				
 				if (canvasActive) {
 					// === DRAW SHIELD IMAGE
-					if (showHull) {
+					if (showShield) {
 						// find geometrical center of the ship's rooms
 						if (ship.rooms.size() > 0) {
 							p = ship.findLowBounds();
@@ -960,101 +1137,118 @@ public class Main
 							c.dispose();
 						}
 					}
+				}
+			}
+		});
+		
+		// the method used to draw stuff on the main display.
+		// I'm pretty sure I should NOT be using it this way, putting so many conditions in there, but then I can't really think of another way to do it.
+		// Split into more paintControl methods and redraw them separately only when needed to save a bit on performance?
+		canvas.addPaintListener(new PaintListener() {
+			public void paintControl(PaintEvent e)
+			{
+				Rectangle tempRect = null;
+				Rectangle tempDoor = null;
+				FTLMount tempMount = null;
+				FTLRoom tempFTLRoom = null;
+				Color c;
+				Point p;
+				Image rotatedImg = null;
+				Image flippedImg = null;
+
+				e.gc.setFont(appFont);
+				
+				if (canvasActive) {
 					// === DRAW ALREADY PLACES MOUNTS
-						if (showMounts) {
-							//int index = 0;
-							int strips = 0;
-							FTLItem it = null;
-							FTLMount m = null;
-							
-							for (int i=0; i < ship.mounts.size(); i++) {
-								m = ship.mounts.get(i);
-								if (i < ship.weaponSet.size() && !ship.weaponsBySet) {
-									it = ShipIO.getItem(ship.weaponSet.get(i));
-									if (m != null && it != null) {
-										strips = weaponStripMap.get(it.img);
-										
-										e.gc.setAlpha(255);
-										if (!m.mirror) {
-											if (m.rotate) { // player - horizontal - have to rotate 90 degrees
-												//rotatedImg = new Image(shell.getDisplay(), rotate(weaponImgMap.get(it.blueprint).getImageData(), SWT.RIGHT));
-												rotatedImg = rotated.get(i);
-										        
-												e.gc.drawImage(rotatedImg, 0, 0, rotatedImg.getBounds().width, rotatedImg.getBounds().height/strips,
-														m.rect.x+m.rect.width/2-rotatedImg.getBounds().width/2,
-														m.rect.y+m.rect.height/2-rotatedImg.getBounds().height/strips/2,
-														rotatedImg.getBounds().width,
-														rotatedImg.getBounds().height/strips);
-												//rotatedImg.dispose();
-											} else { // enemy - vertical - leave them be, don't dispose since it's the base image in the map
-												rotatedImg = weaponImgMap.get(it.blueprint);
-												e.gc.drawImage(rotatedImg, 0, 0, rotatedImg.getBounds().width/strips, rotatedImg.getBounds().height,
-														m.rect.x+m.rect.width/2-rotatedImg.getBounds().width/strips/2,
-														m.rect.y+m.rect.height/2-rotatedImg.getBounds().height/2,
-														rotatedImg.getBounds().width/strips,
-														rotatedImg.getBounds().height);
-												//rotatedImg.dispose();
-											}
-										} else {
-											if (m.rotate) { // player - horizontal - rotate, flip along H axis
-												//rotatedImg = new Image(shell.getDisplay(), rotate(weaponImgMap.get(it.blueprint).getImageData(), SWT.RIGHT));
-												//flippedImg = new Image(shell.getDisplay(), flip(rotatedImg.getImageData(), true));
-												//rotatedImg.dispose();
-												flippedImg = rotatedFlipped.get(i);
-										        
-												e.gc.drawImage(flippedImg, 0, flippedImg.getBounds().height/strips*(strips-1),
-														flippedImg.getBounds().width, flippedImg.getBounds().height/strips,
-														m.rect.x+m.rect.width/2-flippedImg.getBounds().width/2,
-														m.rect.y+m.rect.height/2-flippedImg.getBounds().height/strips/2,
-														flippedImg.getBounds().width,
-														flippedImg.getBounds().height/strips);
-												//flippedImg.dispose();
-											} else { // enemy - vertical - don't rotate, flip along V axis
-												//flippedImg = new Image(shell.getDisplay(), flip(weaponImgMap.get(it.blueprint).getImageData(), false));
-												flippedImg = flipped.get(i);
-										        
-												e.gc.drawImage(flippedImg, flippedImg.getBounds().width/strips*(strips-1), 0,
-														flippedImg.getBounds().width/strips, flippedImg.getBounds().height,
-														m.rect.x+m.rect.width/2-flippedImg.getBounds().width/strips/2,
-														m.rect.y+m.rect.height/2-flippedImg.getBounds().height/2,
-														flippedImg.getBounds().width/strips,
-														flippedImg.getBounds().height);
-												//flippedImg.dispose();
-											}
+					if (showMounts) {
+						//int index = 0;
+						int strips = 0;
+						FTLItem it = null;
+						FTLMount m = null;
+						
+						for (int i=0; i < ship.mounts.size(); i++) {
+							m = ship.mounts.get(i);
+							if (i < ship.weaponSet.size() && !ship.weaponsBySet) {
+								it = ShipIO.getItem(ship.weaponSet.get(i));
+								if (m != null && it != null) {
+									strips = weaponStripMap.get(it.img);
+									
+									e.gc.setAlpha(255);
+									if (!m.mirror) {
+										if (m.rotate) { // player - horizontal - have to rotate 90 degrees
+											rotatedImg = rotated.get(i);
+									        
+											e.gc.drawImage(rotatedImg, 0, 0, rotatedImg.getBounds().width, rotatedImg.getBounds().height/strips,
+													m.rect.x+m.rect.width/2-rotatedImg.getBounds().width/2,
+													m.rect.y+m.rect.height/2-rotatedImg.getBounds().height/strips/2,
+													rotatedImg.getBounds().width,
+													rotatedImg.getBounds().height/strips);
+										} else { // enemy - vertical - leave them be, don't dispose since it's the base image in the map
+											rotatedImg = weaponImgMap.get(it.blueprint);
+											e.gc.drawImage(rotatedImg, 0, 0, rotatedImg.getBounds().width/strips, rotatedImg.getBounds().height,
+													m.rect.x+m.rect.width/2-rotatedImg.getBounds().width/strips/2,
+													m.rect.y+m.rect.height/2-rotatedImg.getBounds().height/2,
+													rotatedImg.getBounds().width/strips,
+													rotatedImg.getBounds().height);
+										}
+									} else {
+										if (m.rotate) { // player - horizontal - rotate, flip along H axis
+											flippedImg = rotatedFlipped.get(i);
+									        
+											e.gc.drawImage(flippedImg, 0, flippedImg.getBounds().height/strips*(strips-1),
+													flippedImg.getBounds().width, flippedImg.getBounds().height/strips,
+													m.rect.x+m.rect.width/2-flippedImg.getBounds().width/2,
+													m.rect.y+m.rect.height/2-flippedImg.getBounds().height/strips/2,
+													flippedImg.getBounds().width,
+													flippedImg.getBounds().height/strips);
+											//flippedImg.dispose();
+										} else { // enemy - vertical - don't rotate, flip along V axis
+											flippedImg = flipped.get(i);
+									        
+											e.gc.drawImage(flippedImg, flippedImg.getBounds().width/strips*(strips-1), 0,
+													flippedImg.getBounds().width/strips, flippedImg.getBounds().height,
+													m.rect.x+m.rect.width/2-flippedImg.getBounds().width/strips/2,
+													m.rect.y+m.rect.height/2-flippedImg.getBounds().height/2,
+													flippedImg.getBounds().width/strips,
+													flippedImg.getBounds().height);
 										}
 									}
-								} else {
-									// draw placeholders
-									
-									c = (selectedMount == m) ? e.display.getSystemColor(SWT.COLOR_MAGENTA) : e.display.getSystemColor(SWT.COLOR_YELLOW);
-									e.gc.setForeground(c);
-									c.dispose();
-									c = (selectedMount == m) ? e.display.getSystemColor(SWT.COLOR_DARK_MAGENTA) : e.display.getSystemColor(SWT.COLOR_DARK_YELLOW);
-									e.gc.setBackground(c);
-									c.dispose();
-									
-									e.gc.setLineWidth(2);
-									e.gc.setAlpha(255);
-									e.gc.drawRectangle(m.rect);
-									e.gc.setAlpha(192);
-									e.gc.fillRectangle(m.rect);
 								}
+							} else {
+								// draw placeholders
+								
+								c = (selectedMount == m) ? e.display.getSystemColor(SWT.COLOR_MAGENTA) : e.display.getSystemColor(SWT.COLOR_YELLOW);
+								e.gc.setForeground(c);
+								c.dispose();
+								c = (selectedMount == m) ? e.display.getSystemColor(SWT.COLOR_DARK_MAGENTA) : e.display.getSystemColor(SWT.COLOR_DARK_YELLOW);
+								e.gc.setBackground(c);
+								c.dispose();
+								
+								e.gc.setLineWidth(2);
+								e.gc.setAlpha(255);
+								e.gc.drawRectangle(m.rect);
+								e.gc.setAlpha(192);
+								e.gc.fillRectangle(m.rect);
 							}
 						}
+					}
 					
 				// === DRAW SHIP HULL IMAGE
-					if (showHull) {
+					e.gc.setAlpha(btnCloaked.getSelection() ? 64 : 255);
+					if (showHull && hullImage != null && !hullImage.isDisposed())
+						e.gc.drawImage(hullImage, ship.imageRect.x, ship.imageRect.y);
+					if (showFloor && floorImage != null && !floorImage.isDisposed() && loadFloor && hullImage != null && !hullImage.isDisposed())
+						e.gc.drawImage(floorImage, 0, 0, floorImage.getBounds().width, floorImage.getBounds().height, ship.imageRect.x, ship.imageRect.y, ship.imageRect.width, ship.imageRect.height);
+					if (btnCloaked.getSelection()) {
 						e.gc.setAlpha(255);
-						if (hullImage != null && !hullImage.isDisposed())
-							e.gc.drawImage(hullImage, ship.imageRect.x, ship.imageRect.y);
-						if (floorImage != null && !floorImage.isDisposed() && loadFloor)
-							e.gc.drawImage(floorImage, ship.imageRect.x, ship.imageRect.y);
+						e.gc.drawImage(cloakImage, 0, 0, cloakImage.getBounds().width, cloakImage.getBounds().height,
+										ship.imageRect.x-10, ship.imageRect.y-10, ship.imageRect.width+20, ship.imageRect.height+20);
 					}
 					
 				// === DRAW ALREADY PLACED ROOMS (INSIDES)
 					// drawn separetely, so that room borders are drawn over the grid lines, looks nicer that way.
 					if (showRooms) {
-						e.gc.setAlpha(255);
+						e.gc.setAlpha(btnCloaked.getSelection() ? 128 : 255);
 						for (FTLRoom rm : ship.rooms) {
 							c = new Color(e.display, 230, 225, 220);
 							e.gc.setBackground(c);
@@ -1065,18 +1259,18 @@ public class Main
 							if (loadSystem && !ShipIO.isNull(rm.img) && rm.sysImg != null && !rm.sysImg.isDisposed()) {
 								e.gc.drawImage(rm.sysImg, 0, 0, rm.sysImg.getBounds().width, rm.sysImg.getBounds().height, rm.rect.x, rm.rect.y, rm.rect.width, rm.rect.height);
 							}
-							// draw start-enabled overlay
+							// draw disabled-on-start overlay
 							if (!ship.startMap.get(rm.sys) && !rm.sys.equals(Systems.EMPTY)) {
 								c = e.display.getSystemColor(SWT.COLOR_DARK_RED);
 								e.gc.setBackground(c);
 								c.dispose();
-								e.gc.setAlpha(128);
+								e.gc.setAlpha(btnCloaked.getSelection() ? 64 : 128);
 								e.gc.fillRectangle(rm.rect.x, rm.rect.y, rm.rect.width, rm.rect.height);
-								e.gc.setAlpha(255);
+								e.gc.setAlpha(btnCloaked.getSelection() ? 128 : 255);
 							}
 							// draw slot overlay
 							if (rm.slot != -2) {
-								e.gc.setAlpha(192);
+								e.gc.setAlpha(btnCloaked.getSelection() ? 96 : 192);
 								c = e.display.getSystemColor(SWT.COLOR_DARK_CYAN);
 								e.gc.setBackground(c);
 								if (!rm.sys.equals(Systems.MEDBAY)) {
@@ -1085,7 +1279,7 @@ public class Main
 									e.gc.fillRectangle(getRectFromStation(rm));
 								}
 								c.dispose();
-								e.gc.setAlpha(255);
+								e.gc.setAlpha(btnCloaked.getSelection() ? 128 : 255);
 							}
 							// draw room id
 							if (debug) {
@@ -1135,7 +1329,7 @@ public class Main
 					
 				// === DRAW ALREADY PLACED ROOMS (BORDERS) AND SYSTEM ICONS
 					if (showRooms) {
-						e.gc.setAlpha(255);
+						e.gc.setAlpha(btnCloaked.getSelection() ? 128 : 255);
 						for (FTLRoom rm : ship.rooms) {
 							e.gc.setLineWidth(4);
 							c = e.display.getSystemColor(SWT.COLOR_BLACK);
@@ -1184,9 +1378,9 @@ public class Main
 						if (showMounts)
 							tempMount = getMountFromMouse();
 						if (showRooms) {
-							tempRoom = getRectFromMouse();
+							tempRect = getRectFromMouse();
 							tempDoor = getDoorFromMouse();
-							tempFTLRoom = getRoomContainingRect(tempRoom);
+							tempFTLRoom = getRoomContainingRect(tempRect);
 						}
 						
 						// === pointer tool highlights
@@ -1204,7 +1398,7 @@ public class Main
 								e.gc.drawRectangle(tempDoor);
 								
 							// mount highlight
-							} else if (showMounts && !moveSelected && !resizeSelected) {
+							} else if (showMounts && (doImagesContain(mousePos) || tempMount != null) && !moveSelected && !resizeSelected) {
 								e.gc.setLineWidth(3);
 								if (!doImagesContain(mousePos) || ship.weaponsBySet) {
 									if (tempMount != null)
@@ -1212,33 +1406,33 @@ public class Main
 								} else {
 									tempMount = getMountFromImage(mousePos);
 									if (tempMount != null && tempMount.rotate) {
-										tempRoom = indexImgMapRotated.get(getMountIndex(tempMount));
-										tempRoom.x = tempMount.rect.x + tempMount.rect.width/2 - tempRoom.width/2;
-										tempRoom.y = tempMount.rect.y + tempMount.rect.height/2 - tempRoom.height/2;
-										e.gc.drawRectangle(tempRoom);
+										tempRect = indexImgMapRotated.get(getMountIndex(tempMount));
+										tempRect.x = tempMount.rect.x + tempMount.rect.width/2 - tempRect.width/2;
+										tempRect.y = tempMount.rect.y + tempMount.rect.height/2 - tempRect.height/2;
+										e.gc.drawRectangle(tempRect);
 									} else if (tempMount != null) {
-										tempRoom = indexImgMapNormal.get(getMountIndex(tempMount));
-										tempRoom.x = tempMount.rect.x + tempMount.rect.width/2 - tempRoom.width/2;
-										tempRoom.y = tempMount.rect.y + tempMount.rect.height/2 - tempRoom.height/2;
-										e.gc.drawRectangle(tempRoom);
+										tempRect = indexImgMapNormal.get(getMountIndex(tempMount));
+										tempRect.x = tempMount.rect.x + tempMount.rect.width/2 - tempRect.width/2;
+										tempRect.y = tempMount.rect.y + tempMount.rect.height/2 - tempRect.height/2;
+										e.gc.drawRectangle(tempRect);
 									}
 								}
 								
 							// highlight already placed rooms
-							} else if (showRooms && tempRoom != null && tempFTLRoom != null && !moveSelected && !resizeSelected) {
+							} else if (showRooms && tempRect != null && tempFTLRoom != null && !moveSelected && !resizeSelected) {
 								e.gc.setLineWidth(4);
 								e.gc.drawRectangle(tempFTLRoom.rect.x+2, tempFTLRoom.rect.y+2, tempFTLRoom.rect.width-4, tempFTLRoom.rect.height-4);
 								
 							// tile highlight (empty grid cells)
-							} else if (tempRoom != null && !moveSelected && !resizeSelected) { 
+							} else if (tempRect != null && !moveSelected && !resizeSelected) { 
 								e.gc.setLineWidth(2);
-								e.gc.drawRectangle(tempRoom.x+1, tempRoom.y+1, 34, 34);
+								e.gc.drawRectangle(tempRect.x+1, tempRect.y+1, 34, 34);
 							}
 							
 						// === room creation tool highlight - colored outline
 						} else if (tltmRoom.getSelection() && !leftMouseDown) {
-							if (!modShift && tempRoom != null) {
-								if (!inBounds || doesRectOverlap(tempRoom, null)) {
+							if (!modShift && tempRect != null) {
+								if (!inBounds || doesRectOverlap(tempRect, null)) {
 									c = e.display.getSystemColor(SWT.COLOR_RED);
 									e.gc.setForeground(c);
 									c.dispose();
@@ -1250,7 +1444,7 @@ public class Main
 									allowRoomPlacement = true;
 								}
 								e.gc.setLineWidth(2);
-								e.gc.drawRectangle(tempRoom.x, tempRoom.y, 35, 35);
+								e.gc.drawRectangle(tempRect.x, tempRect.y, 35, 35);
 								
 							// === room splitting
 							} else if (modShift && tempDoor != null) {
@@ -1305,13 +1499,11 @@ public class Main
 							if (m == selectedMount) break;
 						}
 						
-						FTLMount m = selectedMount;
+						FTLMount m = selectedMount; // less typing!
 						if (i < ship.weaponSet.size()) {
 							it = ShipIO.getItem(ship.weaponSet.get(i));
 							if (it != null && !ShipIO.isNull(it.img)) {
 								strips = weaponStripMap.get(it.img);
-								
-								//if (selectedMount.mirror && selectedMount.rotate) temp = rotatedFlipped.get(i);
 		
 								c = e.display.getSystemColor(SWT.COLOR_BLUE);
 								e.gc.setForeground(c);
@@ -1335,7 +1527,24 @@ public class Main
 											temp.getBounds().height/strips);
 								}
 							}
+						} else {
+							c = e.display.getSystemColor(SWT.COLOR_BLUE);
+							e.gc.setForeground(c);
+							c.dispose();
+							e.gc.setAlpha(255);
+							e.gc.setLineWidth(3);
+							e.gc.drawRectangle(m.rect);
 						}
+						
+						c = e.display.getSystemColor(SWT.COLOR_WHITE);
+						e.gc.setForeground(c);
+						c.dispose();
+						c = e.display.getSystemColor(SWT.COLOR_BLACK);
+						e.gc.setBackground(c);
+						c.dispose();
+						e.gc.setFont(appFont);
+						String s = " "+(getMountIndex(m)+1)+" ";
+						e.gc.drawString(s, m.rect.x, m.rect.y-e.gc.stringExtent(s).y, false);
 						
 					// door selection
 					} else if (showRooms && selectedDoor != null) {
@@ -1389,22 +1598,6 @@ public class Main
 						e.gc.setForeground(c);
 						c.dispose();
 						e.gc.drawRectangle(shieldEllipse);
-						if (!ship.isPlayer) {
-							e.gc.setLineWidth(2);
-							c = e.display.getSystemColor(SWT.COLOR_CYAN);
-							e.gc.setBackground(c);
-							c.dispose();
-							c = e.display.getSystemColor(SWT.COLOR_BLACK);
-							e.gc.setForeground(c);
-							c.dispose();
-							if (tempRoom == null) tempRoom = new Rectangle(0,0,0,0);
-							tempRoom.x = shieldEllipse.x + shieldEllipse.width-15;
-							tempRoom.y = shieldEllipse.y + shieldEllipse.height-15;
-							tempRoom.width = 15;
-							tempRoom.height = 15;
-							e.gc.fillRectangle(tempRoom);
-							e.gc.drawRectangle(tempRoom);
-						}
 					}
 					
 				// === DOOR CREATION TOOL
@@ -1458,20 +1651,20 @@ public class Main
 
 				// === SYSTEM OPERATING STATION TOOL
 					 if (tltmSystem.getSelection()) {
-						tempRoom = getRectFromMouse();
+						tempRect = getRectFromMouse();
 						
-						if (tempRoom != null) {
-							tempFTLRoom = getRoomContainingRect(tempRoom);
+						if (tempRect != null) {
+							tempFTLRoom = getRoomContainingRect(tempRect);
 							if (leftMouseDown || rightMouseDown) {
 								parseRoom = tempFTLRoom;
 								
 								parseRect = new Rectangle(0,0,0,0);
-								parseRect.x = tempRoom.x;
-								parseRect.y = tempRoom.y;
-								parseRect.width = tempRoom.width;
-								parseRect.height = tempRoom.height;
+								parseRect.x = tempRect.x;
+								parseRect.y = tempRect.y;
+								parseRect.width = tempRect.width;
+								parseRect.height = tempRect.height;
 							} else {
-								if (tempFTLRoom != null && (!tempRoom.intersects(getRectFromStation(tempFTLRoom)) || tempFTLRoom.slot == -2)
+								if (tempFTLRoom != null && (!tempRect.intersects(getRectFromStation(tempFTLRoom)) || tempFTLRoom.slot == -2)
 										&& (tempFTLRoom.sys.equals(Systems.PILOT) || tempFTLRoom.sys.equals(Systems.SHIELDS) || tempFTLRoom.sys.equals(Systems.WEAPONS)
 												|| tempFTLRoom.sys.equals(Systems.ENGINES) || tempFTLRoom.sys.equals(Systems.MEDBAY))) {
 									c = e.display.getSystemColor(SWT.COLOR_GREEN);
@@ -1485,7 +1678,7 @@ public class Main
 								
 								e.gc.setLineWidth(2);
 								e.gc.setAlpha(255);
-								e.gc.drawRectangle(tempRoom.x, tempRoom.y, 35, 35);
+								e.gc.drawRectangle(tempRect.x, tempRect.y, 35, 35);
 							}
 						}
 					}
@@ -1560,7 +1753,7 @@ public class Main
 							dragRoomAnchor.x = selectedMount.rect.x + selectedMount.rect.width/2;
 							dragRoomAnchor.y = selectedMount.rect.y + selectedMount.rect.height/2;
 						}
-						if (!modShift) {
+						if (!modShift && e.x != mousePosLastClick.x && e.y != mousePosLastClick.y) {
 							if (dragRoomAnchor.x != 0 && dragRoomAnchor.y != 0) {
 								dragRoomAnchor.x = 0;
 								dragRoomAnchor.y = 0;
@@ -1571,9 +1764,10 @@ public class Main
 								selectedMount.rect.y = mousePos.y - selectedMount.rect.height/2;
 							}
 						} else {
-							selectedMount.rect.x = (int)(dragRoomAnchor.x + (-dragRoomAnchor.x + mousePos.x)/10 - selectedMount.rect.width/2);
-							selectedMount.rect.y = (int)(dragRoomAnchor.y + (-dragRoomAnchor.y + mousePos.y)/10 - selectedMount.rect.height/2);
+							selectedMount.rect.x = phantomRect.x + (mousePos.x - dragRoomAnchor.x)/10 - selectedMount.rect.width/2;
+							selectedMount.rect.y = phantomRect.y + (mousePos.y - dragRoomAnchor.y)/10 - selectedMount.rect.height/2;
 						}
+						ShipIO.updateIndexImgMaps();
 						
 						canvas.redraw();
 		
@@ -1649,8 +1843,8 @@ public class Main
 							shieldEllipse.x = e.x - dragRoomAnchor.x;
 							shieldEllipse.y = e.y - dragRoomAnchor.y;
 						} else {
-							shieldEllipse.x = phantomRect.width + (e.x - dragRoomAnchor.x)/10;
-							shieldEllipse.y = phantomRect.height + (e.y - dragRoomAnchor.y)/10;
+							shieldEllipse.x = phantomRect.width + (int)((e.x - dragRoomAnchor.x)/10);
+							shieldEllipse.y = phantomRect.height + (int)((e.y - dragRoomAnchor.y)/10);
 						}
 						ship.ellipse.x = (shieldEllipse.x + shieldEllipse.width/2) - (ship.findLowBounds().x + ship.computeShipSize().x/2);
 						ship.ellipse.y = (shieldEllipse.y + shieldEllipse.height/2) - (ship.findLowBounds().y + ship.computeShipSize().y/2) - ((ship.isPlayer) ? 0 : 110);
@@ -1661,7 +1855,7 @@ public class Main
 					}
 						
 			// === RESIZE
-				// === Room
+				// === Resize Room
 				} else if (tltmPointer.getSelection() && resizeSelected && selectedRoom != null && canvasActive && !selectedRoom.pinned) {
 					phantomRect = new Rectangle(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height);
 		
@@ -1707,12 +1901,20 @@ public class Main
 					
 					canvas.redraw();
 					
-				// === Shield
+				// === Resize Shield
 				} else if (shieldSelected && !ship.shieldPinned && resizeSelected) {
-					shieldEllipse.width = e.x - shieldEllipse.x;
-					shieldEllipse.height = e.y - shieldEllipse.y;
+					int d = Math.abs(dragRoomAnchor.x - e.x);
+					shieldEllipse.x = dragRoomAnchor.x - d;
+					shieldEllipse.width = 2*d;
+
+					d = Math.abs(e.y - dragRoomAnchor.y);
+					shieldEllipse.y = dragRoomAnchor.y - d;
+					shieldEllipse.height = 2*d;
 					
-					shieldEllipse = fixRect(shieldEllipse);
+					ship.ellipse.x = (shieldEllipse.x + shieldEllipse.width/2) - (ship.findLowBounds().x + ship.computeShipSize().x/2);
+					ship.ellipse.y = (shieldEllipse.y + shieldEllipse.height/2) - (ship.findLowBounds().y + ship.computeShipSize().y/2) - ((ship.isPlayer) ? 0 : 110);
+					ship.ellipse.width = shieldEllipse.width/2;
+					ship.ellipse.height = shieldEllipse.height/2;
 					
 			// === MOVE ANCHOR
 				} else if (moveAnchor && canvasActive) {
@@ -1830,22 +2032,40 @@ public class Main
 							hullSelected = ship.imageRect.contains(mousePos) && leftMouseDown && !rightMouseDown;
 							shieldSelected = shieldEllipse.contains(mousePos) && !leftMouseDown && rightMouseDown;
 							
-							if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
-							phantomRect.x = shieldEllipse.x + shieldEllipse.width-15;
-							phantomRect.y = shieldEllipse.y + shieldEllipse.height-15;
-							phantomRect.width = 15;
-							phantomRect.height = 15;
-							
-							resizeSelected = !ship.isPlayer && shieldSelected && phantomRect.contains(mousePos);
+							resizeSelected = !ship.isPlayer && shieldSelected && modAlt;
+							if (resizeSelected) {
+								dragRoomAnchor.x = shieldEllipse.x + shieldEllipse.width/2;
+								dragRoomAnchor.y = shieldEllipse.y + shieldEllipse.height/2;
+								
+								Point p = canvas.toDisplay(shieldEllipse.x+shieldEllipse.width, shieldEllipse.y+shieldEllipse.height);
+								Robot robot;
+								try {
+									robot = new Robot();
+									robot.mouseMove(p.x, p.y);
+								} catch (AWTException ex) {
+								}
+							}
 
 							moveSelected = hullSelected || (shieldSelected && !resizeSelected);
-							if (hullSelected) {
+							if (hullSelected && moveSelected) {
 								dragRoomAnchor.x = e.x - ship.imageRect.x;
 								dragRoomAnchor.y = e.y - ship.imageRect.y;
+			            		
+			            		if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
+		            			phantomRect.x = mousePos.x;
+		            			phantomRect.y = mousePos.y;
+		            			phantomRect.width = ship.imageRect.x;
+		            			phantomRect.height = ship.imageRect.y;
 							}
 							if (shieldSelected && moveSelected) {
-								dragRoomAnchor.x = e.x - shieldEllipse.x;
-								dragRoomAnchor.y = e.y - shieldEllipse.y;
+			            		dragRoomAnchor.x = mousePos.x - shieldEllipse.x;
+			            		dragRoomAnchor.y = mousePos.y - shieldEllipse.y;
+			            		
+			            		if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
+		            			phantomRect.x = mousePos.x;
+		            			phantomRect.y = mousePos.y;
+		            			phantomRect.width = shieldEllipse.x;
+		            			phantomRect.height = shieldEllipse.y;
 							}
 						}
 						if (selectedRoom != null) {
@@ -1859,6 +2079,13 @@ public class Main
 					if (tltmPointer.getSelection() && onCanvas && e.button == 1) {
 						if (selectedMount != null && (doImagesContain(mousePosLastClick) || selectedMount.rect.contains(mousePosLastClick))) {
 							moveSelected = true;
+		            		dragRoomAnchor.x = mousePos.x;
+		            		dragRoomAnchor.y = mousePos.y;
+		            		if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
+	            			phantomRect.x = mousePos.x;
+	            			phantomRect.y = mousePos.y;
+	            			phantomRect.width = selectedMount.rect.x;
+	            			phantomRect.height = selectedMount.rect.y;
 						} if (selectedRoom != null && selectedRoom.rect.contains(mousePos)) {
 							if (corners[0].contains(mousePosLastClick) || corners[1].contains(mousePosLastClick) || corners[2].contains(mousePosLastClick) || corners[3].contains(mousePosLastClick)) {
 								dragRoomAnchor = findFarthestCorner((FTLRoom) selectedRoom, mousePosLastClick);
@@ -1917,10 +2144,11 @@ public class Main
 															? (Slide.UP)
 															: selectedMount.slide)
 										: selectedMount.slide;
+
 								if (!modShift && e.button==3) {
+									selectedMount.rotate = !selectedMount.rotate;
 									selectedMount.rect.x += (selectedMount.rotate) ? (selectedMount.rect.width/2-selectedMount.rect.height/2) : (-selectedMount.rect.height/2+selectedMount.rect.width/2);
 									selectedMount.rect.y += (selectedMount.rotate) ? (selectedMount.rect.height/2-selectedMount.rect.width/2) : (-selectedMount.rect.width/2+selectedMount.rect.height/2);
-									selectedMount.rotate = (!modShift && e.button == 3) ? !selectedMount.rotate : selectedMount.rotate;
 									selectedMount.rect.width = (selectedMount.rotate) ? (FTLMount.MOUNT_WIDTH) : (FTLMount.MOUNT_HEIGHT);
 									selectedMount.rect.height = (selectedMount.rotate) ? (FTLMount.MOUNT_HEIGHT) : (FTLMount.MOUNT_WIDTH);
 									ShipIO.updateIndexImgMaps();
@@ -1933,7 +2161,7 @@ public class Main
 							if (e.button != 3) {
 								// if the weapon mount gets dragged off the screen, then don't update the actual position (the mount will revert to it's last position)
 								// the below condition actually passes when the position IS to be updated.
-								if (modShift || (e.x > 0 && e.y > 0 && e.x < GRID_W*35 && e.y < GRID_H*35)) {
+								if ((modShift || (e.x > 0 && e.y > 0 && e.x < GRID_W*35 && e.y < GRID_H*35)) && e.x != mousePosLastClick.x && e.y != mousePosLastClick.y) {
 									
 									mountRect.x = selectedMount.rect.x + selectedMount.rect.width/2 + ((hullImage != null) ? (-ship.anchor.x - ship.offset.x*35) : (-ship.imageRect.x));
 									mountRect.y = selectedMount.rect.y + selectedMount.rect.height/2 + ((hullImage != null) ? (-ship.anchor.y - ship.offset.y*35) : (-ship.imageRect.y));
@@ -1946,6 +2174,9 @@ public class Main
 									
 									selectedMount.rect.x -= (selectedMount.rotate) ? (FTLMount.MOUNT_WIDTH/2) : (FTLMount.MOUNT_HEIGHT/2);
 									selectedMount.rect.y -= (selectedMount.rotate) ? (FTLMount.MOUNT_HEIGHT/2) : (FTLMount.MOUNT_WIDTH/2);
+								} else if (e.x < 0 || e.y < 0 || e.x >= GRID_W*35 || e.y >= GRID_H*35) {
+									selectedMount.rect.x = 70;
+									selectedMount.rect.y = 70;
 								}
 							}
 						} else if (hullSelected && moveSelected && e.button == 1 && snapMountsToHull) {
@@ -1975,7 +2206,7 @@ public class Main
 							phantomRect = null;
 							
 							if (ship.rooms.size() > 0) {
-								btnShields.setEnabled(true);
+								btnShields.setEnabled(ship.isPlayer);
 								btnShields.setToolTipText(null);
 							}
 							
@@ -2113,48 +2344,371 @@ public class Main
 				}
 			}
 		});
-	
+
 		
+		// === SELECTED ITEM POSITION
 		
+			txtX.addVerifyListener(new VerifyListener() {
+				public void verifyText(VerifyEvent e) {
+					String string = e.text;
+					char[] chars = new char[string.length()];
+					string.getChars(0, chars.length, chars, 0);
+					for (int i = 0; i < chars.length; i++) {
+						if (!('0' <= chars[i] && chars[i] <= '9') && ('-'!=chars[i])) {
+							e.doit = false;
+							return;
+						}
+					}
+				}
+			});
+
+			txtY.addVerifyListener(new VerifyListener() {
+				public void verifyText(VerifyEvent e) {
+					String string = e.text;
+					char[] chars = new char[string.length()];
+					string.getChars(0, chars.length, chars, 0);
+					for (int i = 0; i < chars.length; i++) {
+						if (!('0' <= chars[i] && chars[i] <= '9') && ('-'!=chars[i])) {
+							e.doit = false;
+							return;
+						}
+					}
+				}
+			});
+			
+			txtX.addTraverseListener(new TraverseListener() {
+				public void keyTraversed(TraverseEvent e) {
+					if (e.detail == SWT.TRAVERSE_RETURN) {
+						updateSelectedPosition();
+					} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
+						updateSelectedPosText();	        	  
+					}
+					canvas.forceFocus();
+					e.doit = false;
+				}
+			});
+			
+			txtY.addTraverseListener(new TraverseListener() {
+				public void keyTraversed(TraverseEvent e) {
+			        if (e.detail == SWT.TRAVERSE_RETURN) {
+						updateSelectedPosition();
+					} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
+						updateSelectedPosText();    	  
+					}
+					canvas.forceFocus();
+					e.doit = false;
+				}
+			});
+
+			btnXminus.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					txtX.setText(""+(Integer.valueOf(txtX.getText())-((selectedRoom==null) ? 35 : 1)));
+					updateSelectedPosition();
+				} });
+
+			btnXplus.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					txtX.setText(""+(Integer.valueOf(txtX.getText())+((selectedRoom==null) ? 35 : 1)));
+					updateSelectedPosition();
+				} });
+
+			btnYminus.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					txtY.setText(""+(Integer.valueOf(txtY.getText())-((selectedRoom==null) ? 35 : 1)));
+					updateSelectedPosition();
+				} });
+
+			btnYplus.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					txtY.setText(""+(Integer.valueOf(txtY.getText())+((selectedRoom==null) ? 35 : 1)));
+					updateSelectedPosition();
+				} });
+			
+			
+		// === IMAGE BUTTONS
+			
+			btnMiniship.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+					String[] filterExtensions = new String[] {"*.png"};
+					dialog.setFilterExtensions(filterExtensions);
+					dialog.setFilterPath(resPath);
+					String path = dialog.open();
+					
+					if (!ShipIO.isNull(path)) {
+						Main.ship.miniPath = path;
+					}
+					updateButtonImg();
+				}
+			});
+			
+			btnFloor.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+					String[] filterExtensions = new String[] {"*.png"};
+					dialog.setFilterExtensions(filterExtensions);
+					dialog.setFilterPath(resPath);
+					String path = dialog.open();
+					
+					if (!ShipIO.isNull(path)) {
+						Main.ship.floorPath = path;
+						
+						ShipIO.loadImage(path, "floor");
+						canvas.redraw();
+					}
+					updateButtonImg();
+				}
+			});
+			
+			btnCloak.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+					String[] filterExtensions = new String[] {"*.png"};
+					dialog.setFilterExtensions(filterExtensions);
+					dialog.setFilterPath(resPath);
+					String path = dialog.open();
+					
+					if (!ShipIO.isNull(path)) {
+						if (ShipIO.isDefaultResource(new File(path)))
+							Main.ship.cloakOverride = path;
+						
+						Main.ship.cloakPath = path;
+						btnCloaked.setEnabled(true);
+						
+						ShipIO.loadImage(path, "cloak");
+						canvas.redraw();
+					}
+					updateButtonImg();
+				}
+			});
+			
+			btnShields.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+					String[] filterExtensions = new String[] {"*.png"};
+					dialog.setFilterExtensions(filterExtensions);
+					dialog.setFilterPath(resPath);
+					String path = dialog.open();
+					Main.ship.shieldOverride = null;
+					
+					if (!ShipIO.isNull(path)) {
+						if (ShipIO.isDefaultResource(new File(path)))
+							Main.ship.shieldOverride = path;
+						
+						Main.ship.shieldPath = path;
+						
+						ShipIO.loadImage(path, "shields");
+						
+						if (ship.isPlayer)
+							if (shieldImage != null && !shieldImage.isDisposed()) {
+								Rectangle temp = shieldImage.getBounds();
+								shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - temp.width/2 + ship.ellipse.x;
+								shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - temp.height/2 + ship.ellipse.y;
+								shieldEllipse.width = temp.width;
+								shieldEllipse.height = temp.height;
+							}
+						
+						updateButtonImg();
+						
+						canvas.redraw();
+					}
+				}
+			});
+			
+			btnHull.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+					String[] filterExtensions = new String[] {"*.png"};
+					dialog.setFilterExtensions(filterExtensions);
+					dialog.setFilterPath(resPath);
+					String path = dialog.open();
+					
+					if (!ShipIO.isNull(path)) {
+						Main.ship.imagePath = path;
+						
+						//Main.ship.cloakPath = path.substring(0, path.lastIndexOf('_')) + "_cloak.png";
+						//Main.ship.floorPath = path.substring(0, path.lastIndexOf('_')) + "_floor.png";
+						
+						ShipIO.loadImage(path, "hull");
+						canvas.redraw();
+					}
+					updateButtonImg();
+				}
+			});
+			
+			btnShipProperties.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					shell.setEnabled(false);
+					shipDialog.open();
+					
+					shell.setEnabled(true);
+					canvas.redraw();
+				}
+			});
+
+		btnHull.addMouseListener(new MouseAdapter() {
+			public void mouseUp(MouseEvent e) {
+				sourceBtn = (Button) e.widget;
+			} });
+		btnShields.addMouseListener(new MouseAdapter() {
+			public void mouseUp(MouseEvent e) {
+				sourceBtn = (Button) e.widget;
+			} });
+		btnFloor.addMouseListener(new MouseAdapter() {
+			public void mouseUp(MouseEvent e) {
+				sourceBtn = (Button) e.widget;
+			} });
+		btnCloak.addMouseListener(new MouseAdapter() {
+			public void mouseUp(MouseEvent e) {
+				sourceBtn = (Button) e.widget;
+			} });
+		btnMiniship.addMouseListener(new MouseAdapter() {
+			public void mouseUp(MouseEvent e) {
+				sourceBtn = (Button) e.widget;
+			} });
+		
+		menu_imageBtns.addMenuListener(new MenuAdapter() {
+			String s = null;
+			public void menuShown(MenuEvent e) {
+				if (sourceBtn == btnHull) {
+					s = ship.imagePath;
+				} else if (sourceBtn == btnShields) {
+					s = ship.shieldPath;
+				} else if (sourceBtn == btnFloor) {
+					s = ship.floorPath;
+				} else if (sourceBtn == btnCloak) {
+					s = ship.cloakPath;
+				} else if (sourceBtn == btnMiniship) {
+					s = ship.miniPath;
+				}
+				mntmUnload.setEnabled(!ShipIO.isNull(s));
+				mntmShowFile.setEnabled(!ShipIO.isNull(s));
+				if (!ShipIO.isNull(s)) {
+					mntmPath.setText("..."+s.substring(s.lastIndexOf(ShipIO.pathDelimiter)));
+				} else {
+					mntmPath.setText("");
+				}
+			}
+		});
+		
+		mntmUnload.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				if (sourceBtn == btnHull) {
+					ship.imagePath = null;
+					if (hullImage != null && !hullImage.isDisposed() && !ShipIO.loadingSwitch)
+						hullImage.dispose();
+					ship.imageRect.x = 0;
+					ship.imageRect.y = 0;
+					ship.imageRect.width = 0;
+					ship.imageRect.height = 0;
+				} else if (sourceBtn == btnShields) {
+					ship.shieldPath = null;
+					ship.shieldOverride = null;
+					if (shieldImage != null && !shieldImage.isDisposed() && !ShipIO.loadingSwitch) {
+						shieldImage.dispose();
+						/*shieldEllipse.x = 0;
+						shieldEllipse.y = 0;
+						shieldEllipse.width = 0;
+						shieldEllipse.height = 0;*/
+					}
+				} else if (sourceBtn == btnFloor) {
+					ship.floorPath = null;
+					if (floorImage != null && !floorImage.isDisposed() && !ShipIO.loadingSwitch)
+						floorImage.dispose();
+				} else if (sourceBtn == btnCloak) {
+					ship.cloakPath = null;
+					ship.cloakOverride = null;
+					btnCloaked.setEnabled(false);
+					if (cloakImage != null && !cloakImage.isDisposed() && !ShipIO.loadingSwitch)
+						cloakImage.dispose();
+				} else if (sourceBtn == btnMiniship) {
+					ship.miniPath = null;
+				}
+				updateButtonImg();
+				canvas.redraw();
+				bgCanvas.redraw();
+			}
+		});
+		
+		mntmShowFile.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				File file = null;
+				if (sourceBtn == btnHull) {
+					file = new File(ship.imagePath);
+				} else if (sourceBtn == btnShields) {
+					file = new File(ship.shieldPath);
+				} else if (sourceBtn == btnFloor) {
+					file = new File(ship.floorPath);
+				} else if (sourceBtn == btnCloak) {
+					file = new File(ship.cloakPath);
+				} else if (sourceBtn == btnMiniship) {
+					file = new File(ship.miniPath);
+				}
+
+				if (Desktop.isDesktopSupported()) {
+						Desktop desktop = Desktop.getDesktop();
+					if (file.exists() && desktop != null) {
+						try {
+							desktop.open(file.getParentFile());
+							//desktop.browse(file.getParentFile().toURI());
+						} catch (IOException ex) {
+						}
+					}
+				} else {
+					erDialog.print("Error: show file - desktop not supported.");
+				}
+			}
+		});
+		
+	// === STATE BUTTONS
+
+		btnCloaked.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				canvas.redraw();
+			}
+		});
+
 	// === SHELL
 		
 		shell.getDisplay().addFilter(SWT.KeyUp, new Listener() {
 			public void handleEvent(Event e)
 			{
+            	if (e.keyCode == SWT.SHIFT)
+            		modShift = false;
+            	if (e.keyCode == SWT.ALT)
+            		modAlt = false;
+            	
+            	
             	if (modShift && (hullSelected || shieldSelected) && moveSelected) {
             		hullSelected = false;
             		shieldSelected = false;
             		moveSelected = false;
             	}
-            	modShift = false;
-            	if ((hullSelected || shieldSelected) && moveSelected) {
+            	if (hullSelected && moveSelected) {
             		dragRoomAnchor.x = mousePos.x - ship.imageRect.x;
             		dragRoomAnchor.y = mousePos.y - ship.imageRect.y;
+            	} else if (shieldSelected && moveSelected) {
+            		dragRoomAnchor.x = mousePos.x - shieldEllipse.x;
+            		dragRoomAnchor.y = mousePos.y - shieldEllipse.y;
+            	} else if (selectedMount != null && moveSelected) {
+            		dragRoomAnchor.x = mousePos.x - selectedMount.rect.x;
+            		dragRoomAnchor.y = mousePos.y - selectedMount.rect.y;
             	}
 			}
 		});
 		
 		shell.getDisplay().addFilter(SWT.KeyDown, new Listener() {
             public void handleEvent(Event e) {
-            	if (!modShift) {
-            		modShift = e.keyCode == SWT.SHIFT;
-            		if (hullSelected && moveSelected) {
-            			if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
-            			phantomRect.x = mousePos.x;
-            			phantomRect.y = mousePos.y;
-            			phantomRect.width = ship.imageRect.x;
-            			phantomRect.height = ship.imageRect.y;
-            		}
-            		if (shieldSelected && moveSelected) {
-            			if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
-            			phantomRect.x = mousePos.x;
-            			phantomRect.y = mousePos.y;
-            			phantomRect.width = shieldEllipse.x;
-            			phantomRect.height = shieldEllipse.y;
-            		}
-            	}
+            	if (e.keyCode == SWT.ALT)
+            		modAlt = true;
+            	if (e.keyCode == SWT.SHIFT)
+            		modShift = true;
             	
+            	// check to make sure that the hotkeys won't be triggered while the user is modifying fields in another window
             	if (shell.isEnabled() && !txtX.isFocusControl() && !txtY.isFocusControl()) {
+            		
+            			// === element deletion
 	            	if (canvasActive && (selectedMount != null || selectedRoom != null || selectedDoor != null) && (e.keyCode == SWT.DEL || (e.stateMask == SWT.SHIFT && e.keyCode == 'd'))) {
 	            		if (ship.rooms.remove(selectedRoom)) {
 	            			idList.remove(selectedRoom.id);
@@ -2174,12 +2728,15 @@ public class Main
 	            			canvas.redraw();
 	            		}
 	            		
+	            		// === deselect
 	            	} else if (e.keyCode == SWT.ESC) {
 	            		selectedRoom = null;
 	            		selectedDoor = null;
 	            		selectedMount = null;
 	            		canvas.redraw();
-	            	} else if (e.stateMask == SWT.CTRL && e.keyCode == 's') {
+	            		
+	            		// === file menu options
+	            	} else if (e.stateMask == SWT.CTRL && e.keyCode == 's' && mntmSaveShip.getEnabled()) {
 	            		mntmSaveShip.notifyListeners(SWT.Selection, null);
 	            	} else if (e.stateMask == SWT.CTRL && e.keyCode == 'n') {
 	            		mntmNewShip.notifyListeners(SWT.Selection, null);
@@ -2189,22 +2746,34 @@ public class Main
 	            		mntmLoadShipProject.notifyListeners(SWT.Selection, null);
 	            	} else if (e.stateMask == SWT.CTRL && e.keyCode == 'e' && mntmExport.getEnabled()) {
 	            		mntmExport.notifyListeners(SWT.Selection, null);
+	            		
+	            		// === show / hide graphics
 	            	} else if (e.keyCode == '1') {
-	            		showAnchor = (showAnchor) ? false : true;
+	            		showAnchor = !showAnchor;
 	            		mntmShowAnchor.setSelection(showAnchor);
 	            		canvas.redraw();
 	            	} else if (e.keyCode == '2') {
-	            		showMounts = (showMounts) ? false : true;
+	            		showMounts = !showMounts;
 	            		mntmShowMounts.setSelection(showMounts);
 	            		canvas.redraw();
 	            	} else if (e.keyCode == '3') {
-	            		showRooms = (showRooms) ? false : true;
+	            		showRooms = !showRooms;
 	            		mntmShowRooms.setSelection(showRooms);
 	            		canvas.redraw();
 	            	} else if (e.keyCode == '4') {
-	            		showHull = (showHull) ? false : true;
+	            		showHull = !showHull;
 	            		mntmShowHull.setSelection(showHull);
 	            		canvas.redraw();
+	            	} else if (e.keyCode == '5') {
+	            		showFloor = !showFloor;
+	            		mntmShowFloor.setSelection(showFloor);
+	            		canvas.redraw();
+	            	} else if (e.keyCode == '6') {
+	            		showShield = !showShield;
+	            		mntmShowShield.setSelection(showShield);
+	            		canvas.redraw();
+	            		
+	            		// === pin
 	            	} else if (e.keyCode == '`') {
 	            		if (selectedRoom != null) selectedRoom.pinned = !selectedRoom.pinned;
 	            		if (selectedDoor != null) selectedDoor.pinned = !selectedDoor.pinned;
@@ -2212,186 +2781,23 @@ public class Main
 	            		if (hullSelected) ship.hullPinned = !ship.hullPinned;
 	            		if (shieldSelected) ship.shieldPinned = !ship.shieldPinned;
 	            		canvas.redraw();
-	            	}
+	            		
+	            		// === tool hotkeys
+	            	} else if (e.stateMask == SWT.NONE && (e.keyCode == 'q' || e.keyCode == 'w' || e.keyCode == 'e' || e.keyCode == 'r' || e.keyCode == 't')) {
+	            		tltmPointer.setSelection(e.keyCode == 'q');
+	            		tltmRoom.setSelection(e.keyCode == 'w');
+	            		tltmDoor.setSelection(e.keyCode == 'e');
+	            		tltmMount.setSelection(e.keyCode == 'r');
+	            		tltmSystem.setSelection(e.keyCode == 't');
+	            		
+		        		// === nudge function
+	            	} else if (e.keyCode == SWT.ARROW_UP || e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_LEFT || e.keyCode == SWT.ARROW_RIGHT) {
+	            		// sending it to an auxiliary function as to not make a clutter here
+	            		nudgeSelected(e.keyCode);
+    				}
             	}
             }
         });
-		
-		
-	// === SIDEBAR
-		
-		btnShipProperties.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				shell.setEnabled(false);
-				shipDialog.open();
-				
-				shell.setEnabled(true);
-				canvas.redraw();
-			}
-		});
-		
-		btnHull.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-				String[] filterExtensions = new String[] {"*.png"};
-				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
-				String path = dialog.open();
-				
-				if (!ShipIO.isNull(path)) {
-					Main.ship.imagePath = path;
-					
-					//Main.ship.cloakPath = path.substring(0, path.lastIndexOf('_')) + "_cloak.png";
-					//Main.ship.floorPath = path.substring(0, path.lastIndexOf('_')) + "_floor.png";
-					
-					ShipIO.loadImage(path, "hull");
-					canvas.redraw();
-				}
-				updateButtonImg();
-			}
-		});
-		
-		btnShields.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-				String[] filterExtensions = new String[] {"*.png"};
-				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
-				String path = dialog.open();
-				Main.ship.shieldOverride = null;
-				
-				if (!ShipIO.isNull(path)) {
-					if (ShipIO.isDefaultResource(new File(path))) {
-						Main.ship.shieldOverride = path;
-						Main.debug("is default resource: " + path);
-					}
-					
-					Main.ship.shieldPath = path;
-					
-					ShipIO.loadImage(path, "shields");
-					
-					if (ship.isPlayer)
-						if (shieldImage != null && !shieldImage.isDisposed()) {
-							Rectangle temp = shieldImage.getBounds();
-							shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - temp.width/2 + ship.ellipse.x;
-							shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - temp.height/2 + ship.ellipse.y;
-							shieldEllipse.width = temp.width;
-							shieldEllipse.height = temp.height;
-						}
-					
-					updateButtonImg();
-					
-					canvas.redraw();
-				}
-			}
-		});
-		
-		btnCloak.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-				String[] filterExtensions = new String[] {"*.png"};
-				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
-				String path = dialog.open();
-				
-				if (!ShipIO.isNull(path)) {
-					Main.ship.cloakPath = path;
-					
-					ShipIO.loadImage(path, "cloak");
-					canvas.redraw();
-				}
-				updateButtonImg();
-			}
-		});
-		
-		btnFloor.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-				String[] filterExtensions = new String[] {"*.png"};
-				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
-				String path = dialog.open();
-				
-				if (!ShipIO.isNull(path)) {
-					Main.ship.floorPath = path;
-					
-					ShipIO.loadImage(path, "floor");
-					canvas.redraw();
-				}
-				updateButtonImg();
-			}
-		});
-		
-		btnMiniship.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-				String[] filterExtensions = new String[] {"*.png"};
-				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
-				String path = dialog.open();
-				
-				if (!ShipIO.isNull(path)) {
-					Main.ship.miniPath = path;
-				}
-				updateButtonImg();
-			}
-		});
-		
-	// === SELECTED ITEM POSITION
-
-		txtX.addVerifyListener(new VerifyListener() {
-			public void verifyText(VerifyEvent e) {
-				String string = e.text;
-				char[] chars = new char[string.length()];
-				string.getChars(0, chars.length, chars, 0);
-				for (int i = 0; i < chars.length; i++) {
-					if (!('0' <= chars[i] && chars[i] <= '9') && ('-'!=chars[i])) {
-						e.doit = false;
-						return;
-					}
-				}
-			}
-		});
-
-		txtY.addVerifyListener(new VerifyListener() {
-			public void verifyText(VerifyEvent e) {
-				String string = e.text;
-				char[] chars = new char[string.length()];
-				string.getChars(0, chars.length, chars, 0);
-				for (int i = 0; i < chars.length; i++) {
-					if (!('0' <= chars[i] && chars[i] <= '9') && ('-'!=chars[i])) {
-						e.doit = false;
-						return;
-					}
-				}
-			}
-		});
-		
-		txtX.addTraverseListener(new TraverseListener() {
-			public void keyTraversed(TraverseEvent e) {
-				if (e.detail == SWT.TRAVERSE_RETURN) {
-					updateSelectedPosition();
-				} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
-					updateSelectedPosText();	        	  
-				}
-				canvas.forceFocus();
-	            e.doit = false;
-			}
-		});
-		
-		txtY.addTraverseListener(new TraverseListener() {
-			public void keyTraversed(TraverseEvent e) {
-		        if (e.detail == SWT.TRAVERSE_RETURN) {
-					updateSelectedPosition();
-				} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
-					updateSelectedPosText();    	  
-				}
-				canvas.forceFocus();
-	            e.doit = false;
-			}
-		});
-		
 		
 	// === SYSTEM CONTEXT MENU
 		
@@ -2531,6 +2937,7 @@ public class Main
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
 				dialog.setFilterPath(resPath);
+				dialog.setText("");
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path) && selectedRoom != null) {
@@ -2577,12 +2984,24 @@ public class Main
 					btnShipProperties.setEnabled(true);
 					updateButtonImg();
 					
+					if (!ship.isPlayer) {
+						ship.shieldPath = resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship" + ShipIO.pathDelimiter + "enemy_shields.png";
+						ShipIO.loadImage(ship.shieldPath, "shields");
+						shieldEllipse.x = GRID_W*35/2-100;
+						shieldEllipse.y = GRID_H*35/2-100;
+						shieldEllipse.width = 200;
+						shieldEllipse.height = 200;
+					}
+					
 					mntmSaveShip.setEnabled(true);
 					mntmSaveShipAs.setEnabled(true);
 					mntmExport.setEnabled(true);
 					mntmClose.setEnabled(true);
 					
 					currentPath = null;
+					
+					mntmConToPlayer.setEnabled(!ship.isPlayer);
+					mntmConToEnemy.setEnabled(ship.isPlayer);
 
 					canvas.redraw();
 				}
@@ -2641,8 +3060,14 @@ public class Main
 								shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 + ship.ellipse.x - ship.ellipse.width;
 								shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 + ship.ellipse.y - ship.ellipse.height + 110;
 							}
+							ShipIO.updateIndexImgMaps();
+							
+							btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath));
 							
 							currentPath = null;
+							
+							mntmConToPlayer.setEnabled(!ship.isPlayer);
+							mntmConToEnemy.setEnabled(ship.isPlayer);
 							
 							canvas.redraw();
 						}
@@ -2667,6 +3092,8 @@ public class Main
 					ShipIO.askSaveDir();
 				} else {
 					ShipIO.saveShipProject(currentPath);
+					
+					ConfigIO.saveConfig();
 					print("Project saved successfully.");
 				}
 				
@@ -2678,9 +3105,9 @@ public class Main
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				ShipIO.askSaveDir();
-				print("Project saved successfully.");
 				
 				ConfigIO.saveConfig();
+				print("Project saved successfully.");
 			}
 		});
 		
@@ -2736,11 +3163,19 @@ public class Main
 						shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 + ship.ellipse.x - ship.ellipse.width;
 						shieldEllipse.y = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().y/2 + ship.ellipse.y - ship.ellipse.height + 110;
 					}
+					ShipIO.updateIndexImgMaps();
+					
+					btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath));
 
 					mntmSaveShip.setEnabled(true);
 					mntmSaveShipAs.setEnabled(true);
 					mntmExport.setEnabled(true);
 					mntmClose.setEnabled(true);
+					
+					mntmConToPlayer.setEnabled(!ship.isPlayer);
+					mntmConToEnemy.setEnabled(ship.isPlayer);
+					
+					ConfigIO.saveConfig();
 					
 					canvas.redraw();
 				}
@@ -2761,16 +3196,16 @@ public class Main
 				if (ship != null) {
 					ship.rooms.clear();
 					ship.doors.clear();
-					if (!ShipIO.loadingSwitch && hullImage != null && !hullImage.isDisposed()) {
+					if (!ShipIO.loadingSwitch && hullImage != null && !hullImage.isDisposed())
 						hullImage.dispose();
-					}
-					if (!ShipIO.loadingSwitch && shieldImage != null && !shieldImage.isDisposed()) {
+					if (!ShipIO.loadingSwitch && shieldImage != null && !shieldImage.isDisposed())
 						shieldImage.dispose();
-					}
-					if (!ShipIO.loadingSwitch && floorImage != null && !floorImage.isDisposed()) {
+					if (!ShipIO.loadingSwitch && floorImage != null && !floorImage.isDisposed())
 						floorImage.dispose();
-					}
+					if (!ShipIO.loadingSwitch && cloakImage != null && !cloakImage.isDisposed())
+						cloakImage.dispose();
 				}
+				btnCloaked.setEnabled(false);
 				hullImage = null;
 				shieldImage = null;
 				floorImage = null;
@@ -2826,6 +3261,18 @@ public class Main
 				ConfigIO.saveConfig();
 			}
 		});
+		
+		mntmConToPlayer.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				convertToPlayer();
+			}
+		});
+		
+		mntmConToEnemy.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				convertToEnemy();
+			}
+		});
 	
 	// === VIEW MENU
 		
@@ -2867,6 +3314,22 @@ public class Main
 				canvas.redraw();
 			}
 		});
+		
+		mntmShowFloor.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				showFloor = ((MenuItem) e.widget).getSelection();
+				ConfigIO.saveConfig();
+				canvas.redraw();
+			}
+		});
+		
+		mntmShowShield.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				showShield = ((MenuItem) e.widget).getSelection();
+				ConfigIO.saveConfig();
+				canvas.redraw();
+			}
+		});
 
 		mntmLoadFloorGraphic.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
@@ -2904,6 +3367,84 @@ public class Main
 //======================================================
 // === BOOKMARK: AUXILIARY METHODS
 	
+	// === SHIP CONVERSIONS
+	
+	public void convertToPlayer() {
+		if (Main.ship != null) {
+			ship.isPlayer = true;
+			
+			btnShields.setEnabled(ship.rooms.size() > 0);
+			
+			ship.shieldPath = null;
+			ship.shieldOverride = null;
+			if (shieldImage != null && !shieldImage.isDisposed() && !ShipIO.loadingSwitch)
+				shieldImage.dispose();
+			shieldImage = null;
+			
+			shieldEllipse.x = 0;
+			shieldEllipse.y = 0;
+			shieldEllipse.width = 0;
+			shieldEllipse.height = 0;
+			
+			updateButtonImg();
+			
+			btnFloor.setEnabled(true);
+			btnMiniship.setEnabled(true);
+			
+			if (ship.weaponsBySet) ship.weaponSet.clear();
+			if (ship.dronesBySet) ship.droneSet.clear();
+			ship.weaponsBySet = false;
+			ship.dronesBySet = false;
+			
+			ship.minSec = 0;
+			ship.maxSec = 0;
+			
+			ship.crewMax = 8;
+
+			mntmConToPlayer.setEnabled(false);
+			mntmConToEnemy.setEnabled(true);
+			
+			print("Ship converted to player.");
+		}
+	}
+	
+	public void convertToEnemy() {
+		if (Main.ship != null) {
+			ship.isPlayer = false;
+			
+			ship.shipName = null;
+			ship.descr = null;
+			
+			btnShields.setEnabled(false);
+			
+			if (shieldImage != null && !shieldImage.isDisposed() && !ShipIO.loadingSwitch)
+				shieldImage.dispose();
+			shieldImage = null;
+
+			ship.shieldOverride = null;
+			ship.shieldPath = resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship" + ShipIO.pathDelimiter + "enemy_shields.png";
+			ShipIO.loadImage(ship.shieldPath, "shields");
+			
+			if (floorImage != null && !floorImage.isDisposed() && !ShipIO.loadingSwitch)
+				floorImage.dispose();
+			floorImage = null;
+			ship.floorPath = null;
+			ship.cloakOverride = null;
+			
+			ship.miniPath = null;
+			
+			btnFloor.setEnabled(false);
+			btnMiniship.setEnabled(false);
+			
+			updateButtonImg();
+			
+			mntmConToPlayer.setEnabled(true);
+			mntmConToEnemy.setEnabled(false);
+			
+			print("Ship converted to enemy.");
+		}
+	}
+
 	// === ROUNDING TO GRID
 	
 	/**
@@ -2925,11 +3466,20 @@ public class Main
 		return (int) (Math.floor(a/35)*35);
 	}
 	
-	
 
 	//=================
 	// === GENERAL
+	
+	public Rectangle copyRect(Rectangle rect) {
+		return new Rectangle(rect.x, rect.y, rect.width, rect.height);
+	}
 
+	/**
+	 * Fixes a rectangle to have positive values height and width, moving its (x,y) origin as needed.
+	 * The end effect is a rectangle that stays in exactly the same place, but has positive height and width.
+	 * @param r Rectangle that needs to be fixed.
+	 * @return Fixed rectangle
+	 */
 	public Rectangle fixRect(Rectangle r) {
 		Rectangle rect = new Rectangle(0,0,0,0);
 		rect.x = r.width<0 ? r.x+r.width : r.x;
@@ -2955,6 +3505,9 @@ public class Main
 		return false;
 	}
 	
+	/**
+	 * Checks if a rect is wholly contained within another.
+	 */
 	public boolean containsRect(Rectangle r1, Rectangle r2) {
 		return r1.contains(r2.x, r2.y) && r1.contains(r2.x+r2.width, r2.y+r2.height); 
 	}
@@ -2987,6 +3540,69 @@ public class Main
 		return null;
 	}
 
+	public void nudgeSelected(int event) {
+		// check so that if none is selected the function won't even bother going in
+		if (hullSelected || shieldSelected || selectedMount != null || selectedRoom != null) {
+			switch (event) {
+				case (SWT.ARROW_UP):
+					if (selectedRoom != null) {
+						phantomRect = copyRect(selectedRoom.rect);
+						phantomRect.y -= 35;
+						if (!doesRectOverlap(phantomRect, selectedRoom.rect) && phantomRect.y >= ship.anchor.y)
+							selectedRoom.rect.y -= 35;
+					}
+					if (selectedMount != null) selectedMount.rect.y -= (modShift) ? 35 : 1;
+					if (hullSelected) ship.imageRect.y -= (modShift) ? 35 : 1;
+					if (shieldSelected) shieldEllipse.y -= (modShift) ? 35 : 1;
+					break;
+				case (SWT.ARROW_DOWN):
+					if (selectedRoom != null) {
+						phantomRect = copyRect(selectedRoom.rect);
+						phantomRect.y += 35;
+						if (!doesRectOverlap(phantomRect, selectedRoom.rect) && phantomRect.y + phantomRect.height <= GRID_H*35)
+							selectedRoom.rect.y += 35;
+					}
+					if (selectedMount != null) selectedMount.rect.y += (modShift) ? 35 : 1;
+					if (hullSelected) ship.imageRect.y += (modShift) ? 35 : 1;
+					if (shieldSelected) shieldEllipse.y += (modShift) ? 35 : 1;
+					break;
+				case (SWT.ARROW_LEFT):
+					if (selectedRoom != null) {
+						phantomRect = copyRect(selectedRoom.rect);
+						phantomRect.x -= 35;
+						if (!doesRectOverlap(phantomRect, selectedRoom.rect) && phantomRect.x >= ship.anchor.x)
+							selectedRoom.rect.x -= 35;
+					}
+					if (selectedMount != null) selectedMount.rect.x -= (modShift) ? 35 : 1;
+					if (hullSelected) ship.imageRect.x -= (modShift) ? 35 : 1;
+					if (shieldSelected) shieldEllipse.x -= (modShift) ? 35 : 1;
+					break;
+				case (SWT.ARROW_RIGHT):
+					if (selectedRoom != null) {
+						phantomRect = copyRect(selectedRoom.rect);
+						phantomRect.x += 35;
+						if (!doesRectOverlap(phantomRect, selectedRoom.rect) && phantomRect.x + phantomRect.width <= GRID_W*35)
+							selectedRoom.rect.x += 35;
+					}
+					if (selectedMount != null) selectedMount.rect.x += (modShift) ? 35 : 1;
+					if (hullSelected) ship.imageRect.x += (modShift) ? 35 : 1;
+					if (shieldSelected) shieldEllipse.x += (modShift) ? 35 : 1;
+					break;
+				default: break;
+			}
+			
+			if (selectedRoom != null) updateCorners(selectedRoom);
+			if (shieldSelected) {
+				ship.ellipse.x = (shieldEllipse.x + shieldEllipse.width/2) - (ship.findLowBounds().x + ship.computeShipSize().x/2);
+				ship.ellipse.y = (shieldEllipse.y + shieldEllipse.height/2) - (ship.findLowBounds().y + ship.computeShipSize().y/2) - ((ship.isPlayer) ? 0 : 110);
+				ship.ellipse.width = shieldEllipse.width/2;
+				ship.ellipse.height = shieldEllipse.height/2;
+			}
+			updateSelectedPosText();
+			
+			canvas.redraw();
+		}
+	}
 	
 
 	//=================
@@ -3226,8 +3842,14 @@ public class Main
 	public void updateSelectedPosText() {
 		if (canvasActive) {
 			boolean enable = selectedMount != null || selectedRoom != null || hullSelected || shieldSelected;
+			
 			txtX.setEnabled(enable);
+			btnXplus.setEnabled(enable);
+			btnXminus.setEnabled(enable);
 			txtY.setEnabled(enable);
+			btnYplus.setEnabled(enable);
+			btnYminus.setEnabled(enable);
+			
 			if (!enable) {
 				txtX.setText("");
 				txtY.setText("");
@@ -3335,18 +3957,13 @@ public class Main
 			System.out.println(msg);
 	}
 	
+	
+	// === Graphics
+	
 	static ImageData flip(ImageData srcData, boolean vertical) {
 		int bytesPerPixel = srcData.bytesPerLine / srcData.width;
 		int destBytesPerLine = srcData.width * bytesPerPixel;
 		byte[] newData = new byte[srcData.data.length];
-
-		/*
-	    Color white = shell.getDisplay().getSystemColor(SWT.COLOR_WHITE);
-	    Color black = shell.getDisplay().getSystemColor(SWT.COLOR_BLACK);
-	    PaletteData palette = new PaletteData(new RGB[] { white.getRGB(), black.getRGB() });
-	    final ImageData sourceData = new ImageData(30, 30, 1, palette);
-	    */
-	    //sourceData.transparentPixel = 0;
 	    
 		for (int srcY = 0; srcY < srcData.height; srcY++) {
 			for (int srcX = 0; srcX < srcData.width; srcX++) {
@@ -3368,7 +3985,15 @@ public class Main
 		}
 		// destBytesPerLine is used as scanlinePad to ensure that no padding is
 		// required
-		return new ImageData(srcData.width, srcData.height, srcData.depth, srcData.palette, destBytesPerLine, newData);
+
+	    Color white = shell.getDisplay().getSystemColor(SWT.COLOR_WHITE);
+	    Color black = shell.getDisplay().getSystemColor(SWT.COLOR_BLACK);
+	    PaletteData palette = new PaletteData(new RGB[] { white.getRGB(), black.getRGB() });
+	    final ImageData sourceData = new ImageData(srcData.width, srcData.height, srcData.depth, palette, destBytesPerLine, newData);
+	    sourceData.transparentPixel = 0;
+	    
+		//return new ImageData(srcData.width, srcData.height, srcData.depth, srcData.palette, destBytesPerLine, newData);
+	    return sourceData;
 	}
 	
 	public static ImageData rotate(ImageData srcData, int direction) {
@@ -3410,7 +4035,15 @@ public class Main
 		}
 		// destBytesPerLine is used as scanlinePad to ensure that no padding is
 		// required
-		return new ImageData(width, height, srcData.depth, srcData.palette, destBytesPerLine, newData);
+
+	    Color white = shell.getDisplay().getSystemColor(SWT.COLOR_WHITE);
+	    Color black = shell.getDisplay().getSystemColor(SWT.COLOR_BLACK);
+	    PaletteData palette = new PaletteData(new RGB[] { white.getRGB(), black.getRGB() });
+	    final ImageData sourceData = new ImageData(width, height, srcData.depth, palette, destBytesPerLine, newData);
+	    sourceData.transparentPixel = 0;
+	    
+		//return new ImageData(width, height, srcData.depth, srcData.palette, destBytesPerLine, newData);
+		return sourceData;
 	}
 }
 

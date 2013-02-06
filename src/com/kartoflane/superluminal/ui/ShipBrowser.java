@@ -21,6 +21,8 @@ import com.kartoflane.superluminal.core.ConfigIO;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.elements.FTLShip;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
 
 
 public class ShipBrowser
@@ -116,7 +118,6 @@ public class ShipBrowser
 		btnRes.setLayoutData(gd_btnRes);
 		btnRes.setText("Browse...");
 		
-				
 		tree = new Tree(shell, SWT.BORDER);
 		tree.setFont(Main.appFont);
 		GridData gd_tree = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 2);
@@ -155,7 +156,7 @@ public class ShipBrowser
 		
 	//=====================================
 	// === BOOKMARK LISTENERS
-
+		
 		btnData.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -199,6 +200,13 @@ public class ShipBrowser
 			{
 				Main.shell.setEnabled(true);
 				shell.dispose();
+			}
+		});
+
+		tree.addMouseListener(new MouseAdapter() {
+			public void mouseDoubleClick(MouseEvent e) {
+				if (btnConfirm.getEnabled())
+					btnConfirm.notifyListeners(SWT.Selection, null);
 			}
 		});
 		

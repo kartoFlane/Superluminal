@@ -97,4 +97,8 @@ public class FTLRoom extends Placeable implements Serializable, Comparable<FTLRo
 									: Slide.NO;
 		return dir;
 	}
+	
+	public static void draw() {
+		
+	}
 }

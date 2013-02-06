@@ -179,7 +179,7 @@ public class PropertiesWindow
 		textPower.setEnabled(false);
 		textLevel.setEnabled(false);
 		btnOk.setEnabled(false);
-		btnAvailable.setEnabled(false);
+		//btnAvailable.setEnabled(false);
 		
 		shell.open();
 		
@@ -202,6 +202,9 @@ public class PropertiesWindow
 				: (sys.equals(Systems.ARTILLERY))
 					? 4
 					: 0;
+			max = (!Main.ship.isPlayer && (sys.equals(Systems.WEAPONS) || sys.equals(Systems.ENGINES) || sys.equals(Systems.SHIELDS)))
+					? 10
+					: max;
 		}
 
 		shell.setImage(Main.systemsMap.get(sys));
@@ -214,14 +217,15 @@ public class PropertiesWindow
 		scalePower.setSelection(power);
 		textLevel.setMaximum(scaleLevel.getMaximum());
 		textPower.setMaximum(scalePower.getMaximum());
-		
+
+		btnAvailable.setSelection(Main.ship.startMap.get(sys));
+		/*
 		if (!sys.equals(Systems.EMPTY) && Main.ship.isPlayer) {
 			btnAvailable.setSelection(Main.ship.startMap.get(sys));
 			btnAvailable.setEnabled(true);
 		} else {
-			btnAvailable.setSelection(false);
 			btnAvailable.setSelection(true);
-		}
+		}*/
 
 		if (!sys.equals(Systems.EMPTY) && !sys.equals(Systems.PILOT) && !sys.equals(Systems.DOORS) && !sys.equals(Systems.SENSORS)) {
 			scalePower.setEnabled(true);
