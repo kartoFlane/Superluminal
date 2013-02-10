@@ -141,6 +141,7 @@ public class PropertiesWindow
 				Main.ship.powerMap.put(sys, ((i<=Integer.valueOf(textLevel.getText()) ? i : Integer.valueOf(textLevel.getText()))));
 
 				Main.ship.startMap.put(sys, btnAvailable.getSelection());
+				Main.systemsMap.get(sys).setAvailable(btnAvailable.getSelection());
 				
 				shell.setVisible(false);
 			}
@@ -183,7 +184,7 @@ public class PropertiesWindow
 		
 		shell.open();
 		
-		String s = Main.selectedRoom.sys.toString().toLowerCase();
+		String s = Main.selectedRoom.getSystem().toString().toLowerCase();
 		s = s.substring(0, 1).toUpperCase() + s.substring(1, s.length());
 		shell.setText(s);
 		shell.setLocation(Main.shell.getLocation().x+100, Main.shell.getLocation().y+100);
@@ -191,7 +192,7 @@ public class PropertiesWindow
 		int level = 0;
 		int power = 0;
 		if (Main.selectedRoom != null) {
-			sys = Main.selectedRoom.sys;
+			sys = Main.selectedRoom.getSystem();
 			level = Main.ship.levelMap.get(sys);
 			power = Main.ship.powerMap.get(sys);
 			max = (sys.equals(Systems.PILOT) || sys.equals(Systems.OXYGEN) || sys.equals(Systems.TELEPORTER) || sys.equals(Systems.CLOAKING)
@@ -206,8 +207,6 @@ public class PropertiesWindow
 					? 10
 					: max;
 		}
-
-		shell.setImage(Main.systemsMap.get(sys));
 		
 		textLevel.setSelection(((level<1)?1:level));
 		textPower.setSelection(power);
@@ -218,7 +217,7 @@ public class PropertiesWindow
 		textLevel.setMaximum(scaleLevel.getMaximum());
 		textPower.setMaximum(scalePower.getMaximum());
 
-		btnAvailable.setSelection(Main.ship.startMap.get(sys));
+		btnAvailable.setSelection(Main.systemsMap.get(sys).isAvailable());
 		/*
 		if (!sys.equals(Systems.EMPTY) && Main.ship.isPlayer) {
 			btnAvailable.setSelection(Main.ship.startMap.get(sys));

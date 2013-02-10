@@ -241,7 +241,8 @@ public class ShipBrowser
 		btnConfirm.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				Main.shell.setEnabled(true);
-				Main.idList.clear();
+
+				Main.mntmClose.notifyListeners(SWT.Selection, null);
 				
 				ShipIO.loadShip(selectedShip, true);
 

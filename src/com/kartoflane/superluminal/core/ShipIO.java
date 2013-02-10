@@ -44,6 +44,7 @@ import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.elements.FTLRoom;
 import com.kartoflane.superluminal.elements.FTLShip;
 import com.kartoflane.superluminal.elements.Slide;
+import com.kartoflane.superluminal.elements.SystemBox;
 import com.kartoflane.superluminal.elements.Systems;
 import com.kartoflane.superluminal.ui.ShipBrowser;
 
@@ -308,11 +309,12 @@ ship:					while(sc.hasNext()) {
 														
 														r = shipBeingLoaded.getRoomWithId(id);
 														if (r != null) {
-															r.sys = Systems.valueOf(sysName);
+															r.assignSystem(Systems.valueOf(sysName));
 															
-															shipBeingLoaded.levelMap.put(r.sys, level);
-															shipBeingLoaded.powerMap.put(r.sys, power);
-										    				shipBeingLoaded.startMap.put(r.sys, start);
+															shipBeingLoaded.levelMap.put(r.getSystem(), level);
+															shipBeingLoaded.powerMap.put(r.getSystem(), power);
+										    				shipBeingLoaded.startMap.put(r.getSystem(), start);
+										    				Main.systemsMap.get(r.getSystem()).setAvailable(shipBeingLoaded.startMap.get(r.getSystem()));
 														} else {
 															errors.add("Error: load ship - rooms with specified ID not found. Some systems' data may be missing.");
 														}
@@ -577,11 +579,12 @@ scan:				while(sc.hasNext()) {
 									    			if (matcher.find()) {
 									    				debug(matcher.group(3) + " - looking for ID: "+matcher.group(7));
 									    				r = shipBeingLoaded.getRoomWithId(Integer.valueOf(matcher.group(7)));
-									    				r.sys = Systems.valueOf(matcher.group(3).toUpperCase());
+									    				r.assignSystem(Systems.valueOf(matcher.group(3).toUpperCase()));
 		
-										    			shipBeingLoaded.levelMap.put(r.sys, Integer.valueOf(matcher.group(5)));
-									    				shipBeingLoaded.powerMap.put(r.sys, Integer.valueOf(matcher.group(5)));
-									    				shipBeingLoaded.startMap.put(r.sys, Boolean.valueOf(matcher.group(9)));
+										    			shipBeingLoaded.levelMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
+									    				shipBeingLoaded.powerMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
+									    				shipBeingLoaded.startMap.put(r.getSystem(), Boolean.valueOf(matcher.group(9)));
+									    				Main.systemsMap.get(r.getSystem()).setAvailable(shipBeingLoaded.startMap.get(r.getSystem()));
 									    				
 									    				str = matcher.group(12);
 									    				s = matcher.group(11);
@@ -600,10 +603,10 @@ scan:				while(sc.hasNext()) {
 									    							errors.add("Error: load system images - system image not found.");
 									    						}
 									    					}
-									    				} else if (!r.sys.equals(Systems.TELEPORTER) && !r.sys.equals(Systems.EMPTY)) {
+									    				} else if (!r.getSystem().equals(Systems.TELEPORTER) && !r.getSystem().equals(Systems.EMPTY)) {
 									    					// load default sysImg for the room (teleporter doesn't have default graphic)
 									    					if (Main.loadSystem) {
-										    					r.img = "room_"+r.sys.toString().toLowerCase();
+										    					r.img = "room_"+r.getSystem().toString().toLowerCase();
 										    					r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
 										    					f = new File(r.img);
 									    						if (loadingSwitch) { 
@@ -630,10 +633,10 @@ scan:				while(sc.hasNext()) {
 									    					if (matcher.find()) {
 									    						r.slot = Integer.valueOf(matcher.group(3));
 									    					}
-									    				} else if (r.sys.equals(Systems.WEAPONS) || r.sys.equals(Systems.SHIELDS) || r.sys.equals(Systems.ENGINES) || r.sys.equals(Systems.PILOT) || r.sys.equals(Systems.MEDBAY)) {
+									    				} else if (r.getSystem().equals(Systems.WEAPONS) || r.getSystem().equals(Systems.SHIELDS) || r.getSystem().equals(Systems.ENGINES) || r.getSystem().equals(Systems.PILOT) || r.getSystem().equals(Systems.MEDBAY)) {
 									    					// get defaults
-									    					r.slot = FTLRoom.getDefaultSlot(r.sys);
-									    					r.dir = FTLRoom.getDefaultDir(r.sys);
+									    					r.slot = FTLRoom.getDefaultSlot(r.getSystem());
+									    					r.dir = FTLRoom.getDefaultDir(r.getSystem());
 									    				}
 									    			}
 								    			} else if (!ignoreNextTag) {
@@ -641,10 +644,10 @@ scan:				while(sc.hasNext()) {
 									    			matcher = pattern.matcher(s);
 									    			if (matcher.find()) {
 									    				r = shipBeingLoaded.getRoomWithId(Integer.valueOf(matcher.group(7)));
-									    				r.sys = Systems.valueOf(matcher.group(3).toUpperCase());
+									    				r.assignSystem(Systems.valueOf(matcher.group(3).toUpperCase()));
 									    				
-										    			shipBeingLoaded.levelMap.put(r.sys, Integer.valueOf(matcher.group(5)));
-									    				shipBeingLoaded.powerMap.put(r.sys, Integer.valueOf(matcher.group(5)));
+										    			shipBeingLoaded.levelMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
+									    				shipBeingLoaded.powerMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
 									    			}
 								    			}
 								    			
@@ -793,6 +796,8 @@ scan:				while(sc.hasNext()) {
 	        
 	        if ((Main.dataPreloading && asActive) || !Main.dataPreloading) {
 	        	Main.ship = shipBeingLoaded;
+	        	
+	        	Main.updatePainter();
 
 				loadShipImages(shipBeingLoaded);
 
@@ -830,7 +835,7 @@ scan:				while(sc.hasNext()) {
 		FileReader filer;
 		Scanner scanner;
 		String s;
-		int i = 0;
+		int x = 0, y = 0;
 		FTLRoom room;
 		FTLDoor door;
 		Rectangle ellipse;
@@ -876,37 +881,41 @@ scan:				while(sc.hasNext()) {
 					room = new FTLRoom(0,0,0,0);
 					room.id = scanner.nextInt();
 						
-					i = scanner.nextInt();
-					room.rect.x = ship.offset.x*35 + i*35;
-					i = scanner.nextInt();
-					room.rect.y = ship.offset.y*35 + i*35;
-					i = scanner.nextInt();
-					room.rect.width = i*35;
-					i = scanner.nextInt();
-					room.rect.height = i*35;
-						
-					ship.rooms.add(room);
-					Main.idList.add(room.id);
-					debug("ROOM: (" + room.id + ") " + room.rect);
+					x = scanner.nextInt()*35 + ship.offset.x*35;
+					y = scanner.nextInt()*35 + ship.offset.y*35;
+					room.setLocation(x, y);
+					
+					x = scanner.nextInt()*35;
+					y = scanner.nextInt()*35;
+					room.setSize(x, y);
+					
+					room.add(shipBeingLoaded);
+					
+					debug("ROOM: (" + room.id + ") " + room.getBounds());
 					foundSection = true;
 				} else if (s.equals("DOOR")) {
 					door = new FTLDoor();
 					
-					i = scanner.nextInt();
-					door.rect.x = ship.offset.x*35 + i*35;
-					i = scanner.nextInt();
-					door.rect.y = ship.offset.y*35 + i*35;
+					x = scanner.nextInt()*35 + ship.offset.x*35;
+					y = scanner.nextInt()*35 + ship.offset.y*35;
+					door.setLocation(x, y);
+					
 					scanner.nextInt(); scanner.nextInt();
 					
-					i = scanner.nextInt();
-					door.horizontal = (i == 0) ? true : false;
-					
-					door.rect.x += ((door.horizontal) ? (2) : (-3));
-					door.rect.y += ((door.horizontal) ? (-3) : (2));
+					x = scanner.nextInt();
+					door.horizontal = (x == 0) ? true : false;
+
+					Point p = door.getLocation();
+					if (door.horizontal) {
+						door.setLocation(p.x+2, p.y-3);
+					} else {
+						door.setLocation(p.x-3, p.y+2);
+					}
 					door.fixRectOrientation();
-						
-					ship.doors.add(door);
-					debug("DOOR: (" + ((door.horizontal)?("HORIZONTAL"):("VERTICAL")) + ") " + door.rect.x/35 +", "+door.rect.y/35);
+
+					door.add(ship);
+					
+					debug("DOOR: (" + ((door.horizontal)?("HORIZONTAL"):("VERTICAL")) + ") " + door.getBounds().x/35 +", "+door.getBounds().y/35);
 					foundSection = true;
 				}
 			}
@@ -1476,7 +1485,7 @@ search:		while(sc.hasNext()) {
 			double progress = 0;
 			String img;
 			for (FTLRoom r : Main.ship.rooms) {
-				if (!r.sys.equals(Systems.EMPTY) && !r.sys.equals(Systems.TELEPORTER) && !isNull(r.img)) {
+				if (!r.getSystem().equals(Systems.EMPTY) && !r.getSystem().equals(Systems.TELEPORTER) && !isNull(r.img)) {
 					img = r.img.substring(r.img.lastIndexOf(pathDelimiter));
 					destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + img);
 					if (dontCheck || !isDefaultResource(destination)) {
@@ -1542,18 +1551,18 @@ search:		while(sc.hasNext()) {
 				fw.write("ROOM" + lineDelimiter);
 				fw.write(r.id + lineDelimiter);
 				
-				fw.write((r.rect.x-Main.ship.anchor.x-Main.ship.offset.x*35)/35 + lineDelimiter);
-				fw.write((r.rect.y-Main.ship.anchor.y-Main.ship.offset.y*35)/35 + lineDelimiter);
-				fw.write(r.rect.width/35 + lineDelimiter);
-				fw.write(r.rect.height/35 + lineDelimiter);
+				fw.write((r.getBounds().x-Main.ship.anchor.x-Main.ship.offset.x*35)/35 + lineDelimiter);
+				fw.write((r.getBounds().y-Main.ship.anchor.y-Main.ship.offset.y*35)/35 + lineDelimiter);
+				fw.write(r.getBounds().width/35 + lineDelimiter);
+				fw.write(r.getBounds().height/35 + lineDelimiter);
 			}
 			
 
 			int x,y;
 			for (FTLDoor d : Main.ship.doors) {
 				fw.write("DOOR" + lineDelimiter);
-				x = (d.rect.x-Main.ship.anchor.x-Main.ship.offset.x*35+(d.horizontal ? -2 : 3))/35;
-				y = (d.rect.y-Main.ship.anchor.y-Main.ship.offset.y*35+(d.horizontal ? 3 : -2))/35;
+				x = (d.getBounds().x-Main.ship.anchor.x-Main.ship.offset.x*35+(d.horizontal ? -2 : 3))/35;
+				y = (d.getBounds().y-Main.ship.anchor.y-Main.ship.offset.y*35+(d.horizontal ? 3 : -2))/35;
 				
 				debug("(" + x + ", " + y + ")");
 				
@@ -1675,20 +1684,20 @@ search:		while(sc.hasNext()) {
 				fw.write("\t<systemList>"+lineDelimiter);
 				
 				for (FTLRoom r : Main.ship.rooms) {
-					if (!r.sys.equals(Systems.EMPTY)) {
-						fw.write("\t\t<"+r.sys.toString().toLowerCase()+" power=\""+Main.ship.levelMap.get(r.sys)+"\" room=\""+r.id+"\" start=\""+Main.ship.startMap.get(r.sys)+"\"");
+					if (!r.getSystem().equals(Systems.EMPTY)) {
+						fw.write("\t\t<"+r.getSystem().toString().toLowerCase()+" power=\""+Main.ship.levelMap.get(r.getSystem())+"\" room=\""+r.id+"\" start=\""+Main.ship.startMap.get(r.getSystem())+"\"");
 						if (!isNull(r.img)) {
 							fw.write(" img=\""+r.img.substring(r.img.lastIndexOf(pathDelimiter)+1, r.img.lastIndexOf('.'))+"\"");
 						}
-						if (r.slot != -2 || r.sys.equals(Systems.MEDBAY)) {
+						if (r.slot != -2 || r.getSystem().equals(Systems.MEDBAY)) {
 							fw.write(">");
 							fw.write(lineDelimiter);
 							fw.write("\t\t\t" + "<slot>" + lineDelimiter);
-							if (!r.sys.equals(Systems.MEDBAY))
+							if (!r.getSystem().equals(Systems.MEDBAY))
 								fw.write("\t\t\t\t" + "<direction>"+r.dir.toString().toLowerCase()+"</direction>" + lineDelimiter);
 							fw.write("\t\t\t\t" + "<number>"+r.slot+"</number>" + lineDelimiter);
 							fw.write("\t\t\t" + "</slot>" + lineDelimiter);
-							fw.write("\t\t" + "</" + r.sys.toString().toLowerCase() + ">");
+							fw.write("\t\t" + "</" + r.getSystem().toString().toLowerCase() + ">");
 						} else {
 							fw.write("/>");
 						}
@@ -1766,10 +1775,10 @@ search:		while(sc.hasNext()) {
 				fw.write("\t<systemList>"+lineDelimiter);
 				
 				for (FTLRoom r : Main.ship.rooms) {
-					if (!r.sys.equals(Systems.EMPTY)) {
-						fw.write("\t\t<"+r.sys.toString().toLowerCase()+" power=\""+Main.ship.levelMap.get(r.sys)+"\" room=\""+r.id+"\"");
+					if (!r.getSystem().equals(Systems.EMPTY)) {
+						fw.write("\t\t<"+r.getSystem().toString().toLowerCase()+" power=\""+Main.ship.levelMap.get(r.getSystem())+"\" room=\""+r.id+"\"");
 						
-						if (Main.ship.startMap.get(r.sys)) {
+						if (Main.ship.startMap.get(r.getSystem())) {
 							fw.write("/>");
 						} else {
 							fw.write(" start=\"false\"/>");
@@ -1918,8 +1927,8 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 			r.sysImg.dispose();
 
 		try {
-			if (isNull(r.img) && !r.sys.equals(Systems.TELEPORTER) && !r.sys.equals(Systems.EMPTY)) // load default graphics (teleporter doesn't have default graphic)
-				r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + "room_" + r.sys.toString().toLowerCase() + ".png";
+			if (isNull(r.img) && !r.getSystem().equals(Systems.TELEPORTER) && !r.getSystem().equals(Systems.EMPTY)) // load default graphics (teleporter doesn't have default graphic)
+				r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + "room_" + r.getSystem().toString().toLowerCase() + ".png";
 			
 			if (Main.loadSystem && !isNull(r.img))
 				r.sysImg = (loadingSwitch) ? SWTResourceManager.getImage(r.img) : new Image(Main.shell.getDisplay(), r.img);
@@ -2034,6 +2043,7 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 		
 		if (Main.currentPath != null) {
 			Main.projectPath = Main.currentPath.substring(Main.currentPath.lastIndexOf(pathDelimiter));
+			Main.mntmClose.notifyListeners(SWT.Selection, null);
 	        loadShipProject(Main.currentPath);
 		}
 	}

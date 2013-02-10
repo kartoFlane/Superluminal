@@ -22,13 +22,22 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormAttachment;
 
+import com.kartoflane.superluminal.elements.Anchor;
+import com.kartoflane.superluminal.elements.CursorBox;
 import com.kartoflane.superluminal.elements.FTLDoor;
 import com.kartoflane.superluminal.elements.FTLItem;
 import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.elements.FTLRoom;
 import com.kartoflane.superluminal.elements.FTLShip;
+import com.kartoflane.superluminal.elements.Grid;
+import com.kartoflane.superluminal.elements.GridBox;
 import com.kartoflane.superluminal.elements.Slide;
+import com.kartoflane.superluminal.elements.SystemBox;
 import com.kartoflane.superluminal.elements.Systems;
+import com.kartoflane.superluminal.painter.ColorBox;
+import com.kartoflane.superluminal.painter.ImageBox;
+import com.kartoflane.superluminal.painter.LayeredPainter;
+import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.ui.ErrorDialog;
 import com.kartoflane.superluminal.ui.ExportDialog;
 import com.kartoflane.superluminal.ui.NewShipWindow;
@@ -61,9 +70,8 @@ public class Main
 	public final static int REACTOR_MAX_PLAYER = 25;
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
-	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "2013.02.2" + "-";
+	public final static String VERSION = "2013.02.7";
 	
 		// === Important objects
 	public static Shell shell;
@@ -74,6 +82,9 @@ public class Main
 	public static ExportDialog exDialog;
 	public static MessageBox box;
 	public static ErrorDialog erDialog;
+	public static Transform currentTransform;
+	public static LayeredPainter layeredPainter;
+	public static CursorBox cursor;
 	
 		// === Preferences
 		// ship explorer
@@ -121,7 +132,7 @@ public class Main
 	public static boolean allowRoomPlacement = true;
 	
 		// === Internal
-	public static boolean debug = false;
+	public static boolean debug = true;
 	/**
 	 * when set to true, all ship data is pre-loaded into hashmaps/sets when the ship browser is opened for the first time.
 	 * no need to do this, only one ship is being used at any given time.
@@ -170,7 +181,7 @@ public class Main
 	public static LinkedList<Image> rotatedFlipped = new LinkedList<Image>();
 	
 		// === Miscellaneous
-	private static Rectangle[] corners = new Rectangle[4];
+	public static Rectangle[] corners = new Rectangle[4];
 	private static Color highlightColor = null;
 	private static String lastMsg = "";
 	/**
@@ -193,10 +204,10 @@ public class Main
 	/**
 	 * Holds Image objects for easy reference, without the need to load them every time they're needed.
 	 */
-	public static HashMap<Systems, Image> systemsMap = new HashMap<Systems, Image>();
+	//public static HashMap<Systems, Image> systemsMap = new HashMap<Systems, Image>();
 
 	// === GUI elements' variables, for use in listeners and functions that reference them
-	private static Menu menuSystem;
+	public static Menu menuSystem;
 	//private static Label helpIcon;
 	private static Label text;
 	private static Label mGridPosText;
@@ -233,12 +244,29 @@ public class Main
 	private MenuItem mntmConToPlayer;
 	private MenuItem mntmConToEnemy;
 	
-	public static Font appFont = (SWTResourceManager.getFont("Segoe UI", 9, SWT.NORMAL));
+	public static Font appFont;
+	public static ToolItem tltmPointer;
+	public static ToolItem tltmRoom;
+	public static ToolItem tltmDoor;
+	public static ToolItem tltmMount;
+	public static ToolItem tltmSystem;
+
+	
+	public static Anchor anchor;
+	public static GridBox gridBox;
+	public static HashMap<Systems, SystemBox> systemsMap = new HashMap<Systems, SystemBox>();
+	public static Grid grid;
 	
 	// =================================================================================================== //
 	
 	/*
 	 * === TODO
+	 * 
+	 * - weaponArt odnosi sie do animations.xml, tam dopiero jest zdefiniowany uzywany image!
+	 * - shell.pack w ship properties zamiast sztywnego ustalania wielkosci - inaczej jest clipping przyciskow na dole
+	 * - usun width hint w hull/shield/etc images - zamiast tego daj minWidth (inaczej przyciski sie nie rozciagaja i tekst jest clippowany) 
+	 * - w exportdialog text field nie jest ukrywany jak okno jest poczatkowo otwierane i ship jest player ship
+	 * - przetestuj autoblueprints i blueprints na Macu
 	 * 
 	 * Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
 	 * 
@@ -305,15 +333,19 @@ public class Main
 		constantRedraw = ConfigIO.getBoolean("constantRedraw");
 		arbitraryPosOverride = ConfigIO.getBoolean("arbitraryPosOverride");
 		
-		// several levels of redundancy, in case someone, somewhere, somehow, didn't have one of those fonts...
+		appFont = new Font(Display.getCurrent(), "Monospaced", 9, SWT.NORMAL);
 		if (appFont == null) {
-			appFont = (SWTResourceManager.getFont("Arial", 9, SWT.NORMAL));
+			appFont = new Font(shell.getDisplay(), "Serif", 9, SWT.NORMAL);
 		}
 		if (appFont == null) {
-			appFont = (SWTResourceManager.getFont("Times New Roman", 9, SWT.NORMAL));
+			appFont = new Font(shell.getDisplay(), "Courier", 9, SWT.NORMAL);
 		}
 		
+		// used as a default, "null" transformation to fall back to in order to do regular drawing.
+		currentTransform = new Transform(shell.getDisplay());
+		
 		createContents();
+		
 		shell.setFont(appFont);
 		
 		if (!ShipIO.isNull(dataPath) && !ShipIO.isNull(resPath))
@@ -336,6 +368,9 @@ public class Main
 				fd_bgCanvas.right.offset = GRID_W*35;
 				fd_bgCanvas.bottom.offset = GRID_H*35;
 				bgCanvas.setSize(GRID_W*35, GRID_H*35);
+				
+				if (grid != null)
+					grid.setSize(GRID_W*35, GRID_H*35);
 			}
 		});
 		
@@ -344,27 +379,27 @@ public class Main
 		display.timerExec(INTERVAL, new Runnable() {
 			public void run() {
 				if (canvas.isDisposed()) return;
-
-				if (canvasActive) {
-					if (shellStateChange != shell.getMaximized()) {
-						shellStateChange = shell.getMaximized();
-						GRID_W = ((int) ((canvasBg.getBounds().width))/35);
-						GRID_H = ((int) ((canvasBg.getBounds().height))/35);
-						fd_canvas.right.offset = GRID_W*35;
-						fd_canvas.bottom.offset = GRID_H*35;
-						canvas.setSize(GRID_W*35, GRID_H*35);
-						fd_bgCanvas.right.offset = GRID_W*35;
-						fd_bgCanvas.bottom.offset = GRID_H*35;
-						bgCanvas.setSize(GRID_W*35, GRID_H*35);
-					}
-					if (constantRedraw && onCanvas)
-						canvas.redraw();
-					
-					// === update info text fields; mousePos and rudimentary ship info
-					mGridPosText.setText("(" + (int)(1+Math.floor(mousePos.x/35)) + ", " + (int)(1+Math.floor(mousePos.y/35)) + ")");
-					mPosText.setText("(" + mousePos.x + ", " + mousePos.y + ")");
-					shipInfoText.setText("rooms: " + ship.rooms.size() + ",  doors: " + ship.doors.size());
+				if (shellStateChange != shell.getMaximized()) {
+					shellStateChange = shell.getMaximized();
+					GRID_W = ((int) ((canvasBg.getBounds().width))/35);
+					GRID_H = ((int) ((canvasBg.getBounds().height))/35);
+					fd_canvas.right.offset = GRID_W*35;
+					fd_canvas.bottom.offset = GRID_H*35;
+					canvas.setSize(GRID_W*35, GRID_H*35);
+					fd_bgCanvas.right.offset = GRID_W*35;
+					fd_bgCanvas.bottom.offset = GRID_H*35;
+					bgCanvas.setSize(GRID_W*35, GRID_H*35);
+						
+					if (grid != null)
+						grid.setSize(GRID_W*35, GRID_H*35);
 				}
+					
+				// === update info text fields; mousePos and rudimentary ship info
+				mGridPosText.setText("(" + (int)(1+Math.floor(mousePos.x/35)) + ", " + (int)(1+Math.floor(mousePos.y/35)) + ")");
+				mPosText.setText("(" + mousePos.x + ", " + mousePos.y + ")");
+				if (ship != null)
+					shipInfoText.setText("rooms: " + ship.rooms.size() + ",  doors: " + ship.doors.size());
+
 				display.timerExec(INTERVAL, this);
 			}
 		});
@@ -382,31 +417,6 @@ public class Main
 		tempImage = SWTResourceManager.getImage(Main.class, "/org/eclipse/jface/dialogs/images/help.gif");
 		
 	// === Load images to a map for easy access
-		
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.PILOT.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.PILOT, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.DOORS.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.DOORS, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.SENSORS.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.SENSORS, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.OXYGEN.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.OXYGEN, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.MEDBAY.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.MEDBAY, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.SHIELDS.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.SHIELDS, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.WEAPONS.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.WEAPONS, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.ENGINES.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.ENGINES, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.DRONES.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.DRONES, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.TELEPORTER.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.TELEPORTER, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.CLOAKING.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.CLOAKING, tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/systems/s_"+Systems.ARTILLERY.toString().toLowerCase()+"_overlay.png");
-		systemsMap.put(Systems.ARTILLERY, tempImage);
 		
 		tempImage = SWTResourceManager.getImage(Main.class, "/img/room.png");
 		toolsMap.put("room", tempImage);
@@ -595,7 +605,7 @@ public class Main
 		toolBar.setLayoutData(gd_toolBar);
 		
 		// === Container -> Tools -> Pointer
-		final ToolItem tltmPointer = new ToolItem(toolBar, SWT.RADIO);
+		tltmPointer = new ToolItem(toolBar, SWT.RADIO);
 		tltmPointer.setWidth(60);
 		tltmPointer.setSelection(true);
 		tltmPointer.setImage(toolsMap.get("pointer"));
@@ -608,7 +618,7 @@ public class Main
 									+ShipIO.lineDelimiter+" -For weapon mounts, hull and shields, press down Shift for precision mode");
 		
 		// === Container -> Tools -> Room creation
-		final ToolItem tltmRoom = new ToolItem(toolBar, SWT.RADIO);
+		tltmRoom = new ToolItem(toolBar, SWT.RADIO);
 		tltmRoom.setWidth(60);
 		tltmRoom.setToolTipText("Room creation tool"
 								+ShipIO.lineDelimiter+" -Click and drag to create a room"
@@ -616,14 +626,14 @@ public class Main
 		tltmRoom.setImage(toolsMap.get("room"));
 		
 		// === Container -> Tools -> Door creation
-		final ToolItem tltmDoor = new ToolItem(toolBar, SWT.RADIO);
+		tltmDoor = new ToolItem(toolBar, SWT.RADIO);
 		tltmDoor.setWidth(60);
 		tltmDoor.setToolTipText("Door creation tool"
 								+ShipIO.lineDelimiter+" - Hover over an edge of a room and click to place door");
 		tltmDoor.setImage(toolsMap.get("door"));
 		
 		// === Container -> Tools -> Weapon mounting
-		final ToolItem tltmMount = new ToolItem(toolBar, SWT.RADIO);
+		tltmMount = new ToolItem(toolBar, SWT.RADIO);
 		tltmMount.setWidth(60);
 		tltmMount.setToolTipText("Weapon mounting tool"
 									+ShipIO.lineDelimiter+" -Click to place a weapon mount"
@@ -634,7 +644,7 @@ public class Main
 		tltmMount.setImage(toolsMap.get("mount"));
 
 		// === Container -> Tools -> System operating slot
-		final ToolItem tltmSystem = new ToolItem(toolBar, SWT.RADIO);
+		tltmSystem = new ToolItem(toolBar, SWT.RADIO);
 		tltmSystem.setWidth(60);
 		tltmSystem.setToolTipText("System operating station tool"
 									+ShipIO.lineDelimiter+" - Click to place an operating station (only mannable systems + medbay)"
@@ -665,8 +675,8 @@ public class Main
 		
 		// === Container -> buttonComposite -> Hull image button
 		btnHull = new Button(composite, SWT.NONE);
-		GridData gd_btnHull = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_btnHull.widthHint = 70;
+		GridData gd_btnHull = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		gd_btnHull.minimumWidth = 70;
 		btnHull.setLayoutData(gd_btnHull);
 		btnHull.setFont(appFont);
 		btnHull.setEnabled(false);
@@ -674,8 +684,8 @@ public class Main
 
 		// === Container -> buttonComposite -> shield image button
 		btnShields = new Button(composite, SWT.NONE);
-		GridData gd_btnShields = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_btnShields.widthHint = 70;
+		GridData gd_btnShields = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		gd_btnShields.minimumWidth = 70;
 		btnShields.setLayoutData(gd_btnShields);
 		btnShields.setFont(appFont);
 		btnShields.setToolTipText("Shield is aligned in relation to rooms. Place a room before choosing shield graphic.");
@@ -684,8 +694,8 @@ public class Main
 
 		// === Container -> buttonComposite -> floor image button
 		btnFloor = new Button(composite, SWT.NONE);
-		GridData gd_btnFloor = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_btnFloor.widthHint = 70;
+		GridData gd_btnFloor = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		gd_btnFloor.minimumWidth = 70;
 		btnFloor.setLayoutData(gd_btnFloor);
 		btnFloor.setFont(appFont);
 		btnFloor.setEnabled(false);
@@ -693,8 +703,8 @@ public class Main
 
 		// === Container -> buttonComposite -> cloak image button
 		btnCloak = new Button(composite, SWT.NONE);
-		GridData gd_btnCloak = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_btnCloak.widthHint = 70;
+		GridData gd_btnCloak = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		gd_btnCloak.minimumWidth = 70;
 		btnCloak.setLayoutData(gd_btnCloak);
 		btnCloak.setSize(70, 25);
 		btnCloak.setFont(appFont);
@@ -703,8 +713,8 @@ public class Main
 
 		// === Container -> buttonComposite -> miniship image button
 		btnMiniship = new Button(composite, SWT.NONE);
-		GridData gd_btnMiniship = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_btnMiniship.widthHint = 70;
+		GridData gd_btnMiniship = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		gd_btnMiniship.minimumWidth = 70;
 		btnMiniship.setLayoutData(gd_btnMiniship);
 		btnMiniship.setSize(70, 25);
 		btnMiniship.setEnabled(false);
@@ -737,6 +747,7 @@ public class Main
 		
 		// === Container -> Properties
 		final Button btnShipProperties = new Button(composite, SWT.NONE);
+		btnShipProperties.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		btnShipProperties.setFont(appFont);
 		btnShipProperties.setText("Properties");
 		btnShipProperties.setEnabled(false);
@@ -755,7 +766,7 @@ public class Main
 		// === Cotnainer -> set position composite -> X
 		Label lblX = new Label(coSetPosition, SWT.NONE);
 		lblX.setFont(appFont);
-		GridData gd_lblX = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblX = new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1);
 		gd_lblX.horizontalIndent = 5;
 		lblX.setLayoutData(gd_lblX);
 		lblX.setText("X:");
@@ -774,7 +785,7 @@ public class Main
 		btnXminus = new Button(setPosXBtnsCo, SWT.CENTER);
 		btnXminus.setToolTipText("Subtract 35");
 		btnXminus.setEnabled(false);
-		GridData gd_btnXminus = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
+		GridData gd_btnXminus = new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1);
 		gd_btnXminus.widthHint = 18;
 		btnXminus.setLayoutData(gd_btnXminus);
 		btnXminus.setFont(appFont);
@@ -785,7 +796,7 @@ public class Main
 		btnXplus = new Button(setPosXBtnsCo, SWT.CENTER);
 		btnXplus.setToolTipText("Add 35");
 		btnXplus.setEnabled(false);
-		GridData gd_btnXplus = new GridData(SWT.CENTER, SWT.FILL, true, true, 1, 1);
+		GridData gd_btnXplus = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
 		gd_btnXplus.widthHint = 18;
 		btnXplus.setLayoutData(gd_btnXplus);
 		btnXplus.setBounds(0, 0, 75, 25);
@@ -796,14 +807,12 @@ public class Main
 		txtX = new Text(coSetPosition, SWT.BORDER);
 		txtX.setEnabled(false);
 		txtX.setFont(appFont);
-		txtX.setTextLimit(4);
-		GridData gd_txtX = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
-		gd_txtX.widthHint = 40;
-		txtX.setLayoutData(gd_txtX);
+		txtX.setTextLimit(5);
+		txtX.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1));
 
 		// === Cotnainer -> set position composite -> Y
 		Label lblY = new Label(coSetPosition, SWT.NONE);
-		GridData gd_lblY = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblY = new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1);
 		gd_lblY.horizontalIndent = 5;
 		lblY.setLayoutData(gd_lblY);
 		lblY.setFont(appFont);
@@ -821,7 +830,7 @@ public class Main
 		// === Cotnainer -> set position composite -> Y buttons container -> Y minus
 		btnYminus = new Button(setPosYBtnsCo, SWT.CENTER);
 		btnYminus.setToolTipText("Subtract 35");
-		GridData gd_btnYminus = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
+		GridData gd_btnYminus = new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1);
 		gd_btnYminus.widthHint = 18;
 		btnYminus.setLayoutData(gd_btnYminus);
 		btnYminus.setFont(appFont);
@@ -831,7 +840,7 @@ public class Main
 		// === Cotnainer -> set position composite -> Y buttons container -> Y plus
 		btnYplus = new Button(setPosYBtnsCo, SWT.CENTER);
 		btnYplus.setToolTipText("Add 35");
-		GridData gd_btnYplus = new GridData(SWT.CENTER, SWT.FILL, true, true, 1, 1);
+		GridData gd_btnYplus = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
 		gd_btnYplus.widthHint = 18;
 		btnYplus.setLayoutData(gd_btnYplus);
 		btnYplus.setFont(appFont);
@@ -842,10 +851,8 @@ public class Main
 		txtY = new Text(coSetPosition, SWT.BORDER);
 		txtY.setEnabled(false);
 		txtY.setFont(appFont);
-		txtY.setTextLimit(4);
-		GridData gd_txtY = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
-		gd_txtY.widthHint = 40;
-		txtY.setLayoutData(gd_txtY);
+		txtY.setTextLimit(5);
+		txtY.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
 		new Label(coSetPosition, SWT.NONE);
 		
 		Label label_3 = new Label(composite, SWT.SEPARATOR | SWT.RIGHT);
@@ -866,19 +873,16 @@ public class Main
 		btnCloaked.setFont(appFont);
 		btnCloaked.setImage(SWTResourceManager.getImage(Main.class, "/img/smallsys/smallcloak.png"));
 		btnCloaked.setToolTipText("View the cloaked version.");
-		GridData gd_btnCloaked = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
-		gd_btnCloaked.widthHint = 30;
-		btnCloaked.setLayoutData(gd_btnCloaked);
+		btnCloaked.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 
 		// === Cotnainer -> state buttons composite -> pirate
 		btnPirate = new Button(stateBtnsCo, SWT.TOGGLE | SWT.CENTER);
 		btnPirate.setEnabled(false);
 		btnPirate.setFont(appFont);
 		btnPirate.setToolTipText("View the pirate version.");
-		GridData gd_btnPirate = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
-		gd_btnPirate.widthHint = 30;
-		btnPirate.setLayoutData(gd_btnPirate);
+		btnPirate.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnPirate.setImage(SWTResourceManager.getImage(Main.class, "/img/pirate.png"));
+		new Label(composite, SWT.NONE);
 		
 		// Info label
 		/*
@@ -910,6 +914,83 @@ public class Main
 		fd_canvas.top = new FormAttachment(0);
 		fd_canvas.left = new FormAttachment(0);
 		canvas.setLayoutData(fd_canvas);
+
+		layeredPainter = new LayeredPainter();
+		canvas.addPaintListener(layeredPainter);
+		
+		grid = new Grid(GRID_W, GRID_H);
+		
+		anchor = new Anchor();
+		anchor.setLocation(0,0,false);
+		anchor.setSize(GRID_W*35, GRID_H*35);
+		layeredPainter.add(anchor, LayeredPainter.ANCHOR);
+		
+		cursor = new CursorBox();
+		cursor.setBorderThickness(2);
+		cursor.setSize(35, 35);
+		cursor.setBorderColor(new RGB(0,0,255));
+		layeredPainter.add(cursor, LayeredPainter.SELECTION);
+
+		SystemBox tempBox = new SystemBox(Systems.PILOT);
+		tempBox.setImage("/img/systems/s_pilot_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.DOORS);
+		tempBox.setImage("/img/systems/s_doors_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.SENSORS);
+		tempBox.setImage("/img/systems/s_sensors_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.OXYGEN);
+		tempBox.setImage("/img/systems/s_oxygen_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.MEDBAY);
+		tempBox.setImage("/img/systems/s_medbay_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.SHIELDS);
+		tempBox.setImage("/img/systems/s_shields_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.WEAPONS);
+		tempBox.setImage("/img/systems/s_weapons_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.ENGINES);
+		tempBox.setImage("/img/systems/s_engines_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.DRONES);
+		tempBox.setImage("/img/systems/s_drones_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.TELEPORTER);
+		tempBox.setImage("/img/systems/s_teleporter_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.CLOAKING);
+		tempBox.setImage("/img/systems/s_cloaking_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
+		tempBox = new SystemBox(Systems.ARTILLERY);
+		tempBox.setImage("/img/systems/s_artillery_overlay.png", true);
+		systemsMap.put(tempBox.getSystemName(), tempBox);
+		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
+		tempBox.setVisible(false);
 		
 		// canvas supposed to handle drawing of non-dynamic elements of the display (hull, grid, shields, etc), but not really used (only draws grid, IIRC)
 		// REMINDER to be scrapped, find a dedicated 2d graphical library and use that
@@ -1129,7 +1210,7 @@ public class Main
 							e.gc.drawPoint(pt.x, pt.y);
 					// if no shield graphic is loaded or the image doesn't exist, draw a placeholder
 						} else {
-							c = e.display.getSystemColor(SWT.COLOR_DARK_BLUE);
+							c = new Color(e.display, 16, 96, 255);
 							e.gc.setBackground(c);
 							e.gc.setAlpha(36);
 							e.gc.fillOval(shieldEllipse.x, shieldEllipse.y, shieldEllipse.width, shieldEllipse.height);
@@ -1144,6 +1225,9 @@ public class Main
 		// the method used to draw stuff on the main display.
 		// I'm pretty sure I should NOT be using it this way, putting so many conditions in there, but then I can't really think of another way to do it.
 		// Split into more paintControl methods and redraw them separately only when needed to save a bit on performance?
+		
+		/*
+		
 		canvas.addPaintListener(new PaintListener() {
 			public void paintControl(PaintEvent e)
 			{
@@ -1217,10 +1301,10 @@ public class Main
 							} else {
 								// draw placeholders
 								
-								c = (selectedMount == m) ? e.display.getSystemColor(SWT.COLOR_MAGENTA) : e.display.getSystemColor(SWT.COLOR_YELLOW);
+								c = (selectedMount == m) ? new Color(e.display, 128, 0, 128) : new Color(e.display, 255, 255, 0);
 								e.gc.setForeground(c);
 								c.dispose();
-								c = (selectedMount == m) ? e.display.getSystemColor(SWT.COLOR_DARK_MAGENTA) : e.display.getSystemColor(SWT.COLOR_DARK_YELLOW);
+								c = (selectedMount == m) ? new Color(e.display, 128, 0, 128) : new Color(e.display, 128, 128, 0);
 								e.gc.setBackground(c);
 								c.dispose();
 								
@@ -1254,24 +1338,24 @@ public class Main
 							e.gc.setBackground(c);
 							c.dispose();
 							// draw regular room color
-							e.gc.fillRectangle(rm.rect.x, rm.rect.y, rm.rect.width, rm.rect.height);
+							e.gc.fillRectangle(rm.getBounds().x, rm.getBounds().y, rm.getBounds().width, rm.getBounds().height);
 							// draw room images
 							if (loadSystem && !ShipIO.isNull(rm.img) && rm.sysImg != null && !rm.sysImg.isDisposed()) {
-								e.gc.drawImage(rm.sysImg, 0, 0, rm.sysImg.getBounds().width, rm.sysImg.getBounds().height, rm.rect.x, rm.rect.y, rm.rect.width, rm.rect.height);
+								e.gc.drawImage(rm.sysImg, 0, 0, rm.sysImg.getBounds().width, rm.sysImg.getBounds().height, rm.getBounds().x, rm.getBounds().y, rm.getBounds().width, rm.getBounds().height);
 							}
 							// draw disabled-on-start overlay
 							if (!ship.startMap.get(rm.sys) && !rm.sys.equals(Systems.EMPTY)) {
-								c = e.display.getSystemColor(SWT.COLOR_DARK_RED);
+								c = new Color(e.display, 128, 0, 0);
 								e.gc.setBackground(c);
 								c.dispose();
 								e.gc.setAlpha(btnCloaked.getSelection() ? 64 : 128);
-								e.gc.fillRectangle(rm.rect.x, rm.rect.y, rm.rect.width, rm.rect.height);
+								e.gc.fillRectangle(rm.getBounds().x, rm.getBounds().y, rm.getBounds().width, rm.getBounds().height);
 								e.gc.setAlpha(btnCloaked.getSelection() ? 128 : 255);
 							}
 							// draw slot overlay
 							if (rm.slot != -2) {
 								e.gc.setAlpha(btnCloaked.getSelection() ? 96 : 192);
-								c = e.display.getSystemColor(SWT.COLOR_DARK_CYAN);
+								c = new Color(e.display, 0, 128, 128);
 								e.gc.setBackground(c);
 								if (!rm.sys.equals(Systems.MEDBAY)) {
 									e.gc.fillRectangle(getStationDirected(rm));
@@ -1283,10 +1367,10 @@ public class Main
 							}
 							// draw room id
 							if (debug) {
-								c = e.display.getSystemColor(SWT.COLOR_BLACK);
+								c = new Color(e.display, 0,0,0);
 								e.gc.setForeground(c);
 								c.dispose();
-								e.gc.drawString(""+rm.id, rm.rect.x+5, rm.rect.y+rm.rect.height-17, true);
+								e.gc.drawString(""+rm.id, rm.getBounds().x+5, rm.getBounds().y+rm.getBounds().height-17, true);
 							}
 						}
 					}
@@ -1300,7 +1384,7 @@ public class Main
 						
 						allowRoomPlacement = (mousePosLastClick.x > ship.anchor.x && mousePosLastClick.y > ship.anchor.y && mousePos.x > ship.anchor.x+1 && mousePos.y > ship.anchor.y+1 && !doesRectOverlap(fixRect(phantomRect), null));
 						if (allowRoomPlacement) {
-							c = e.display.getSystemColor(SWT.COLOR_GREEN);
+							c = new Color(e.display, 0, 255, 0);
 							e.gc.setForeground(c);
 							c.dispose();
 							c = new Color(e.display, 230, 225, 220);
@@ -1308,7 +1392,7 @@ public class Main
 							e.gc.fillRectangle(phantomRect);
 							c.dispose();
 						} else {
-							c = e.display.getSystemColor(SWT.COLOR_RED);
+							c = new Color(e.display, 255, 0 , 0);
 							e.gc.setForeground(c);
 							c.dispose();
 						}
@@ -1316,7 +1400,7 @@ public class Main
 					}
 					
 				// === DRAW GRID
-					c = e.display.getSystemColor(SWT.COLOR_DARK_GRAY);
+					c = new Color(e.display, 128, 128, 128);
 					e.gc.setForeground(c);
 					c.dispose();
 					e.gc.setAlpha(255);
@@ -1332,12 +1416,12 @@ public class Main
 						e.gc.setAlpha(btnCloaked.getSelection() ? 128 : 255);
 						for (FTLRoom rm : ship.rooms) {
 							e.gc.setLineWidth(4);
-							c = e.display.getSystemColor(SWT.COLOR_BLACK);
+							c = new Color(e.display, 0,0,0);
 							e.gc.setForeground(c);
 							c.dispose();
-							e.gc.drawRectangle(rm.rect.x, rm.rect.y, rm.rect.width, rm.rect.height);
+							e.gc.drawRectangle(rm.getBounds().x, rm.getBounds().y, rm.getBounds().width, rm.getBounds().height);
 							if (rm.sys != Systems.EMPTY) {
-								e.gc.drawImage(systemsMap.get(rm.sys), rm.rect.x+(rm.rect.width-32)/2, rm.rect.y+(rm.rect.height-32)/2);
+								e.gc.drawImage(systemsMap.get(rm.sys), rm.getBounds().x+(rm.getBounds().width-32)/2, rm.getBounds().y+(rm.getBounds().height-32)/2);
 							}
 						}
 						
@@ -1354,10 +1438,10 @@ public class Main
 							i++;
 							if (ship.weaponsBySet || i >= ship.weaponSet.size()) {
 								e.gc.setLineWidth(1);
-								c = e.display.getSystemColor(SWT.COLOR_YELLOW);
+								c = new Color(e.display, 255, 255, 0);
 								e.gc.setForeground(c);
 								c.dispose();
-								c = e.display.getSystemColor(SWT.COLOR_DARK_MAGENTA);
+								c = new Color(e.display, 128, 0, 128);
 								e.gc.setBackground(c);
 								c.dispose();
 								FTLMount.drawMirror(e, m.rotate, m.mirror, m.rect);	
@@ -1365,7 +1449,7 @@ public class Main
 							
 							e.gc.setAlpha(255);
 							e.gc.setLineWidth(2);
-							c = (selectedMount == m) ? e.display.getSystemColor(SWT.COLOR_YELLOW) : e.display.getSystemColor(SWT.COLOR_DARK_MAGENTA);
+							c = (selectedMount == m) ? new Color(e.display, 255, 255, 0) : new Color(e.display, 128, 0, 128);
 							e.gc.setForeground(c);
 							c.dispose();
 							FTLMount.drawDirection(e, m.slide, m.rect);
@@ -1388,7 +1472,7 @@ public class Main
 
 							if (highlightColor != null && !highlightColor.isDisposed())
 								highlightColor.dispose();
-							highlightColor = e.display.getSystemColor(SWT.COLOR_BLUE);
+							highlightColor = new Color(e.display, 0, 0, 255);
 							e.gc.setForeground(highlightColor);
 							e.gc.setAlpha(255);
 							
@@ -1421,7 +1505,7 @@ public class Main
 							// highlight already placed rooms
 							} else if (showRooms && tempRect != null && tempFTLRoom != null && !moveSelected && !resizeSelected) {
 								e.gc.setLineWidth(4);
-								e.gc.drawRectangle(tempFTLRoom.rect.x+2, tempFTLRoom.rect.y+2, tempFTLRoom.rect.width-4, tempFTLRoom.rect.height-4);
+								e.gc.drawRectangle(tempFTLRoom.getBounds().x+2, tempFTLRoom.getBounds().y+2, tempFTLRoom.getBounds().width-4, tempFTLRoom.getBounds().height-4);
 								
 							// tile highlight (empty grid cells)
 							} else if (tempRect != null && !moveSelected && !resizeSelected) { 
@@ -1433,12 +1517,12 @@ public class Main
 						} else if (tltmRoom.getSelection() && !leftMouseDown) {
 							if (!modShift && tempRect != null) {
 								if (!inBounds || doesRectOverlap(tempRect, null)) {
-									c = e.display.getSystemColor(SWT.COLOR_RED);
+									c = new Color(e.display, 255, 0, 0);
 									e.gc.setForeground(c);
 									c.dispose();
 									allowRoomPlacement = false;
 								} else {
-									c = e.display.getSystemColor(SWT.COLOR_GREEN);
+									c = new Color(e.display, 0, 255, 0);
 									e.gc.setForeground(c);
 									c.dispose();
 									allowRoomPlacement = true;
@@ -1453,12 +1537,12 @@ public class Main
 									e.gc.setAlpha(255);
 									e.gc.setLineWidth(3);
 									if (!inBounds || isDoorAtWall(tempDoor)) {
-										c = e.display.getSystemColor(SWT.COLOR_RED);
+										c = new Color(e.display, 255, 0, 0);
 										e.gc.setForeground(c);
 										c.dispose();
 										allowRoomPlacement = false;
 									} else {
-										c = e.display.getSystemColor(SWT.COLOR_GREEN);
+										c = new Color(e.display, 0, 255, 0);
 										e.gc.setForeground(c);
 										c.dispose();
 										allowRoomPlacement = true;
@@ -1466,9 +1550,9 @@ public class Main
 										parseRect = tempDoor;
 									}
 									if (tempDoor.width == 31) {
-										e.gc.drawRectangle(tempFTLRoom.rect.x, tempDoor.y+1, tempFTLRoom.rect.width, 4);
+										e.gc.drawRectangle(tempFTLRoom.getBounds().x, tempDoor.y+1, tempFTLRoom.getBounds().width, 4);
 									} else {
-										e.gc.drawRectangle(tempDoor.x+1, tempFTLRoom.rect.y, 4, tempFTLRoom.rect.height);
+										e.gc.drawRectangle(tempDoor.x+1, tempFTLRoom.getBounds().y, 4, tempFTLRoom.getBounds().height);
 									}
 								}
 							}
@@ -1505,7 +1589,7 @@ public class Main
 							if (it != null && !ShipIO.isNull(it.img)) {
 								strips = weaponStripMap.get(it.img);
 		
-								c = e.display.getSystemColor(SWT.COLOR_BLUE);
+								c = new Color(e.display, 0, 0, 255);
 								e.gc.setForeground(c);
 								c.dispose();
 								e.gc.setAlpha(255);
@@ -1528,7 +1612,7 @@ public class Main
 								}
 							}
 						} else {
-							c = e.display.getSystemColor(SWT.COLOR_BLUE);
+							c = new Color(e.display, 0, 0, 255);
 							e.gc.setForeground(c);
 							c.dispose();
 							e.gc.setAlpha(255);
@@ -1536,10 +1620,10 @@ public class Main
 							e.gc.drawRectangle(m.rect);
 						}
 						
-						c = e.display.getSystemColor(SWT.COLOR_WHITE);
+						c = new Color(e.display, 255, 255, 255);
 						e.gc.setForeground(c);
 						c.dispose();
-						c = e.display.getSystemColor(SWT.COLOR_BLACK);
+						c = new Color(e.display, 0,0,0);
 						e.gc.setBackground(c);
 						c.dispose();
 						e.gc.setFont(appFont);
@@ -1548,10 +1632,8 @@ public class Main
 						
 					// door selection
 					} else if (showRooms && selectedDoor != null) {
-						c = e.display.getSystemColor(SWT.COLOR_BLUE);
+						c = new Color(e.display, 0, 0, 255);
 						e.gc.setBackground(c);
-						c.dispose();
-						c = e.display.getSystemColor(SWT.COLOR_BLUE);
 						e.gc.setForeground(c);
 						c.dispose();
 						e.gc.setAlpha(128);
@@ -1565,27 +1647,25 @@ public class Main
 					} else if (showRooms && selectedRoom != null) {
 						e.gc.setAlpha(255);
 						e.gc.setLineWidth(2);
-						c = e.display.getSystemColor(SWT.COLOR_DARK_BLUE);
+						c = new Color(e.display, 0, 0, 128);
 						e.gc.setBackground(c);
-						c.dispose();
-						c = e.display.getSystemColor(SWT.COLOR_DARK_BLUE);
 						e.gc.setForeground(c);
 						c.dispose();
-						e.gc.drawRectangle(selectedRoom.rect.x+1, selectedRoom.rect.y+1, selectedRoom.rect.width-2, selectedRoom.rect.height-2);
+						e.gc.drawRectangle(selectedRoom.getBounds().x+1, selectedRoom.getBounds().y+1, selectedRoom.getBounds().width-2, selectedRoom.getBounds().height-2);
 						for (int i=0; i<4; i++)
 							e.gc.fillRectangle(corners[i]);
-						
-						c = e.display.getSystemColor(SWT.COLOR_BLUE);
+
+						c = new Color(e.display, 0, 0, 255);
 						e.gc.setBackground(c);
 						c.dispose();
 						e.gc.setAlpha(64);
-						e.gc.fillRectangle(selectedRoom.rect);
+						e.gc.fillRectangle(selectedRoom.getBounds());
 						
 					// hull selection
 					} else if (showHull && hullSelected) {
 						e.gc.setAlpha(255);
 						e.gc.setLineWidth(3);
-						c = e.display.getSystemColor(SWT.COLOR_BLUE);
+						c = new Color(e.display, 0, 0, 255);
 						e.gc.setForeground(c);
 						c.dispose();
 						e.gc.drawRectangle(ship.imageRect);
@@ -1594,7 +1674,7 @@ public class Main
 					} else if (showHull && shieldSelected) {
 						e.gc.setAlpha(255);
 						e.gc.setLineWidth(3);
-						c = e.display.getSystemColor(SWT.COLOR_BLUE);
+						c = new Color(e.display, 0, 0, 255);
 						e.gc.setForeground(c);
 						c.dispose();
 						e.gc.drawRectangle(shieldEllipse);
@@ -1604,12 +1684,12 @@ public class Main
 					if (tltmDoor.getSelection()) {
 						if (highlightColor != null && !highlightColor.isDisposed())
 							highlightColor.dispose();
-						highlightColor = e.display.getSystemColor(SWT.COLOR_RED);
+						highlightColor = new Color(e.display, 255, 0, 0);
 						phantomRect = getDoorFromMouse();
 						if (phantomRect != null && isDoorAtWall(phantomRect) && wallToDoor(getDoorFromMouse()) == null) {
 							if (highlightColor != null && !highlightColor.isDisposed())
 								highlightColor.dispose();
-							highlightColor = e.display.getSystemColor(SWT.COLOR_GREEN);
+							highlightColor = new Color(e.display, 0, 255, 0);
 							parseRect = (leftMouseDown) ? phantomRect : null;
 						}
 					}
@@ -1624,25 +1704,25 @@ public class Main
 							phantomRect = new Rectangle(mousePos.x-FTLMount.MOUNT_HEIGHT/2, mousePos.y-FTLMount.MOUNT_WIDTH/2, FTLMount.MOUNT_HEIGHT, FTLMount.MOUNT_WIDTH);
 						}
 						if ((!mountToolSlide.equals(Slide.NO) && ship.mounts.size()==Main.ship.weaponSlots) || (ship.mounts.size()==Main.ship.weaponSlots+1)) {
-							c = e.display.getSystemColor(SWT.COLOR_RED);
+							c = new Color(e.display, 255, 0, 0);
 							e.gc.setForeground(c);
 							c.dispose();
 						} else {
-							c = e.display.getSystemColor(SWT.COLOR_YELLOW);
+							c = new Color(e.display, 255, 255, 0);
 							e.gc.setForeground(c);
 							c.dispose();
 						}
 
 						e.gc.setAlpha(255);
 						e.gc.drawRectangle(phantomRect);
-						
-						c = e.display.getSystemColor(SWT.COLOR_DARK_MAGENTA);
+
+						c = new Color(e.display, 128, 0, 128);
 						e.gc.setForeground(c);
 						c.dispose();
 						FTLMount.drawDirection(e, mountToolSlide, phantomRect);
 						
 						e.gc.setLineWidth(1);
-						c = e.display.getSystemColor(SWT.COLOR_YELLOW);
+						c = new Color(e.display, 255, 255, 0);
 						e.gc.setForeground(c);
 						c.dispose();
 						FTLMount.drawMirror(e, mountToolHorizontal, mountToolMirror, phantomRect);
@@ -1667,11 +1747,11 @@ public class Main
 								if (tempFTLRoom != null && (!tempRect.intersects(getRectFromStation(tempFTLRoom)) || tempFTLRoom.slot == -2)
 										&& (tempFTLRoom.sys.equals(Systems.PILOT) || tempFTLRoom.sys.equals(Systems.SHIELDS) || tempFTLRoom.sys.equals(Systems.WEAPONS)
 												|| tempFTLRoom.sys.equals(Systems.ENGINES) || tempFTLRoom.sys.equals(Systems.MEDBAY))) {
-									c = e.display.getSystemColor(SWT.COLOR_GREEN);
+									c = new Color(e.display, 0, 255, 0);
 									e.gc.setForeground(c);
 									c.dispose();
 								} else {
-									c = e.display.getSystemColor(SWT.COLOR_RED);
+									c = new Color(e.display, 255, 0, 0);
 									e.gc.setForeground(c);
 									c.dispose();
 								}
@@ -1688,7 +1768,7 @@ public class Main
 						if (ship.vertical != 0) {
 							e.gc.setAlpha(196);
 							e.gc.setLineWidth(2);
-							c = e.display.getSystemColor(SWT.COLOR_BLUE);
+							c = new Color(e.display, 0, 0, 255);
 							e.gc.setForeground(c);
 							c.dispose();
 							e.gc.drawLine(0, ship.anchor.y-ship.vertical, GRID_W*35, ship.anchor.y-ship.vertical);
@@ -1698,7 +1778,7 @@ public class Main
 					
 					if (phantomRect != null && debug) {
 						e.gc.setLineWidth(2);
-						c = e.display.getSystemColor(SWT.COLOR_DARK_MAGENTA);
+						c = new Color(e.display, 128, 0, 128);
 						e.gc.setForeground(c);
 						c.dispose();
 						e.gc.setAlpha(128);
@@ -1707,8 +1787,8 @@ public class Main
 					
 				// === Pinned indicator
 					e.gc.setAlpha(255);
-					if (selectedRoom != null && selectedRoom.pinned) // room pin indicator
-						e.gc.drawImage(pinImage, selectedRoom.rect.x+3, selectedRoom.rect.y+3);
+					if (selectedRoom != null && selectedRoom.isPinned()) // room pin indicator
+						e.gc.drawImage(pinImage, selectedRoom.getBounds().x+3, selectedRoom.getBounds().y+3);
 					if (selectedDoor != null && selectedDoor.pinned) // door pin indicator
 						e.gc.drawImage(pinImage, (selectedDoor.horizontal) ? selectedDoor.rect.x+8 : selectedDoor.rect.x+7, (selectedDoor.horizontal) ? selectedDoor.rect.y-17 : selectedDoor.rect.y+8);
 					if (selectedMount != null && selectedMount.pinned) // mount pin indicator
@@ -1719,7 +1799,7 @@ public class Main
 						e.gc.drawImage(pinImage, shieldEllipse.x+5, shieldEllipse.y+5);
 					
 				} else {
-					c = e.display.getSystemColor(SWT.COLOR_WHITE);
+					c = new Color(e.display, 255, 255, 255);
 					e.gc.setForeground(c);
 					c.dispose();
 					Font font = new Font(shell.getDisplay(), "Helvetica", 12, SWT.BOLD);
@@ -1732,8 +1812,16 @@ public class Main
 			}
 		});
 		
-				
+		*/
+		
+		Integer[] ignoredLayers = {LayeredPainter.SELECTION, LayeredPainter.GRID, LayeredPainter.ANCHOR, LayeredPainter.SYSTEM_ICON};
+		MouseInputAdapter mouseListener = new MouseInputAdapter(ignoredLayers);
+		canvas.addMouseMoveListener(mouseListener);
+		canvas.addMouseTrackListener(mouseListener);
+		canvas.addMouseListener(mouseListener);
+		
 	// === BOOKMARK: MOUSE MOVE
+		/*
 		
 		canvas.addMouseMoveListener(new MouseMoveListener() {
 			public void mouseMove(MouseEvent e) {
@@ -1772,52 +1860,52 @@ public class Main
 						canvas.redraw();
 		
 					// === Move door
-					} else if (selectedDoor != null && !selectedDoor.pinned) {
-						phantomRect = new Rectangle(selectedDoor.rect.x, selectedDoor.rect.y, selectedDoor.rect.width, selectedDoor.rect.height);
+					} else if (selectedDoor != null && !selectedDoor.isPinned()) {
+						phantomRect = new Rectangle(selectedDoor.getBounds().x, selectedDoor.getBounds().y, selectedDoor.getBounds().width, selectedDoor.getBounds().height);
 						x = e.x;
 						y = e.y;
 						
 						phantomRect.x = Math.round(x / 35) * 35 + ((selectedDoor.horizontal) ? (2) : (-3));
 						phantomRect.y = Math.round(y / 35) * 35 + ((selectedDoor.horizontal) ? (-3) : (2));
-						if (x >= ship.anchor.x && x + selectedDoor.rect.width < GRID_W * 35 + 35 && wallToDoor(phantomRect) == null && isDoorAtWall(phantomRect)) {
-							selectedDoor.rect.x = phantomRect.x;
+						if (x >= ship.anchor.x && x + selectedDoor.getBounds().width < GRID_W * 35 + 35 && wallToDoor(phantomRect) == null && isDoorAtWall(phantomRect)) {
+							selectedDoor.getBounds().x = phantomRect.x;
 						}
-						if (y >= ship.anchor.y && y + selectedDoor.rect.height < GRID_H * 35 + 35 && wallToDoor(phantomRect) == null && isDoorAtWall(phantomRect)) {
-							selectedDoor.rect.y = phantomRect.y;
+						if (y >= ship.anchor.y && y + selectedDoor.getBounds().height < GRID_H * 35 + 35 && wallToDoor(phantomRect) == null && isDoorAtWall(phantomRect)) {
+							selectedDoor.getBounds().y = phantomRect.y;
 						}
 						
 						canvas.redraw();
 						
 					// === Move room
-					} else if (selectedRoom != null && !selectedRoom.pinned) {
-						phantomRect = new Rectangle(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height);
+					} else if (selectedRoom != null && !selectedRoom.isPinned()) {
+						phantomRect = new Rectangle(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height);
 						x = e.x - dragRoomAnchor.x;
 						y = e.y - dragRoomAnchor.y;
 						
 						phantomRect.x = roundToGrid(x);
 						phantomRect.y = roundToGrid(y);
 						
-						phantomRect.x = (phantomRect.x+phantomRect.width < GRID_W*35+35) ? (phantomRect.x) : (selectedRoom.rect.x);
-						phantomRect.y = (phantomRect.y+phantomRect.height < GRID_H*35+35) ? (phantomRect.y) : (selectedRoom.rect.y);
+						phantomRect.x = (phantomRect.x+phantomRect.width < GRID_W*35+35) ? (phantomRect.x) : (selectedRoom.getBounds().x);
+						phantomRect.y = (phantomRect.y+phantomRect.height < GRID_H*35+35) ? (phantomRect.y) : (selectedRoom.getBounds().y);
 						
 						phantomRect.width =  (phantomRect.x < ship.anchor.x)
 												? (phantomRect.width + (ship.anchor.x - phantomRect.x))
-												: (selectedRoom.rect.width);
+												: (selectedRoom.getBounds().width);
 												
 						phantomRect.height = (phantomRect.y < ship.anchor.y)
 												? (phantomRect.height + (ship.anchor.y - phantomRect.y))
-												: (selectedRoom.rect.height);
+												: (selectedRoom.getBounds().height);
 						
-						if (!doesRectOverlap(phantomRect, selectedRoom.rect)) {
-							selectedRoom.rect.x = (x >= ship.anchor.x)
-													? ((x + selectedRoom.rect.width < GRID_W * 35 + 35)
+						if (!doesRectOverlap(phantomRect, selectedRoom.getBounds())) {
+							selectedRoom.getBounds().x = (x >= ship.anchor.x)
+													? ((x + selectedRoom.getBounds().width < GRID_W * 35 + 35)
 														? (phantomRect.x)
-														: (selectedRoom.rect.x))
+														: (selectedRoom.getBounds().x))
 													: (ship.anchor.x);
-							selectedRoom.rect.y = (y >= ship.anchor.y)
-													? ((y + selectedRoom.rect.height < GRID_H * 35 + 35)
+							selectedRoom.getBounds().y = (y >= ship.anchor.y)
+													? ((y + selectedRoom.getBounds().height < GRID_H * 35 + 35)
 														? (phantomRect.y)
-														: (selectedRoom.rect.y))
+														: (selectedRoom.getBounds().y))
 													: (ship.anchor.y);
 						}
 						updateCorners(selectedRoom);
@@ -1856,8 +1944,8 @@ public class Main
 						
 			// === RESIZE
 				// === Resize Room
-				} else if (tltmPointer.getSelection() && resizeSelected && selectedRoom != null && canvasActive && !selectedRoom.pinned) {
-					phantomRect = new Rectangle(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height);
+				} else if (tltmPointer.getSelection() && resizeSelected && selectedRoom != null && canvasActive && !selectedRoom.isPinned()) {
+					phantomRect = new Rectangle(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height);
 		
 					x = e.x - dragRoomAnchor.x;
 					y = e.y - dragRoomAnchor.y;
@@ -1886,13 +1974,13 @@ public class Main
 		
 					phantomRect = fixRect(phantomRect);
 					
-					if (phantomRect.x >= ship.anchor.x && phantomRect.x+phantomRect.width < GRID_W*35+35 && !doesRectOverlap(phantomRect, selectedRoom.rect)) {
-						selectedRoom.rect.x = phantomRect.x;
-						selectedRoom.rect.width = (phantomRect.width == 0) ? 35 : phantomRect.width;
+					if (phantomRect.x >= ship.anchor.x && phantomRect.x+phantomRect.width < GRID_W*35+35 && !doesRectOverlap(phantomRect, selectedRoom.getBounds())) {
+						selectedRoom.getBounds().x = phantomRect.x;
+						selectedRoom.getBounds().width = (phantomRect.width == 0) ? 35 : phantomRect.width;
 					}
-					if (phantomRect.y >= ship.anchor.y && phantomRect.y+phantomRect.height < GRID_H * 35+35 && !doesRectOverlap(phantomRect, selectedRoom.rect)) {
-						selectedRoom.rect.y = phantomRect.y;
-						selectedRoom.rect.height = (phantomRect.height == 0) ? 35 : phantomRect.height;
+					if (phantomRect.y >= ship.anchor.y && phantomRect.y+phantomRect.height < GRID_H * 35+35 && !doesRectOverlap(phantomRect, selectedRoom.getBounds())) {
+						selectedRoom.getBounds().y = phantomRect.y;
+						selectedRoom.getBounds().height = (phantomRect.height == 0) ? 35 : phantomRect.height;
 					}
 					
 					updateCorners(selectedRoom);
@@ -1998,6 +2086,10 @@ public class Main
 		canvas.addMouseListener(new MouseListener() {
 			@Override
 			public void mouseDown(MouseEvent e) {
+				for (FTLRoom r : ship.rooms) {
+					r.mouseDown(e);
+				}
+				
 				mousePosLastClick.x = e.x;
 				mousePosLastClick.y = e.y;
 				
@@ -2086,16 +2178,16 @@ public class Main
 	            			phantomRect.y = mousePos.y;
 	            			phantomRect.width = selectedMount.rect.x;
 	            			phantomRect.height = selectedMount.rect.y;
-						} if (selectedRoom != null && selectedRoom.rect.contains(mousePos)) {
+						} if (selectedRoom != null && selectedRoom.getBounds().contains(mousePos)) {
 							if (corners[0].contains(mousePosLastClick) || corners[1].contains(mousePosLastClick) || corners[2].contains(mousePosLastClick) || corners[3].contains(mousePosLastClick)) {
 								dragRoomAnchor = findFarthestCorner((FTLRoom) selectedRoom, mousePosLastClick);
 								resizeSelected = true;
-							} else if (selectedRoom.rect.contains(mousePosLastClick)) {
+							} else if (selectedRoom.getBounds().contains(mousePosLastClick)) {
 								moveSelected = true;
-								dragRoomAnchor.x = e.x - selectedRoom.rect.x;
-								dragRoomAnchor.y = e.y - selectedRoom.rect.y;
+								dragRoomAnchor.x = e.x - selectedRoom.getBounds().x;
+								dragRoomAnchor.y = e.y - selectedRoom.getBounds().y;
 							}
-						} else if (selectedDoor != null && selectedDoor.rect.contains(mousePos)) {
+						} else if (selectedDoor != null && selectedDoor.getBounds().contains(mousePos)) {
 							moveSelected = true;
 						}
 					} else if (tltmRoom.getSelection() && onCanvas) {
@@ -2112,15 +2204,17 @@ public class Main
 	// === BOOKMARK: MOUSE UP
 			@Override
 			public void mouseUp(MouseEvent e) {
+				
 				onCanvas = true;
 				moveSelected = false;
 				
 				if (highlightColor != null && !highlightColor.isDisposed())
 					highlightColor.dispose();
-				highlightColor = shell.getDisplay().getSystemColor(SWT.COLOR_GREEN);
+				highlightColor = new Color(shell.getDisplay(), 0, 255, 0);
 				if (canvasActive) {
 					if (selectedRoom != null && resizeSelected) {
-						selectedRoom.rect = fixRect(selectedRoom.rect);
+						//selectedRoom.getBounds() = fixRect(selectedRoom.getBounds());
+						selectedRoom.setBounds(fixRect(selectedRoom.getBounds()));
 					}
 					
 					if (tltmPointer.getSelection()) {
@@ -2202,6 +2296,7 @@ public class Main
 							idList.add(r.id);
 	
 							ship.rooms.add(r);
+							layeredPainter.add(r, LayeredPainter.ROOM);
 							parseRect = null;
 							phantomRect = null;
 							
@@ -2217,20 +2312,21 @@ public class Main
 							parseRect.y = roundToGrid(parseRect.y)+35;
 							if (parseRect.width == 31) {
 								// horizontal
-								r1 = new FTLRoom(parseRoom.rect.x, parseRoom.rect.y, parseRoom.rect.width, parseRect.y-parseRoom.rect.y);
-								parseRoom.rect.height = parseRoom.rect.y+parseRoom.rect.height-parseRect.y;
-								parseRoom.rect.y = parseRect.y;
+								r1 = new FTLRoom(parseRoom.getBounds().x, parseRoom.getBounds().y, parseRoom.getBounds().width, parseRect.y-parseRoom.getBounds().y);
+								parseRoom.getBounds().height = parseRoom.getBounds().y+parseRoom.getBounds().height-parseRect.y;
+								parseRoom.getBounds().y = parseRect.y;
 							} else {
 								// vertical
-								r1 = new FTLRoom(parseRoom.rect.x, parseRoom.rect.y, parseRect.x - parseRoom.rect.x, parseRoom.rect.height);
-								parseRoom.rect.width = parseRoom.rect.x+parseRoom.rect.width-parseRect.x;
-								parseRoom.rect.x = parseRect.x;
+								r1 = new FTLRoom(parseRoom.getBounds().x, parseRoom.getBounds().y, parseRect.x - parseRoom.getBounds().x, parseRoom.getBounds().height);
+								parseRoom.getBounds().width = parseRoom.getBounds().x+parseRoom.getBounds().width-parseRect.x;
+								parseRoom.getBounds().x = parseRect.x;
 							}
 							parseRoom.sys = Systems.EMPTY;
 							parseRoom = null;
 							selectedRoom = null;
 							
 							ship.rooms.add(r1);
+							layeredPainter.add(r1, LayeredPainter.ROOM);
 							r1.id = getLowestId();
 							idList.add(r1.id);
 							ship.reassignID();
@@ -2239,9 +2335,9 @@ public class Main
 						// === door creation
 					} else if (tltmDoor.getSelection() && onCanvas && parseRect != null && e.button == 1) {
 						boolean horizontal = parseRect.height == 6;
-						FTLDoor d = new FTLDoor(new Point(parseRect.x, parseRect.y), horizontal);
+						FTLDoor d = new FTLDoor(parseRect.x, parseRect.y, horizontal);
 						
-						ship.doors.add(d);
+						d.add(ship);
 						parseRect = null;
 						
 						// === weapon mount creation
@@ -2345,7 +2441,7 @@ public class Main
 			}
 		});
 
-		
+		*/
 		// === SELECTED ITEM POSITION
 		
 			txtX.addVerifyListener(new VerifyListener() {
@@ -2527,9 +2623,6 @@ public class Main
 					if (!ShipIO.isNull(path)) {
 						Main.ship.imagePath = path;
 						
-						//Main.ship.cloakPath = path.substring(0, path.lastIndexOf('_')) + "_cloak.png";
-						//Main.ship.floorPath = path.substring(0, path.lastIndexOf('_')) + "_floor.png";
-						
 						ShipIO.loadImage(path, "hull");
 						canvas.redraw();
 					}
@@ -2607,10 +2700,6 @@ public class Main
 					ship.shieldOverride = null;
 					if (shieldImage != null && !shieldImage.isDisposed() && !ShipIO.loadingSwitch) {
 						shieldImage.dispose();
-						/*shieldEllipse.x = 0;
-						shieldEllipse.y = 0;
-						shieldEllipse.width = 0;
-						shieldEllipse.height = 0;*/
 					}
 				} else if (sourceBtn == btnFloor) {
 					ship.floorPath = null;
@@ -2651,7 +2740,6 @@ public class Main
 					if (file.exists() && desktop != null) {
 						try {
 							desktop.open(file.getParentFile());
-							//desktop.browse(file.getParentFile().toURI());
 						} catch (IOException ex) {
 						}
 					}
@@ -2710,12 +2798,14 @@ public class Main
             		
             			// === element deletion
 	            	if (canvasActive && (selectedMount != null || selectedRoom != null || selectedDoor != null) && (e.keyCode == SWT.DEL || (e.stateMask == SWT.SHIFT && e.keyCode == 'd'))) {
-	            		if (ship.rooms.remove(selectedRoom)) {
-	            			idList.remove(selectedRoom.id);
+	            		if (selectedRoom != null) {
+	            			selectedRoom.dispose();
+	            			ship.rooms.remove(selectedRoom);
 	            			selectedRoom = null;
 	                		removeUnalignedDoors();
 	    					ship.reassignID();
 		            		canvas.redraw();
+		            		
 		            		if (ship.rooms.size() == 0) {
 		            			btnShields.setEnabled(false);
 		            			btnShields.setToolTipText("Shield is aligned in relation to rooms. Place a room before choosing shield graphic.");
@@ -2775,8 +2865,8 @@ public class Main
 	            		
 	            		// === pin
 	            	} else if (e.keyCode == '`') {
-	            		if (selectedRoom != null) selectedRoom.pinned = !selectedRoom.pinned;
-	            		if (selectedDoor != null) selectedDoor.pinned = !selectedDoor.pinned;
+	            		if (selectedRoom != null) selectedRoom.setPinned(!selectedRoom.isPinned());
+	            		if (selectedDoor != null) selectedDoor.setPinned(!selectedDoor.isPinned());
 	            		if (selectedMount != null) selectedMount.pinned = !selectedMount.pinned;
 	            		if (hullSelected) ship.hullPinned = !ship.hullPinned;
 	            		if (shieldSelected) ship.shieldPinned = !ship.shieldPinned;
@@ -2805,130 +2895,127 @@ public class Main
 			@Override
 			public void menuShown(MenuEvent e) {
 				if (selectedRoom != null) {
-					mntmEmpty.setSelection(selectedRoom.sys == Systems.EMPTY);
+					mntmEmpty.setSelection(selectedRoom.getSystem() == Systems.EMPTY);
 					// === subsystems
-					mntmPilot.setSelection(selectedRoom.sys == Systems.PILOT);
+					mntmPilot.setSelection(selectedRoom.getSystem() == Systems.PILOT);
 					mntmPilot.setEnabled(!isSystemAssigned(Systems.PILOT, selectedRoom));
-					mntmSensors.setSelection(selectedRoom.sys == Systems.SENSORS);
+					mntmSensors.setSelection(selectedRoom.getSystem() == Systems.SENSORS);
 					mntmSensors.setEnabled(!isSystemAssigned(Systems.SENSORS, selectedRoom));
-					mntmDoors.setSelection(selectedRoom.sys == Systems.DOORS);
+					mntmDoors.setSelection(selectedRoom.getSystem() == Systems.DOORS);
 					mntmDoors.setEnabled(!isSystemAssigned(Systems.DOORS, selectedRoom));
 					// === systems
-					mntmEngines.setSelection(selectedRoom.sys == Systems.ENGINES);
+					mntmEngines.setSelection(selectedRoom.getSystem() == Systems.ENGINES);
 					mntmEngines.setEnabled(!isSystemAssigned(Systems.ENGINES, selectedRoom));
-					mntmMedbay.setSelection(selectedRoom.sys == Systems.MEDBAY);
+					mntmMedbay.setSelection(selectedRoom.getSystem() == Systems.MEDBAY);
 					mntmMedbay.setEnabled(!isSystemAssigned(Systems.MEDBAY, selectedRoom));
-					mntmOxygen.setSelection(selectedRoom.sys == Systems.OXYGEN);
+					mntmOxygen.setSelection(selectedRoom.getSystem() == Systems.OXYGEN);
 					mntmOxygen.setEnabled(!isSystemAssigned(Systems.OXYGEN, selectedRoom));
-					mntmShields.setSelection(selectedRoom.sys == Systems.SHIELDS);
+					mntmShields.setSelection(selectedRoom.getSystem() == Systems.SHIELDS);
 					mntmShields.setEnabled(!isSystemAssigned(Systems.SHIELDS, selectedRoom));
-					mntmWeapons.setSelection(selectedRoom.sys == Systems.WEAPONS);
+					mntmWeapons.setSelection(selectedRoom.getSystem() == Systems.WEAPONS);
 					mntmWeapons.setEnabled(!isSystemAssigned(Systems.WEAPONS, selectedRoom));
 					// === special
-					mntmArtillery.setSelection(selectedRoom.sys == Systems.ARTILLERY);
+					mntmArtillery.setSelection(selectedRoom.getSystem() == Systems.ARTILLERY);
 					mntmArtillery.setEnabled(!isSystemAssigned(Systems.ARTILLERY, selectedRoom));
-					mntmCloaking.setSelection(selectedRoom.sys == Systems.CLOAKING);
+					mntmCloaking.setSelection(selectedRoom.getSystem() == Systems.CLOAKING);
 					mntmCloaking.setEnabled(!isSystemAssigned(Systems.CLOAKING, selectedRoom));
-					mntmDrones.setSelection(selectedRoom.sys == Systems.DRONES);
+					mntmDrones.setSelection(selectedRoom.getSystem() == Systems.DRONES);
 					mntmDrones.setEnabled(!isSystemAssigned(Systems.DRONES, selectedRoom));
-					mntmTeleporter.setSelection(selectedRoom.sys == Systems.TELEPORTER);
+					mntmTeleporter.setSelection(selectedRoom.getSystem() == Systems.TELEPORTER);
 					mntmTeleporter.setEnabled(!isSystemAssigned(Systems.TELEPORTER, selectedRoom));
 					// ===
-					mntmSysImage.setEnabled(!selectedRoom.sys.equals(Systems.EMPTY));
+					mntmSysImage.setEnabled(!selectedRoom.getSystem().equals(Systems.EMPTY));
 				}
 			}
 		});
 		
 		mntmEmpty.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				selectedRoom.sys = Systems.EMPTY;
-				canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
-				if (selectedRoom.sysImg != null && !selectedRoom.sysImg.isDisposed() && !ShipIO.loadingSwitch)
-					selectedRoom.sysImg.dispose();
-				canvas.redraw();
+				selectedRoom.assignSystem(Systems.EMPTY);
+				canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 			} });
 		mntmOxygen.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.OXYGEN, selectedRoom)) {
-					selectedRoom.sys = Systems.OXYGEN;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.OXYGEN);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmMedbay.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.MEDBAY, selectedRoom)) {
-					selectedRoom.sys = Systems.MEDBAY;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.MEDBAY);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmShields.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.SHIELDS, selectedRoom)) {
-					selectedRoom.sys = Systems.SHIELDS;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.SHIELDS);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmWeapons.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.WEAPONS, selectedRoom)) {
-					selectedRoom.sys = Systems.WEAPONS;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.WEAPONS);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmEngines.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.ENGINES, selectedRoom)) {
-					selectedRoom.sys = Systems.ENGINES;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.ENGINES);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmDoors.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.DOORS, selectedRoom)) {
-					selectedRoom.sys = Systems.DOORS;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.DOORS);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmPilot.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.PILOT, selectedRoom)) {
-					selectedRoom.sys = Systems.PILOT;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.PILOT);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmSensors.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.SENSORS, selectedRoom)) {
-					selectedRoom.sys = Systems.SENSORS;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.SENSORS);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmDrones.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.DRONES, selectedRoom)) {
-					selectedRoom.sys = Systems.DRONES;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.DRONES);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmArtillery.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.ARTILLERY, selectedRoom)) {
-					selectedRoom.sys = Systems.ARTILLERY;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.ARTILLERY);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmTeleporter.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.TELEPORTER, selectedRoom)) {
-					selectedRoom.sys = Systems.TELEPORTER;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.TELEPORTER);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmCloaking.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.CLOAKING, selectedRoom)) {
-					selectedRoom.sys = Systems.CLOAKING;
-					canvas.redraw(selectedRoom.rect.x, selectedRoom.rect.y, selectedRoom.rect.width, selectedRoom.rect.height, true);
+					selectedRoom.assignSystem(Systems.CLOAKING);
+					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
 		mntmSysImage.addSelectionListener(new SelectionAdapter() {
@@ -2966,6 +3053,8 @@ public class Main
 					ship.anchor.x = 140;
 					ship.anchor.y = 140;
 					print("New ship created.");
+					
+					anchor.setVisible(true);
 					
 					canvasActive = true;
 					tltmPointer.setEnabled(true);
@@ -3013,13 +3102,16 @@ public class Main
 			public void widgetSelected(SelectionEvent e) {
 				ShipBrowser shipBrowser = new ShipBrowser(shell);
 				shipBrowser.shell.open();
-				
+
 				shipBrowser.shell.addDisposeListener(new DisposeListener() {
 					@Override
 					public void widgetDisposed(DisposeEvent e)
 					{
-						if (ship != null ) {
+						if (ship != null) {
 							canvasActive = true;
+							
+							anchor.setVisible(true);
+							
 							tltmPointer.setEnabled(true);
 							tltmRoom.setEnabled(true);
 							tltmDoor.setEnabled(true);
@@ -3127,6 +3219,8 @@ public class Main
 				ShipIO.askLoadDir();
 				
 				if (ship != null) {
+					anchor.setVisible(true);
+					
 					canvasActive = true;
 					tltmPointer.setEnabled(true);
 					tltmRoom.setEnabled(true);
@@ -3194,7 +3288,11 @@ public class Main
 		mntmClose.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (ship != null) {
+					for (FTLRoom r : ship.rooms) {
+						r.dispose();
+					}
 					ship.rooms.clear();
+					
 					ship.doors.clear();
 					if (!ShipIO.loadingSwitch && hullImage != null && !hullImage.isDisposed())
 						hullImage.dispose();
@@ -3205,6 +3303,7 @@ public class Main
 					if (!ShipIO.loadingSwitch && cloakImage != null && !cloakImage.isDisposed())
 						cloakImage.dispose();
 				}
+				
 				btnCloaked.setEnabled(false);
 				hullImage = null;
 				shieldImage = null;
@@ -3217,6 +3316,8 @@ public class Main
 				shieldEllipse.y = 0;
 				shieldEllipse.width = 0;
 				shieldEllipse.height = 0;
+				
+				anchor.setVisible(false);
 
 				canvasActive = false;
 				
@@ -3450,27 +3551,40 @@ public class Main
 	/**
 	 * Aligns to closest line of the grid.
 	 */
-	public int roundToGrid(int a) {
+	public static int roundToGrid(int a) {
 		return Math.round(a/35)*35;
 	}
 	/**
 	 * Aligns to the lowest (left-most / top-most) line of the grid.
 	 */
-	public int downToGrid(int a) {
+	public static int downToGrid(int a) {
 		return (int) (Math.ceil(a/35)*35);
 	}
 	/**
 	 * Aligns to the highest (right-most / bottom-most) line of the grid.
 	 */
-	public int upToGrid(int a) {
+	public static int upToGrid(int a) {
 		return (int) (Math.floor(a/35)*35);
 	}
 	
 
 	//=================
 	// === GENERAL
+
+	public static void canvasRedraw(Rectangle rect, boolean all) {
+		Main.canvas.redraw(rect.x, rect.y, rect.width, rect.height, all);
+	}
 	
-	public Rectangle copyRect(Rectangle rect) {
+	public static void copyRect(Rectangle source, Rectangle destination) {
+		if (source != null && destination != null) {
+			destination.x = source.x;
+			destination.y = source.y;
+			destination.width = source.width;
+			destination.height = source.height;
+		}
+	}
+	
+	public static Rectangle cloneRect(Rectangle rect) {
 		return new Rectangle(rect.x, rect.y, rect.width, rect.height);
 	}
 
@@ -3480,7 +3594,7 @@ public class Main
 	 * @param r Rectangle that needs to be fixed.
 	 * @return Fixed rectangle
 	 */
-	public Rectangle fixRect(Rectangle r) {
+	public static Rectangle fixRect(Rectangle r) {
 		Rectangle rect = new Rectangle(0,0,0,0);
 		rect.x = r.width<0 ? r.x+r.width : r.x;
 		rect.y = r.height<0 ? r.y+r.height : r.y;
@@ -3496,9 +3610,9 @@ public class Main
 	 * @param treatAs if set to another rectangle, the self-exclusive check will be performed against that rectangle, and not the one in the first parameter. Can be set to null if not used.
 	 * @return true if rect given in parameter overlaps any of already placed rooms/rects.
 	 */
-	public boolean doesRectOverlap(Rectangle rect, Rectangle treatAs) {
+	public static boolean doesRectOverlap(Rectangle rect, Rectangle treatAs) {
 		for (FTLRoom r : ship.rooms) {
-			if (rect.intersects(r.rect) && ((treatAs != null && r.rect != treatAs) || (treatAs == null && r.rect != rect)) ) {
+			if (rect.intersects(r.getBounds()) && ((treatAs != null && r.getBounds() != treatAs) || (treatAs == null && r.getBounds() != rect)) ) {
 				return true;
 			}
 		}
@@ -3508,7 +3622,7 @@ public class Main
 	/**
 	 * Checks if a rect is wholly contained within another.
 	 */
-	public boolean containsRect(Rectangle r1, Rectangle r2) {
+	public static boolean containsRect(Rectangle r1, Rectangle r2) {
 		return r1.contains(r2.x, r2.y) && r1.contains(r2.x+r2.width, r2.y+r2.height); 
 	}
 	
@@ -3519,6 +3633,21 @@ public class Main
 				tempRect.x = x*35;
 				tempRect.y = y*35;
 				if (tempRect.contains(mousePosLastClick)) {
+					return tempRect;
+				}
+			}
+		}
+		return null;
+	}
+	
+	public static Rectangle getRectAt(int x, int y) {
+		Rectangle tempRect = new Rectangle(0,0,35,35);
+		Point p = new Point(x, y);
+		for(int i=0; i<GRID_W; i++) {
+			for(int j=0; j<GRID_H; j++) {
+				tempRect.x = i*35;
+				tempRect.y = j*35;
+				if (tempRect.contains(p)) {
 					return tempRect;
 				}
 			}
@@ -3546,10 +3675,10 @@ public class Main
 			switch (event) {
 				case (SWT.ARROW_UP):
 					if (selectedRoom != null) {
-						phantomRect = copyRect(selectedRoom.rect);
+						phantomRect = cloneRect(selectedRoom.getBounds());
 						phantomRect.y -= 35;
-						if (!doesRectOverlap(phantomRect, selectedRoom.rect) && phantomRect.y >= ship.anchor.y)
-							selectedRoom.rect.y -= 35;
+						if (!doesRectOverlap(phantomRect, selectedRoom.getBounds()) && phantomRect.y >= ship.anchor.y)
+							selectedRoom.getBounds().y -= 35;
 					}
 					if (selectedMount != null) selectedMount.rect.y -= (modShift) ? 35 : 1;
 					if (hullSelected) ship.imageRect.y -= (modShift) ? 35 : 1;
@@ -3557,10 +3686,10 @@ public class Main
 					break;
 				case (SWT.ARROW_DOWN):
 					if (selectedRoom != null) {
-						phantomRect = copyRect(selectedRoom.rect);
+						phantomRect = cloneRect(selectedRoom.getBounds());
 						phantomRect.y += 35;
-						if (!doesRectOverlap(phantomRect, selectedRoom.rect) && phantomRect.y + phantomRect.height <= GRID_H*35)
-							selectedRoom.rect.y += 35;
+						if (!doesRectOverlap(phantomRect, selectedRoom.getBounds()) && phantomRect.y + phantomRect.height <= GRID_H*35)
+							selectedRoom.getBounds().y += 35;
 					}
 					if (selectedMount != null) selectedMount.rect.y += (modShift) ? 35 : 1;
 					if (hullSelected) ship.imageRect.y += (modShift) ? 35 : 1;
@@ -3568,10 +3697,10 @@ public class Main
 					break;
 				case (SWT.ARROW_LEFT):
 					if (selectedRoom != null) {
-						phantomRect = copyRect(selectedRoom.rect);
+						phantomRect = cloneRect(selectedRoom.getBounds());
 						phantomRect.x -= 35;
-						if (!doesRectOverlap(phantomRect, selectedRoom.rect) && phantomRect.x >= ship.anchor.x)
-							selectedRoom.rect.x -= 35;
+						if (!doesRectOverlap(phantomRect, selectedRoom.getBounds()) && phantomRect.x >= ship.anchor.x)
+							selectedRoom.getBounds().x -= 35;
 					}
 					if (selectedMount != null) selectedMount.rect.x -= (modShift) ? 35 : 1;
 					if (hullSelected) ship.imageRect.x -= (modShift) ? 35 : 1;
@@ -3579,10 +3708,10 @@ public class Main
 					break;
 				case (SWT.ARROW_RIGHT):
 					if (selectedRoom != null) {
-						phantomRect = copyRect(selectedRoom.rect);
+						phantomRect = cloneRect(selectedRoom.getBounds());
 						phantomRect.x += 35;
-						if (!doesRectOverlap(phantomRect, selectedRoom.rect) && phantomRect.x + phantomRect.width <= GRID_W*35)
-							selectedRoom.rect.x += 35;
+						if (!doesRectOverlap(phantomRect, selectedRoom.getBounds()) && phantomRect.x + phantomRect.width <= GRID_W*35)
+							selectedRoom.getBounds().x += 35;
 					}
 					if (selectedMount != null) selectedMount.rect.x += (modShift) ? 35 : 1;
 					if (hullSelected) ship.imageRect.x += (modShift) ? 35 : 1;
@@ -3608,15 +3737,14 @@ public class Main
 	//=================
 	// === ROOM RELATED
 	
-	public void updateCorners(FTLRoom r) {
-		corners[0] = new Rectangle(r.rect.x, r.rect.y, CORNER, CORNER);
-		corners[1] = new Rectangle(r.rect.x+r.rect.width-CORNER, r.rect.y, CORNER, CORNER);
-		corners[2] = new Rectangle(r.rect.x, r.rect.y+r.rect.height-CORNER, CORNER, CORNER);
-		corners[3] = new Rectangle(r.rect.x+r.rect.width-CORNER, r.rect.y+r.rect.height-CORNER, CORNER, CORNER);
-		r.updateCorners();
+	public static void updateCorners(FTLRoom r) {
+		corners[0] = new Rectangle(r.getBounds().x, r.getBounds().y, CORNER, CORNER);
+		corners[1] = new Rectangle(r.getBounds().x+r.getBounds().width-CORNER, r.getBounds().y, CORNER, CORNER);
+		corners[2] = new Rectangle(r.getBounds().x, r.getBounds().y+r.getBounds().height-CORNER, CORNER, CORNER);
+		corners[3] = new Rectangle(r.getBounds().x+r.getBounds().width-CORNER, r.getBounds().y+r.getBounds().height-CORNER, CORNER, CORNER);
 	}
 
-	public int getLowestId() {
+	public static int getLowestId() {
 		int i = -1;
 		idList.add(-1);
 		while(i < GRID_W*GRID_H && idList.contains(i)) {
@@ -3625,7 +3753,7 @@ public class Main
 		return i;
 	}
 	
-	public Point findFarthestCorner(FTLRoom r, Point p) {
+	public static Point findFarthestCorner(FTLRoom r, Point p) {
 		double d = 0;
 		double t = 0;
 		Point pt = null;
@@ -3642,7 +3770,7 @@ public class Main
 	public static FTLRoom getRoomContainingRect(Rectangle rect) {
 		if (rect != null) {
 			for (FTLRoom r : ship.rooms) {
-				if (r.rect.intersects(rect))
+				if (r.getBounds().intersects(rect))
 					return r;
 			}
 		}
@@ -3651,7 +3779,7 @@ public class Main
 
 	public static boolean isSystemAssigned(Systems sys, FTLRoom r) {
 		for (FTLRoom rm : ship.rooms) {
-			if (r != null && rm != r && rm.sys == sys)
+			if (r != null && rm != r && rm.getSystem() == sys)
 				return true;
 		}
 		return false;
@@ -3659,7 +3787,7 @@ public class Main
 	
 	public static boolean isSystemAssigned(Systems sys) {
 		for (FTLRoom rm : ship.rooms) {
-			if (rm.sys == sys)
+			if (rm.getSystem() == sys)
 				return true;
 		}
 		return false;
@@ -3667,27 +3795,27 @@ public class Main
 	
 	public static FTLRoom getRoomWithSystem(Systems sys) {
 		for (FTLRoom rm : ship.rooms) {
-			if (rm.sys.equals(sys))
+			if (rm.getSystem().equals(sys))
 				return rm;
 		}
 		return null;
 	}
 	
 	public static Rectangle getRectFromStation(FTLRoom r) {
-		int w = r.rect.width/35;
+		int w = r.getBounds().width/35;
 		int y = (int) Math.floor(r.slot/w);
 		int x = r.slot - y* w;
 		
-		return new Rectangle(r.rect.x+x*35, r.rect.y+y*35, 35, 35);
+		return new Rectangle(r.getBounds().x+x*35, r.getBounds().y+y*35, 35, 35);
 	}
 
 	public static int getStationFromRect(Rectangle rect) {
 		int x,y,slot=-2;
 		for (FTLRoom r : ship.rooms) {
-			if (r.rect.intersects(rect)) {
-				x = (rect.x - r.rect.x)/35;
-				y = (rect.y - r.rect.y)/35;
-				slot = r.rect.width/35 * y + x;
+			if (r.getBounds().intersects(rect)) {
+				x = (rect.x - r.getBounds().x)/35;
+				y = (rect.y - r.getBounds().y)/35;
+				slot = r.getBounds().width/35 * y + x;
 			}
 		}
 		
@@ -3716,12 +3844,12 @@ public class Main
 	//=================
 	// === DOOR RELATED
 	
-	public void removeUnalignedDoors() {
+	public static void removeUnalignedDoors() {
 		if (removeDoor) {
 			Object[] array = ship.doors.toArray();
 			for (Object o : array) {
 				FTLDoor d = (FTLDoor) o;
-				if (!isDoorAtWall(d.rect)) {
+				if (!isDoorAtWall(d.getBounds())) {
 					ship.doors.remove(d);
 					d = null;
 				}
@@ -3737,19 +3865,37 @@ public class Main
 	 */
 	public FTLDoor wallToDoor(Rectangle rect) {
 		for (FTLDoor dr : ship.doors) {
-			if (rect != null && rect.intersects(dr.rect) && rect.width == dr.rect.width) {
+			if (rect != null && rect.intersects(dr.getBounds()) && rect.width == dr.getBounds().width) {
 				return dr;
 			}
 		}
 		return null;
 	}
 
-	public boolean isDoorAtWall(Rectangle rect) {
+	public static boolean isDoorAtWall(Rectangle rect) {
 		for (FTLRoom r : ship.rooms) {
-			if (rect != null && r != null && rect.intersects(r.rect) && !containsRect(r.rect, rect))
+			if (rect != null && r != null && rect.intersects(r.getBounds()) && !containsRect(r.getBounds(), rect))
 				return true;
 		}
 		return false;
+	}
+	
+	public static Rectangle getDoorAt(int x, int y) {
+		Rectangle dr = new Rectangle(0,0,0,0);
+		Point p = new Point(x, y);
+		for(int i=0; i<GRID_W; i++) {
+			for(int j=0; j<GRID_H; j++) {
+				// horizontal
+				dr.x = i*35+2; dr.y = j*35-3; dr.width = 31; dr.height = 6;
+				if (dr.contains(p))
+					return dr;
+				
+				dr.x = i*35-3; dr.y = j*35+2; dr.width = 6; dr.height = 31;
+				if (dr.contains(p))
+					return dr;
+			}
+		}
+		return null;
 	}
 	
 	public Rectangle getDoorFromMouse() {
@@ -3859,11 +4005,11 @@ public class Main
 				txtX.setText(""+(selectedMount.rect.x+selectedMount.rect.width/2));
 				txtY.setText(""+(selectedMount.rect.y+selectedMount.rect.height/2));
 			} else if (selectedDoor != null) {
-				txtX.setText(""+(selectedDoor.rect.x/35+1));
-				txtY.setText(""+(selectedDoor.rect.y/35+1));
+				txtX.setText(""+(selectedDoor.getBounds().x/35+1));
+				txtY.setText(""+(selectedDoor.getBounds().y/35+1));
 			} else if (selectedRoom != null) {
-				txtX.setText(""+(selectedRoom.rect.x/35+1));
-				txtY.setText(""+(selectedRoom.rect.y/35+1));
+				txtX.setText(""+(selectedRoom.getBounds().x/35+1));
+				txtY.setText(""+(selectedRoom.getBounds().y/35+1));
 			} else if (hullSelected) {
 				txtX.setText(""+(ship.imageRect.x));
 				txtY.setText(""+(ship.imageRect.y));
@@ -3899,18 +4045,18 @@ public class Main
 				
 				selectedMount.rect.x -= (selectedMount.rotate) ? (FTLMount.MOUNT_WIDTH/2) : (FTLMount.MOUNT_HEIGHT/2);
 				selectedMount.rect.y -= (selectedMount.rotate) ? (FTLMount.MOUNT_HEIGHT/2) : (FTLMount.MOUNT_WIDTH/2);
-			} else if (selectedDoor != null && (!selectedDoor.pinned || arbitraryPosOverride)) {
+			} else if (selectedDoor != null && (!selectedDoor.isPinned() || arbitraryPosOverride)) {
 				//selectedDoor.rect.x = 
-			} else if (selectedRoom != null && (!selectedRoom.pinned || arbitraryPosOverride)) {
-				if (x > GRID_W-selectedRoom.rect.width/35) x = GRID_W - selectedRoom.rect.width/35 + 1;
-				if (y > GRID_H-selectedRoom.rect.height/35) y = GRID_H - selectedRoom.rect.height/35 + 1;
+			} else if (selectedRoom != null && (!selectedRoom.isPinned() || arbitraryPosOverride)) {
+				if (x > GRID_W-selectedRoom.getBounds().width/35) x = GRID_W - selectedRoom.getBounds().width/35 + 1;
+				if (y > GRID_H-selectedRoom.getBounds().height/35) y = GRID_H - selectedRoom.getBounds().height/35 + 1;
 				if (x <= ship.anchor.x/35) x = ship.anchor.x/35 + 1;
 				if (y <= ship.anchor.y/35) y = ship.anchor.y/35 + 1;
 				
-				Rectangle collisionCheck = new Rectangle((x-1)*35, (y-1)*35, selectedRoom.rect.width, selectedRoom.rect.height);
-				if (!doesRectOverlap(collisionCheck, selectedRoom.rect)) {
-					selectedRoom.rect.x = (x-1) * 35;
-					selectedRoom.rect.y = (y-1) * 35;
+				Rectangle collisionCheck = new Rectangle((x-1)*35, (y-1)*35, selectedRoom.getBounds().width, selectedRoom.getBounds().height);
+				if (!doesRectOverlap(collisionCheck, selectedRoom.getBounds())) {
+					selectedRoom.getBounds().x = (x-1) * 35;
+					selectedRoom.getBounds().y = (y-1) * 35;
 					updateCorners(selectedRoom);
 				}
 			} else if (hullSelected && (!ship.hullPinned || arbitraryPosOverride)) {
@@ -4044,6 +4190,16 @@ public class Main
 	    
 		//return new ImageData(width, height, srcData.depth, srcData.palette, destBytesPerLine, newData);
 		return sourceData;
+	}
+	
+	public static void updatePainter() {
+		anchor.setLocation(ship.anchor.x, ship.anchor.y,true);
+		for (FTLRoom rm : ship.rooms) {
+			rm.assignSystem(rm.getSystem());
+			if (!rm.getSystem().equals(Systems.EMPTY)) {
+				rm.getSysBox().setVisible(true);
+			}
+		}
 	}
 }
 

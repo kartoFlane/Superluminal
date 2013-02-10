@@ -221,20 +221,25 @@ public class FTLShip implements Serializable
 	 * @param flag used to state which component of position is be updated.
 	 */
 	public void updateElements(Point newAnchor, AxisFlag flag) {
+		Point p;
 		Main.mountRect = new Rectangle(0,0,0,0);
 		int dist = 0;
 		
 		for (FTLRoom r : rooms) {
-			dist = newAnchor.x - anchor.x;
-			r.rect.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
-			dist = newAnchor.y - anchor.y;
-			r.rect.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
+			//dist = newAnchor.x - anchor.x;
+			//r.rect.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
+			//dist = newAnchor.y - anchor.y;
+			//r.rect.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
+			p = r.getLocation();
+			r.setAbsoluteLocation(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y);
 		}
 		for (FTLDoor d : doors) {
-			dist = newAnchor.x - anchor.x;
-			d.rect.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
-			dist = newAnchor.y - anchor.y;
-			d.rect.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
+			p = d.getLocation();
+			d.setLocation(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y);
+			//dist = newAnchor.x - anchor.x;
+			//d.rect.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
+			//dist = newAnchor.y - anchor.y;
+			//d.rect.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
 		}
 		if (Main.ship != null && Main.ship.imageRect != null) {
 			dist = newAnchor.x - anchor.x;
@@ -292,11 +297,11 @@ public class FTLShip implements Serializable
 	public Point findLowBounds() {
 		int x=2000, y=2000;
 		for (FTLRoom r : rooms) {
-			if (r!=null && r.rect.x <= x) {
-				x = r.rect.x;
+			if (r!=null && r.getBounds().x <= x) {
+				x = r.getBounds().x;
 			}
-			if (r!=null && r.rect.y <= y) {
-				y = r.rect.y;
+			if (r!=null && r.getBounds().y <= y) {
+				y = r.getBounds().y;
 			}
 		}
 		
@@ -313,11 +318,11 @@ public class FTLShip implements Serializable
 	public Point findHighBounds() {
 		int x=0, y=0;
 		for (FTLRoom r : rooms) {
-			if (r!=null && r.rect.x+r.rect.width >= x) {
-				x = r.rect.x+r.rect.width;
+			if (r!=null && r.getBounds().x+r.getBounds().width >= x) {
+				x = r.getBounds().x+r.getBounds().width;
 			}
-			if (r!=null && r.rect.y+r.rect.height >= y) {
-				y = r.rect.y+r.rect.height;
+			if (r!=null && r.getBounds().y+r.getBounds().height >= y) {
+				y = r.getBounds().y+r.getBounds().height;
 			}
 		}
 		return new Point(x, y);
@@ -325,7 +330,7 @@ public class FTLShip implements Serializable
 	
 	public int findLeftRoom(FTLDoor d) {
 		for (FTLRoom r : rooms) {
-			if (r.rect.intersects(d.rect) && ((d.horizontal && r.rect.y < d.rect.y) || (!d.horizontal && r.rect.x < d.rect.x))) {
+			if (r.getBounds().intersects(d.getBounds()) && ((d.horizontal && r.getBounds().y < d.getBounds().y) || (!d.horizontal && r.getBounds().x < d.getBounds().x))) {
 				return r.id;
 			}
 		}
@@ -334,7 +339,7 @@ public class FTLShip implements Serializable
 	
 	public int findRightRoom(FTLDoor d) {
 		for (FTLRoom r : rooms) {
-			if (r.rect.intersects(d.rect) && ((d.horizontal && r.rect.y > d.rect.y) || (!d.horizontal && r.rect.x > d.rect.x))) {
+			if (r.getBounds().intersects(d.getBounds()) && ((d.horizontal && r.getBounds().y > d.getBounds().y) || (!d.horizontal && r.getBounds().x > d.getBounds().x))) {
 				return r.id;
 			}
 		}
@@ -350,44 +355,6 @@ public class FTLShip implements Serializable
 		return null;
 	}
 	
-	public void drawShipAnchor(PaintEvent e) {
-		Color c;
-		e.gc.setAlpha(255);
-		e.gc.setLineWidth(2);
-		
-		// anchor bounds lines
-		c = e.display.getSystemColor(SWT.COLOR_GREEN);
-		e.gc.setForeground(c);
-		c.dispose();
-		e.gc.drawLine(anchor.x, anchor.y, anchor.x, Main.GRID_H*35);
-		c = e.display.getSystemColor(SWT.COLOR_RED);
-		e.gc.setForeground(c);
-		c.dispose();
-		e.gc.drawLine(anchor.x, anchor.y, Main.GRID_W*35, anchor.y);
-
-		if (Main.moveAnchor) {
-			c = e.display.getSystemColor(SWT.COLOR_DARK_CYAN);
-			e.gc.setBackground(c);
-			c.dispose();
-		} else {
-			c = e.display.getSystemColor(SWT.COLOR_CYAN);
-			e.gc.setBackground(c);
-			c.dispose();
-		}
-		c = e.display.getSystemColor(SWT.COLOR_BLACK);
-		e.gc.setForeground(c);
-		c.dispose();
-		
-		Point p = new Point(anchor.x, anchor.y);
-		if (anchor.x != 0)
-			p.x -=ANCHOR;
-		if (anchor.y != 0)
-			p.y -=ANCHOR;
-		
-		e.gc.fillRectangle(p.x, p.y, ANCHOR,ANCHOR);
-		e.gc.drawRectangle(p.x, p.y, ANCHOR,ANCHOR);
-	}
-	
 	public void reassignID() {
 		Main.idList.clear();
 		int i = 0;
@@ -397,6 +364,8 @@ public class FTLShip implements Serializable
 			i++;
 		}
 	}
+
+	
 	
 	/*
 	public void updateBounds() {

@@ -26,6 +26,7 @@ public class ErrorDialog
 	private Button btnClose;
 	private Composite composite;
 	private Button btnClear;
+	private Button btnDebug;
 
 	public ErrorDialog(Shell parent)
 	{
@@ -35,6 +36,7 @@ public class ErrorDialog
 	public void open()
 	{
 		shell.open();
+		btnDebug.setSelection(Main.debug);
 	}
 
 	private void createContents()
@@ -60,7 +62,10 @@ public class ErrorDialog
 		composite = new Composite(shell, SWT.NONE);
 		composite.setLayout(new GridLayout(10, false));
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		new Label(composite, SWT.NONE);
+		
+		btnDebug = new Button(composite, SWT.CHECK);
+		btnDebug.setText("Debug");
+		btnDebug.setSelection(Main.debug);
 		new Label(composite, SWT.NONE);
 		new Label(composite, SWT.NONE);
 		new Label(composite, SWT.NONE);
@@ -83,6 +88,13 @@ public class ErrorDialog
 		btnClose.setLayoutData(gd_btnClose);
 		btnClose.setText("Close");
 
+		btnDebug.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Main.debug = btnDebug.getSelection();
+			}
+		});
+		
 		btnClear.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {

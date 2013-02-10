@@ -1,0 +1,133 @@
+package com.kartoflane.superluminal.painter;
+
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.Rectangle;
+
+
+public class PaintBox {
+	public static final int BORDER_RECTANGLE = 0;
+	public static final int BORDER_OVAL = 1;
+
+	protected Rectangle bounds = new Rectangle(0,0,0,0);
+	protected Color borderColor = null;
+	protected RGB border_rgb = null;
+	protected int borderThickness = 3;
+	protected int borderShape = 0;
+	protected boolean visible = true;
+	protected boolean selected = false;
+	protected boolean pinned = false;
+
+	public PaintBox() {
+		this(PaintBox.BORDER_RECTANGLE);
+	}
+
+	public PaintBox(int borderShape) {
+		bounds.width = 35; bounds.height = 35;
+		this.borderShape = borderShape;
+	}
+	
+	public void setPinned(boolean pinned) {
+		this.pinned = pinned;
+	}
+	
+	public boolean isPinned() {
+		return pinned;
+	}
+
+	/**
+	 * Sets a border color, or null for none.
+	 */
+	public void setBorderColor(RGB rgb) {
+		if (border_rgb != null)
+			Cache.checkInColor(this, border_rgb);
+		borderColor = Cache.checkOutColor(this, rgb);
+		border_rgb = rgb;
+	}
+	
+	public Color getBorderColor() {
+		return borderColor;
+	}
+	
+	public void setBorderThickness(int n) {
+		borderThickness = n;
+	}
+	
+	public int getBorderThickness() {
+		return borderThickness;
+	}
+
+	public void setLocation(int x, int y) {
+		bounds.x = x; bounds.y = y;
+	}
+	
+	public Point getLocation() {
+		return new Point(bounds.x, bounds.y);
+	}
+	
+	public void setSize(int width, int height) {
+		bounds.width = width; bounds.height = height;
+	}
+	
+	public Point getSize() {
+		return new Point(bounds.width, bounds.height);
+	}
+
+	public Rectangle getBounds() {
+		return bounds;
+	}
+	
+	public void setBounds(Rectangle rect) {
+		setLocation(rect.x, rect.y);
+		setSize(rect.width, rect.height);
+	}
+	
+	public void setVisible(boolean b) {
+		visible = b;
+	}
+
+	public boolean isVisible() {
+		return visible;
+	}
+
+	/**
+	 * Paints this and optionally, a border on top.
+	 */
+	public void redraw(PaintEvent e) {
+		if (visible) {
+			paintControl(e);
+			paintBorder(e);
+		}
+	}
+
+	protected void paintControl(PaintEvent e) {
+		// Override this, and draw on the e.gc graphics context.
+	}
+
+	protected void paintBorder(PaintEvent e) {
+		if (borderColor != null) {
+			Color prevColor = e.gc.getForeground();
+			int prevLineWidth = e.gc.getLineWidth();
+
+			// Lines grow out from the center, which makes
+			// math a little funky to accomodate odd/even widths.
+			e.gc.setForeground(borderColor);
+			e.gc.setLineWidth(borderThickness);
+			
+			if (borderShape == PaintBox.BORDER_RECTANGLE) {
+				e.gc.drawRectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+			} else if (borderShape == PaintBox.BORDER_OVAL) {
+				e.gc.drawOval(bounds.x, bounds.y, bounds.width, bounds.height);
+			}
+
+			e.gc.setForeground(prevColor);
+			e.gc.setLineWidth(prevLineWidth);
+		}
+	}
+
+	public void dispose() {
+		Cache.checkInColor(this, border_rgb);
+	}
+}
