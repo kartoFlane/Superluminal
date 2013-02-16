@@ -25,20 +25,26 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	public int id;
 	public Point[] corners = new Point[4];
 	private Point selectedCorner;
+	private Point offset;
 	private Systems sys;
 	private SystemBox sysBox;
 	public int slot;
 	public Slide dir;
 	public String img;
 	public Image sysImg;
+	
 	private Color grid_color;
 	private Rectangle origin;
+	private Color slotColor;
+	private RGB slot_rgb;
+	
 	private boolean move = false;
 	private boolean resize = false;
 	
 	public FTLRoom(int x, int y, int w, int h) {
 		super(new RGB(230, 225, 220));
 		origin = new Rectangle(x, y, w, h);
+		offset = new Point(0,0);
 		setBorderColor(new RGB(0, 0, 0));
 		this.setLocation(x, y);
 		this.setSize(w, h);
@@ -51,6 +57,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		this.slot = -2;
 		this.dir = Slide.UP;
 		grid_color = Main.grid.getCellAt(1,1).getGridColor(this);
+		slot_rgb = new RGB(128, 0, 128);
+		slotColor = Cache.checkOutColor(this, slot_rgb);
 	}
 	
 	public FTLRoom(Rectangle rect) {
@@ -69,6 +77,14 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	 */
 	public int compareTo(FTLRoom r) {
 		return id - r.id;
+	}
+	
+	public void setInterior(String path) {
+		if (img != null)
+			Cache.checkInImageAbsolute(this, img);
+		img = path;
+		sysImg = Cache.checkOutImageAbsolute(this, img);
+		Main.canvasRedraw(bounds, false);
 	}
 	
 	public void assignSystem(SystemBox box) {
@@ -107,6 +123,10 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		} else {
 			sysBox = null;
 			sys = sysName;
+			if (img != null)
+				Cache.checkInImageAbsolute(this, img);
+			img = null;
+			sysImg = null;
 			setColor(new RGB(230, 225, 220));
 		}
 	}
@@ -130,11 +150,15 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		origin.x = bounds.x;
 		origin.y = bounds.y;
 		
+		if (Main.ship != null) {
+			x = Math.max(Main.ship.anchor.x, x);
+			y = Math.max(Main.ship.anchor.y, y);
+		}
+		
 		temp = Main.getRectAt(x, y);
 		if (temp != null) {
 			temp.width = bounds.width;
 			temp.height = bounds.height;
-			
 			if (Main.ship != null && !Main.doesRectOverlap(temp, bounds)) {
 				if (temp.x >= Main.ship.anchor.x && temp.x+temp.width <= Main.GRID_W*35)
 					bounds.x = temp.x;
@@ -154,15 +178,23 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			origin.x = bounds.x;
 			origin.y = bounds.y;
 			
+			if (Main.ship != null) {
+				Point p = Main.ship.findLowBounds();
+				Main.ship.offset.x = (p.x - Main.ship.anchor.x + 10)/35;
+				Main.ship.offset.y = (p.y - Main.ship.anchor.y + 10)/35;
+			}
+			
 			if (sysBox != null)
 				sysBox.updateLocation();
+			
+			Main.updateSelectedPosText();
 		}
 	}
 	
 	/**
 	 * Only used by anchor position update. Ommits all collion checks.
 	 */
-	public void setAbsoluteLocation(int x, int y) {
+	public void setLocationAbsolute(int x, int y) {
 		origin.x = x;
 		origin.y = y;
 		bounds.x = x;
@@ -172,6 +204,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		
 		if (sysBox != null)
 			sysBox.updateLocation();
+		
+		Main.updateSelectedPosText();
 	}
 	
 	public void setSize(int w, int h) {
@@ -189,7 +223,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		temp.width = w;
 		temp.height = h;
 		
-		if (Main.ship != null && !Main.doesRectOverlap(temp, bounds)) {
+		if (resize && !Main.doesRectOverlap(temp, bounds)) {
 			if (selectedCorner.equals(corners[0])) {
 				temp.width = w;
 				temp.height = h;
@@ -225,13 +259,19 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			
 			Main.canvas.redraw(origin.x-2, origin.y-2, origin.width+4, origin.height+4, false);
 			Main.canvas.redraw(temp.x, temp.y, temp.width, temp.height, false);
-		} else if (Main.ship == null) {
+		} else if (!resize) {
 			bounds.width = w;
 			bounds.height = h;
 			origin.x = bounds.x;
 			origin.y = bounds.y;
 			origin.width = bounds.width;
 			origin.height = bounds.height;
+		}
+		
+		if (Main.ship != null) {
+			Point p = Main.ship.findLowBounds();
+			Main.ship.offset.x = (p.x - Main.ship.anchor.x + 10)/35;
+			Main.ship.offset.y = (p.y - Main.ship.anchor.y + 10)/35;
 		}
 		
 		if (sysBox != null)
@@ -268,13 +308,16 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	
 	@Override
 	public void paintControl(PaintEvent e) {
+		setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
+		if (sysBox != null)
+			sysBox.setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
 		super.paintControl(e);
 		
 		int prevAlpha = e.gc.getAlpha();
 		int prevWidth = e.gc.getLineWidth();
 		Color prevBg = e.gc.getForeground();
 		
-		e.gc.setAlpha(255);
+		e.gc.setAlpha(alpha);
 		e.gc.setLineWidth(1);
 		e.gc.setForeground(grid_color);
 		
@@ -283,6 +326,9 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		for (int i=1; i < bounds.height/35; i++)
 			e.gc.drawLine(bounds.x, bounds.y + i*35, bounds.x+bounds.width, bounds.y + i*35);
 
+		if (sysImg != null)
+			e.gc.drawImage(sysImg, 0, 0, sysImg.getBounds().width, sysImg.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
+		
 		e.gc.setForeground(prevBg);
 		if (selected) {
 			prevBg = e.gc.getBackground();
@@ -295,9 +341,22 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			e.gc.fillRectangle(bounds.x, bounds.y+bounds.height-10, 10, 10);
 			e.gc.fillRectangle(bounds.x+bounds.width-10, bounds.y+bounds.height-10, 10, 10);
 			
-			e.gc.setBackground(prevBg);
+			e.gc.setAlpha(255);
+			if (isPinned())
+				e.gc.drawImage(pin, bounds.x+10, bounds.y+3);
 		}
-		
+		if (Main.ship != null && Main.ship.slotMap.keySet().contains(sys) && Main.ship.slotMap.get(getSystem()) != -2) {
+			e.gc.setAlpha(Main.btnCloaked.getSelection() ? 80 : 160);
+			e.gc.setBackground(slotColor);
+			
+			if (!sys.equals(Systems.MEDBAY)) {
+				e.gc.fillRectangle(Main.getStationDirected(this));
+			} else {
+				e.gc.fillRectangle(Main.getRectFromStation(this));
+			}
+		}
+
+		e.gc.setBackground(prevBg);
 		e.gc.setLineWidth(prevWidth);
 		e.gc.setAlpha(prevAlpha);
 	}
@@ -307,8 +366,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	{
 		if (bounds.contains(e.x, e.y)) {
 			select();
-			Main.dragRoomAnchor.x = e.x - bounds.x;
-			Main.dragRoomAnchor.y = e.y - bounds.y;
+			offset.x = e.x - bounds.x;
+			offset.y = e.y - bounds.y;
 		} else {
 			deselect();
 		}
@@ -327,6 +386,9 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	
 	@Override
 	public void mouseUp(MouseEvent e) {
+		Main.cursor.setVisible(true);
+		if (move)
+			Main.cursor.setLocation(bounds.x, bounds.y);
 		if (e.button == 1) {
 			if (resize)
 				bounds = Main.fixRect(bounds);
@@ -335,17 +397,16 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			if (!bounds.contains(e.x, e.y) && selected);
 				//deselect();
 		} else if (e.button == 3) {
-			if (bounds.contains(e.x, e.y)) {
+			if (bounds.contains(e.x, e.y) && selected) {
 				Main.menuSystem.setVisible(true);
 			}
 		}
-		Main.cursor.setVisible(true);
 	}
 
 	@Override
 	public void mouseMove(MouseEvent e) {
 		if (selected && move) {
-			setLocation(e.x - Main.dragRoomAnchor.x, e.y - Main.dragRoomAnchor.y);
+			setLocation(e.x - offset.x, e.y - offset.y);
 		} else if (selected && resize && !move) {
 			Point p = new Point(e.x - selectedCorner.x, e.y - selectedCorner.y);
 			p.x += (p.x > 0) ? 35 : -35;
@@ -393,17 +454,39 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		ship.rooms.add(this);
 		Main.layeredPainter.add(this, LayeredPainter.ROOM);
 		Main.idList.add(id);
+		
+		if (ship.rooms.size() > 0) {
+			Main.btnShields.setEnabled(ship.isPlayer);
+			Main.btnShields.setToolTipText(null);
+		}
 	}
 
 	public void dispose() {
 		if (sysBox != null)
 			sysBox.unassign();
-		Cache.checkInImage(this, img);
+		
+		Cache.checkInColor(this, slot_rgb);
+		Cache.checkInImageAbsolute(this, img);
 		Main.layeredPainter.remove(this);
 		Main.idList.remove(id);
+		
+		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
+		
 		super.dispose();
 		grid_color = null;
 		sysImg = null;
 		img = null;
+	}
+
+	@Override
+	public void mouseHover(MouseEvent e) {}
+
+	@Override
+	public void setOffset(int x, int y) {
+	}
+
+	@Override
+	public Point getOffset() {
+		return offset;
 	}
 }

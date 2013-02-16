@@ -100,9 +100,9 @@ public class ShipPropertiesWindow extends Dialog
 
 	public void open()
 	{
+		shell.setLocation(Main.shell.getLocation().x+100, Main.shell.getLocation().y+50);
 		shell.open();
 		shell.layout();
-		shell.setLocation(Main.shell.getLocation().x+100, Main.shell.getLocation().y+50);
 		
 		clearData();
 		
@@ -143,6 +143,9 @@ public class ShipPropertiesWindow extends Dialog
 		
 		int i = 0, j = 0;
 		
+		// calculate the total amount of power required to run all systems
+		// i - all systems (includes systems unavailable at start)
+		// j - available systems only
 		for (Systems s : Main.ship.levelMap.keySet()) {
 			if (Main.isSystemAssigned(s) && !s.equals(Systems.EMPTY) && !s.equals(Systems.PILOT) && !s.equals(Systems.DOORS) && !s.equals(Systems.SENSORS))
 				i += Main.ship.levelMap.get(s);
@@ -313,8 +316,8 @@ search:		for (String s : presetsDr.getItems()) {
 		lblTeleInfo.setText("0 / 0");
 		lblArtilleryInfo.setText("0 / 0");
 		
-		lblReqPower.setText("0");
-		lblReqStart.setText("0");
+		lblReqPower.setText("000");
+		lblReqStart.setText("000");
 		
 		spHuman.setSelection(0);
 		spEngi.setSelection(0);
@@ -335,6 +338,9 @@ search:		for (String s : presetsDr.getItems()) {
 		spDrones.setSelection(0);
 		spSlotsDr.setSelection(0);
 		spMaxDrones.setSelection(0);
+		
+		presets.select(-1);
+		presetsDr.select(-1);
 	}
 	
 	
@@ -361,65 +367,55 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		Label lblName = new Label(shipInfoC, SWT.NONE);
 		lblName.setFont(Main.appFont);
-		GridData gd_lblName = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblName = new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1);
 		gd_lblName.minimumWidth = 40;
-		gd_lblName.widthHint = 40;
 		lblName.setLayoutData(gd_lblName);
 		lblName.setText("Name:");
 		
 		textName = new Text(shipInfoC, SWT.BORDER);
 		textName.setFont(Main.appFont);
-		GridData gd_textName = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
-		gd_textName.widthHint = 167;
-		textName.setLayoutData(gd_textName);
+		textName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
 		
 		Label lblLayout = new Label(shipInfoC, SWT.NONE);
 		lblLayout.setFont(Main.appFont);
 		lblLayout.setToolTipText("Name of the .txt and .xml files used by the ship.");
-		GridData gd_lblLayout = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblLayout = new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1);
 		gd_lblLayout.minimumWidth = 40;
-		gd_lblLayout.widthHint = 40;
 		lblLayout.setLayoutData(gd_lblLayout);
 		lblLayout.setText("Layout:");
 		
 		textLayout = new Text(shipInfoC, SWT.BORDER);
 		textLayout.setFont(Main.appFont);
-		GridData gd_textLayout = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
-		gd_textLayout.widthHint = 80;
-		textLayout.setLayoutData(gd_textLayout);
+		textLayout.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
 		
 		Label lblClass = new Label(shipInfoC, SWT.NONE);
 		lblClass.setFont(Main.appFont);
-		GridData gd_lblClass = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblClass = new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1);
 		gd_lblClass.minimumWidth = 40;
-		gd_lblClass.widthHint = 40;
 		lblClass.setLayoutData(gd_lblClass);
 		lblClass.setText("Class:");
 		
 		textClass = new Text(shipInfoC, SWT.BORDER);
 		textClass.setFont(Main.appFont);
-		textClass.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
+		textClass.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
 		
 		Label lblImage = new Label(shipInfoC, SWT.NONE);
 		lblImage.setFont(Main.appFont);
 		lblImage.setToolTipText("Prefix for images used by this ship, the name under which they'll be exported.\n"
 								+"For example, the Kestrel has this field set to \"kestral\" by default, so it will\n"
 								+"use kestral_base, kestral_shields1, etc for its graphics.");
-		GridData gd_lblImage = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblImage = new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1);
 		gd_lblImage.minimumWidth = 40;
-		gd_lblImage.widthHint = 40;
 		lblImage.setLayoutData(gd_lblImage);
 		lblImage.setText("Image:");
 		
 		textImage = new Text(shipInfoC, SWT.BORDER);
 		textImage.setFont(Main.appFont);
-		GridData gd_textImage = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
-		gd_textImage.widthHint = 80;
-		textImage.setLayoutData(gd_textImage);
+		textImage.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
 		
 		Label lblDescription = new Label(shipInfoC, SWT.NONE);
 		lblDescription.setFont(Main.appFont);
-		lblDescription.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
+		lblDescription.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		lblDescription.setText("Description:");
 		
 		Composite composite_3 = new Composite(shipInfoC, SWT.NONE);
@@ -432,38 +428,37 @@ search:		for (String s : presetsDr.getItems()) {
 		label_2.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		
 		Label lblMinSec = new Label(composite_3, SWT.NONE);
+		lblMinSec.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblMinSec.setFont(Main.appFont);
 		lblMinSec.setText("Min. Sector");
 		
 		spMinSec = new Spinner(composite_3, SWT.BORDER);
+		spMinSec.setMaximum(9);
 		spMinSec.setFont(Main.appFont);
-		GridData gd_spMinSec = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_spMinSec.heightHint = 14;
-		spMinSec.setLayoutData(gd_spMinSec);
+		spMinSec.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		
 		Label lblMaxSec = new Label(composite_3, SWT.NONE);
+		lblMaxSec.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblMaxSec.setFont(Main.appFont);
 		lblMaxSec.setText("Max Sector");
 		
 		spMaxSec = new Spinner(composite_3, SWT.BORDER);
+		spMaxSec.setMaximum(9);
 		spMaxSec.setFont(Main.appFont);
-		GridData gd_spMaxSec = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_spMaxSec.heightHint = 14;
-		spMaxSec.setLayoutData(gd_spMaxSec);
+		spMaxSec.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		
 		Label label_4 = new Label(composite_3, SWT.SEPARATOR | SWT.HORIZONTAL);
 		label_4.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));
 		
 		textDesc = new Text(shipInfoC, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL | SWT.MULTI);
 		textDesc.setFont(Main.appFont);
-		GridData gd_textDesc = new GridData(SWT.FILL, SWT.FILL, false, true, 2, 5);
-		gd_textDesc.widthHint = 212;
+		GridData gd_textDesc = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 5);
+		gd_textDesc.widthHint = 200;
 		textDesc.setLayoutData(gd_textDesc);
 		
 		Label lblMissiles = new Label(shipInfoC, SWT.NONE);
 		lblMissiles.setFont(Main.appFont);
-		GridData gd_lblMissiles = new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1);
-		gd_lblMissiles.heightHint = 14;
+		GridData gd_lblMissiles = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
 		gd_lblMissiles.widthHint = 70;
 		lblMissiles.setLayoutData(gd_lblMissiles);
 		lblMissiles.setText("Missiles:");
@@ -471,41 +466,31 @@ search:		for (String s : presetsDr.getItems()) {
 		spMissiles = new Spinner(shipInfoC, SWT.BORDER);
 		spMissiles.setFont(Main.appFont);
 		spMissiles.setMaximum(99);
-		GridData gd_spMissiles = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_spMissiles.heightHint = 14;
+		GridData gd_spMissiles = new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1);
 		gd_spMissiles.minimumWidth = 20;
-		gd_spMissiles.widthHint = 20;
 		spMissiles.setLayoutData(gd_spMissiles);
 		
 		Label lblDroneParts = new Label(shipInfoC, SWT.NONE);
 		lblDroneParts.setFont(Main.appFont);
-		GridData gd_lblDroneParts = new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1);
-		gd_lblDroneParts.widthHint = 70;
-		lblDroneParts.setLayoutData(gd_lblDroneParts);
+		lblDroneParts.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		lblDroneParts.setText("Drone parts:");
 		
 		spDrones = new Spinner(shipInfoC, SWT.BORDER);
 		spDrones.setMaximum(99);
 		spDrones.setFont(Main.appFont);
-		GridData gd_spDrones = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_spDrones.heightHint = 14;
+		GridData gd_spDrones = new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1);
 		gd_spDrones.minimumWidth = 20;
-		gd_spDrones.widthHint = 20;
 		spDrones.setLayoutData(gd_spDrones);
 		
 		Label lblHullHealth = new Label(shipInfoC, SWT.NONE);
 		lblHullHealth.setFont(Main.appFont);
-		GridData gd_lblHullHealth = new GridData(SWT.FILL, SWT.CENTER, false, false, 2, 1);
-		gd_lblHullHealth.widthHint = 70;
-		lblHullHealth.setLayoutData(gd_lblHullHealth);
+		lblHullHealth.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		lblHullHealth.setText("Hull Health:");
 		
 		spHealth = new Spinner(shipInfoC, SWT.BORDER);
 		spHealth.setMaximum(99);
 		spHealth.setFont(Main.appFont);
-		GridData gd_spHealth = new GridData(SWT.RIGHT, SWT.BOTTOM, true, false, 1, 1);
-		gd_spHealth.heightHint = 14;
-		gd_spHealth.widthHint = 20;
+		GridData gd_spHealth = new GridData(SWT.RIGHT, SWT.BOTTOM, true, true, 1, 1);
 		gd_spHealth.minimumWidth = 20;
 		spHealth.setLayoutData(gd_spHealth);
 		
@@ -519,24 +504,22 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		Group grpSystems = new Group(systemsC, SWT.NONE);
 		grpSystems.setFont(Main.appFont);
-		grpSystems.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
+		grpSystems.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		grpSystems.setText("Systems");
 		grpSystems.setLayout(new GridLayout(5, false));
 		
 			// === Pilot
 		Label lblPilot = new Label(grpSystems, SWT.NONE);
 		lblPilot.setFont(Main.appFont);
-		GridData gd_lblPilot = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblPilot = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblPilot.minimumWidth = 60;
-		gd_lblPilot.widthHint = 60;
 		lblPilot.setLayoutData(gd_lblPilot);
 		lblPilot.setText("Pilot:");
 		
 		lblPilotInfo = new Label(grpSystems, SWT.RIGHT);
 		lblPilotInfo.setFont(Main.appFont);
-		GridData gd_lblPilotInfo = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblPilotInfo.widthHint = 36;
-		lblPilotInfo.setLayoutData(gd_lblPilotInfo);
+		lblPilotInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblPilotInfo.setText("null");
 		
 		Label label_1 = new Label(grpSystems, SWT.SEPARATOR | SWT.VERTICAL);
 		label_1.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 8));
@@ -544,174 +527,152 @@ search:		for (String s : presetsDr.getItems()) {
 			// === Weapons
 		Label lblWeapons = new Label(grpSystems, SWT.NONE);
 		lblWeapons.setFont(Main.appFont);
-		GridData gd_lblWeapons = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblWeapons = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblWeapons.minimumWidth = 60;
-		gd_lblWeapons.widthHint = 60;
 		lblWeapons.setLayoutData(gd_lblWeapons);
 		lblWeapons.setText("Weapons:");
 		
 		lblWeaponsInfo = new Label(grpSystems, SWT.RIGHT);
 		lblWeaponsInfo.setFont(Main.appFont);
-		GridData gd_lblWeaponsInfo = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblWeaponsInfo.widthHint = 36;
-		lblWeaponsInfo.setLayoutData(gd_lblWeaponsInfo);
+		lblWeaponsInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblWeaponsInfo.setText("null");
 		
 			// === Doors
 		Label lblDoors = new Label(grpSystems, SWT.NONE);
 		lblDoors.setFont(Main.appFont);
-		GridData gd_lblDoors = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblDoors = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblDoors.minimumWidth = 60;
-		gd_lblDoors.widthHint = 60;
 		lblDoors.setLayoutData(gd_lblDoors);
 		lblDoors.setText("Doors:");
 		
 		lblDoorsInfo = new Label(grpSystems, SWT.RIGHT);
 		lblDoorsInfo.setFont(Main.appFont);
-		GridData gd_lblDoorsInfo = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblDoorsInfo.widthHint = 36;
-		lblDoorsInfo.setLayoutData(gd_lblDoorsInfo);
+		lblDoorsInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblDoorsInfo.setText("null");
 		
 			// === Shields
 		Label lblShields = new Label(grpSystems, SWT.NONE);
 		lblShields.setFont(Main.appFont);
-		GridData gd_lblShields = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblShields = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblShields.minimumWidth = 60;
-		gd_lblShields.widthHint = 60;
 		lblShields.setLayoutData(gd_lblShields);
 		lblShields.setText("Shields:");
 		
 		lblShieldsInfo = new Label(grpSystems, SWT.RIGHT);
 		lblShieldsInfo.setFont(Main.appFont);
-		GridData gd_lblShieldsInfo = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblShieldsInfo.widthHint = 36;
-		lblShieldsInfo.setLayoutData(gd_lblShieldsInfo);
+		lblShieldsInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblShieldsInfo.setText("null");
 		
 			// === Sensors
 		Label lblSensors = new Label(grpSystems, SWT.NONE);
 		lblSensors.setFont(Main.appFont);
-		GridData gd_lblSensors = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblSensors = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblSensors.minimumWidth = 60;
-		gd_lblSensors.widthHint = 60;
 		lblSensors.setLayoutData(gd_lblSensors);
 		lblSensors.setText("Sensors:");
 		
 		lblSensorsInfo = new Label(grpSystems, SWT.RIGHT);
 		lblSensorsInfo.setFont(Main.appFont);
-		GridData gd_lblSensorsInfo = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblSensorsInfo.widthHint = 36;
-		lblSensorsInfo.setLayoutData(gd_lblSensorsInfo);
+		lblSensorsInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblSensorsInfo.setText("null");
 		
 			// === Engines
 		Label lblEngines = new Label(grpSystems, SWT.NONE);
 		lblEngines.setFont(Main.appFont);
-		GridData gd_lblEngines = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblEngines = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblEngines.minimumWidth = 60;
-		gd_lblEngines.widthHint = 60;
 		lblEngines.setLayoutData(gd_lblEngines);
 		lblEngines.setText("Engines:");
 		
 		lblEnginesInfo = new Label(grpSystems, SWT.RIGHT);
 		lblEnginesInfo.setFont(Main.appFont);
-		GridData gd_lblEnginesInfo = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblEnginesInfo.widthHint = 36;
-		lblEnginesInfo.setLayoutData(gd_lblEnginesInfo);
+		lblEnginesInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblEnginesInfo.setText("null");
 		
 		Label label = new Label(grpSystems, SWT.SEPARATOR | SWT.HORIZONTAL);
-		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 2, 1));
+		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		
 			// === Medbay
 		Label lblMedbay = new Label(grpSystems, SWT.NONE);
 		lblMedbay.setFont(Main.appFont);
-		GridData gd_lblMedbay = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblMedbay = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblMedbay.minimumWidth = 60;
-		gd_lblMedbay.widthHint = 60;
 		lblMedbay.setLayoutData(gd_lblMedbay);
 		lblMedbay.setText("Medbay:");
 		
 		lblMedbayInfo = new Label(grpSystems, SWT.SHADOW_IN | SWT.RIGHT);
 		lblMedbayInfo.setFont(Main.appFont);
-		GridData gd_lblMedbayInfo = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblMedbayInfo.widthHint = 36;
-		lblMedbayInfo.setLayoutData(gd_lblMedbayInfo);
+		lblMedbayInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblMedbayInfo.setText("null");
 		
 			// === Drones
 		Label lblDrones = new Label(grpSystems, SWT.NONE);
 		lblDrones.setFont(Main.appFont);
-		GridData gd_lblDrones = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblDrones = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblDrones.minimumWidth = 60;
-		gd_lblDrones.widthHint = 60;
 		lblDrones.setLayoutData(gd_lblDrones);
 		lblDrones.setText("Drones:");
 		
 		lblDronesInfo = new Label(grpSystems, SWT.RIGHT);
 		lblDronesInfo.setFont(Main.appFont);
-		GridData gd_lblDronesInfo = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblDronesInfo.widthHint = 36;
-		lblDronesInfo.setLayoutData(gd_lblDronesInfo);
+		lblDronesInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblDronesInfo.setText("null");
 		
 			// === Oxygen
 		Label lblOxygen = new Label(grpSystems, SWT.NONE);
 		lblOxygen.setFont(Main.appFont);
-		GridData gd_lblOxygen = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblOxygen = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblOxygen.minimumWidth = 60;
-		gd_lblOxygen.widthHint = 60;
 		lblOxygen.setLayoutData(gd_lblOxygen);
 		lblOxygen.setText("Oxygen:");
 		
 		lblOxygenInfo = new Label(grpSystems, SWT.RIGHT);
 		lblOxygenInfo.setFont(Main.appFont);
-		GridData gd_lblOxygenInfo = new GridData(SWT.RIGHT, SWT.BOTTOM, false, false, 1, 1);
-		gd_lblOxygenInfo.widthHint = 36;
-		lblOxygenInfo.setLayoutData(gd_lblOxygenInfo);
+		lblOxygenInfo.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
+		lblOxygenInfo.setText("null");
 		
 			// === Teleporter
 		Label lblTeleporter = new Label(grpSystems, SWT.NONE);
 		lblTeleporter.setFont(Main.appFont);
-		GridData gd_lblTeleporter = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblTeleporter = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblTeleporter.minimumWidth = 60;
-		gd_lblTeleporter.widthHint = 60;
 		lblTeleporter.setLayoutData(gd_lblTeleporter);
 		lblTeleporter.setText("Teleporter:");
 		
 		lblTeleInfo = new Label(grpSystems, SWT.RIGHT);
 		lblTeleInfo.setFont(Main.appFont);
-		GridData gd_lblTeleInfo = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblTeleInfo.widthHint = 36;
-		lblTeleInfo.setLayoutData(gd_lblTeleInfo);
+		lblTeleInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblTeleInfo.setText("null");
 		new Label(grpSystems, SWT.NONE);
 		new Label(grpSystems, SWT.NONE);
 		
 			// === Cloaking
 		Label lblCloaking = new Label(grpSystems, SWT.NONE);
 		lblCloaking.setFont(Main.appFont);
-		GridData gd_lblCloaking = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblCloaking = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_lblCloaking.minimumWidth = 60;
-		gd_lblCloaking.widthHint = 60;
 		lblCloaking.setLayoutData(gd_lblCloaking);
 		lblCloaking.setText("Cloaking:");
 		
 		lblCloakInfo = new Label(grpSystems, SWT.RIGHT);
 		lblCloakInfo.setFont(Main.appFont);
-		GridData gd_lblCloakInfo = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblCloakInfo.widthHint = 36;
-		lblCloakInfo.setLayoutData(gd_lblCloakInfo);
+		lblCloakInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblCloakInfo.setText("null");
 		new Label(grpSystems, SWT.NONE);
 		new Label(grpSystems, SWT.NONE);
 		
 			// === Artillery
 		Label lblArtillery = new Label(grpSystems, SWT.NONE);
 		lblArtillery.setFont(Main.appFont);
-		GridData gd_lblArtillery = new GridData(SWT.LEFT, SWT.TOP, false, false, 1, 1);
+		GridData gd_lblArtillery = new GridData(SWT.FILL, SWT.TOP, true, false, 1, 1);
 		gd_lblArtillery.minimumWidth = 60;
-		gd_lblArtillery.widthHint = 60;
 		lblArtillery.setLayoutData(gd_lblArtillery);
 		lblArtillery.setText("Artillery:");
 		
 		lblArtilleryInfo = new Label(grpSystems, SWT.RIGHT);
 		lblArtilleryInfo.setFont(Main.appFont);
-		GridData gd_lblArtilleryInfo = new GridData(SWT.RIGHT, SWT.TOP, false, false, 1, 1);
-		gd_lblArtilleryInfo.widthHint = 36;
-		lblArtilleryInfo.setLayoutData(gd_lblArtilleryInfo);
+		lblArtilleryInfo.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 1, 1));
+		lblArtilleryInfo.setText("null");
 		new Label(grpSystems, SWT.NONE);
 		new Label(grpSystems, SWT.NONE);
 		
@@ -722,55 +683,45 @@ search:		for (String s : presetsDr.getItems()) {
 		grpReactor.setText("Reactor");
 		
 		Label lblReq = new Label(grpReactor, SWT.NONE);
+		lblReq.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		lblReq.setFont(Main.appFont);
-		GridData gd_lblReq = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_lblReq.widthHint = 120;
-		lblReq.setLayoutData(gd_lblReq);
 		lblReq.setToolTipText("Power required to run");
 		lblReq.setText("Power req. to run...");
 		new Label(grpReactor, SWT.NONE);
 		new Label(grpReactor, SWT.NONE);
 		
 		Label lblAllSystems = new Label(grpReactor, SWT.NONE);
+		lblAllSystems.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		lblAllSystems.setFont(Main.appFont);
-		GridData gd_lblAllSystems = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_lblAllSystems.widthHint = 120;
-		lblAllSystems.setLayoutData(gd_lblAllSystems);
-		lblAllSystems.setText("     all systems:");
+		lblAllSystems.setText("	 all systems:");
 
 		lblReqPower = new Label(grpReactor, SWT.CENTER);
 		lblReqPower.setFont(Main.appFont);
-		GridData gd_lblReqPower = new GridData(SWT.CENTER, SWT.CENTER, true, false, 2, 1);
-		gd_lblReqPower.widthHint = 40;
+		GridData gd_lblReqPower = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
+		gd_lblReqPower.minimumWidth = 25;
 		lblReqPower.setLayoutData(gd_lblReqPower);
 		
 		Label lblOnlyAvailableSystems = new Label(grpReactor, SWT.NONE);
+		lblOnlyAvailableSystems.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		lblOnlyAvailableSystems.setFont(Main.appFont);
-		GridData gd_lblOnlyAvailableSystems = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_lblOnlyAvailableSystems.widthHint = 120;
-		lblOnlyAvailableSystems.setLayoutData(gd_lblOnlyAvailableSystems);
-		lblOnlyAvailableSystems.setText("     available systems:");
+		lblOnlyAvailableSystems.setText("	 available systems:");
 		
 		lblReqStart = new Label(grpReactor, SWT.CENTER);
 		lblReqStart.setAlignment(SWT.CENTER);
 		lblReqStart.setFont(Main.appFont);
-		GridData gd_lblReqStart = new GridData(SWT.CENTER, SWT.CENTER, true, false, 2, 1);
-		gd_lblReqStart.widthHint = 40;
+		GridData gd_lblReqStart = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
+		gd_lblReqStart.minimumWidth = 10;
 		lblReqStart.setLayoutData(gd_lblReqStart);
 		
 		Label lblMaxPossibleThrough = new Label(grpReactor, SWT.NONE);
+		lblMaxPossibleThrough.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		lblMaxPossibleThrough.setFont(Main.appFont);
 		lblMaxPossibleThrough.setToolTipText("Maximum possible reactor power achievable through in-game upgrading.");
-		GridData gd_lblMaxPossibleThrough = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
-		gd_lblMaxPossibleThrough.widthHint = 120;
-		lblMaxPossibleThrough.setLayoutData(gd_lblMaxPossibleThrough);
 		lblMaxPossibleThrough.setText("Max. possible by upg.:");
 		
 		Label lblReqMax = new Label(grpReactor, SWT.CENTER);
 		lblReqMax.setFont(Main.appFont);
-		GridData gd_lblReqMax = new GridData(SWT.CENTER, SWT.CENTER, false, false, 2, 1);
-		gd_lblReqMax.widthHint = 40;
-		lblReqMax.setLayoutData(gd_lblReqMax);
+		lblReqMax.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 2, 1));
 		lblReqMax.setText("25");
 		
 		Label label_3 = new Label(grpReactor, SWT.SEPARATOR | SWT.HORIZONTAL);
@@ -789,16 +740,14 @@ search:		for (String s : presetsDr.getItems()) {
 		Label lblReactorPower = new Label(composite_1, SWT.NONE);
 		lblReactorPower.setFont(Main.appFont);
 		lblReactorPower.setToolTipText("Reactor level at the start of the game.");
-		GridData gd_lblReactorPower = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblReactorPower.widthHint = 120;
-		lblReactorPower.setLayoutData(gd_lblReactorPower);
+		lblReactorPower.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblReactorPower.setText("Reactor power: ");
 		
 		spReactor = new Spinner(composite_1, SWT.BORDER);
+		spReactor.setMaximum(99);
 		spReactor.setFont(Main.appFont);
-		GridData gd_spReactor = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1);
+		GridData gd_spReactor = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
 		gd_spReactor.minimumWidth = 40;
-		gd_spReactor.widthHint = 40;
 		spReactor.setLayoutData(gd_spReactor);
 
 	// === Properties -> Crew & Augments
@@ -812,161 +761,131 @@ search:		for (String s : presetsDr.getItems()) {
 		Group grpCrew = new Group(crewInfoC, SWT.NONE);
 		grpCrew.setFont(Main.appFont);
 		GridLayout gl_grpCrew = new GridLayout(10, false);
-		gl_grpCrew.horizontalSpacing = 2;
+		gl_grpCrew.horizontalSpacing = 4;
+		gl_grpCrew.marginWidth = 0;
 		grpCrew.setLayout(gl_grpCrew);
 		grpCrew.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 8, 1));
 		grpCrew.setText("Crew");
 		
 		Label lblCrewMax = new Label(grpCrew, SWT.NONE);
 		lblCrewMax.setFont(Main.appFont);
-		GridData gd_lblCrewMax = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblCrewMax = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblCrewMax.minimumWidth = 60;
-		gd_lblCrewMax.widthHint = 55;
 		lblCrewMax.setLayoutData(gd_lblCrewMax);
 		lblCrewMax.setToolTipText("Only affects enemy ships.");
 		lblCrewMax.setText("Crew max:");
 		
 		spMax = new Spinner(grpCrew, SWT.BORDER);
-		GridData gd_spMax = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spMax.widthHint = 5;
-		spMax.setLayoutData(gd_spMax);
+		spMax.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		spMax.setFont(Main.appFont);
 		spMax.setMaximum(8);
 		spMax.setMinimum(0);
 		
 		Label lblHuman = new Label(grpCrew, SWT.NONE);
 		lblHuman.setFont(Main.appFont);
-		GridData gd_lblHuman = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblHuman = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblHuman.minimumWidth = 50;
-		gd_lblHuman.widthHint = 42;
 		lblHuman.setLayoutData(gd_lblHuman);
 		lblHuman.setText("Human:");
 		
 		spHuman = new Spinner(grpCrew, SWT.BORDER);
-		GridData gd_spHuman = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spHuman.widthHint = 5;
-		spHuman.setLayoutData(gd_spHuman);
+		spHuman.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		spHuman.setFont(Main.appFont);
 		spHuman.setMaximum(8);
 		
 		Label lblEngi = new Label(grpCrew, SWT.NONE);
 		lblEngi.setFont(Main.appFont);
-		GridData gd_lblEngi = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblEngi = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblEngi.minimumWidth = 30;
-		gd_lblEngi.widthHint = 30;
 		lblEngi.setLayoutData(gd_lblEngi);
 		lblEngi.setText("Engi:");
 		
 		spEngi = new Spinner(grpCrew, SWT.BORDER);
-		GridData gd_spEngi = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spEngi.widthHint = 5;
-		spEngi.setLayoutData(gd_spEngi);
+		spEngi.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		spEngi.setFont(Main.appFont);
 		spEngi.setMaximum(8);
 		
 		Label lblZoltan = new Label(grpCrew, SWT.NONE);
 		lblZoltan.setFont(Main.appFont);
-		GridData gd_lblZoltan = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblZoltan = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblZoltan.minimumWidth = 40;
-		gd_lblZoltan.widthHint = 40;
 		lblZoltan.setLayoutData(gd_lblZoltan);
 		lblZoltan.setText("Zoltan:");
 		
 		spZoltan = new Spinner(grpCrew, SWT.BORDER);
-		GridData gd_spZoltan = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spZoltan.widthHint = 5;
-		spZoltan.setLayoutData(gd_spZoltan);
+		spZoltan.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		spZoltan.setFont(Main.appFont);
 		spZoltan.setMaximum(8);
 		
 		Label lblGhost = new Label(grpCrew, SWT.NONE);
-		GridData gd_lblGhost = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_lblGhost.widthHint = 47;
-		lblGhost.setLayoutData(gd_lblGhost);
+		lblGhost.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
 		lblGhost.setFont(Main.appFont);
 		lblGhost.setText("Ghost:");
 		
 		spGhost = new Spinner(grpCrew, SWT.BORDER);
 		spGhost.setFont(Main.appFont);
 		spGhost.setMaximum(8);
-		GridData gd_spGhost = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spGhost.widthHint = 5;
-		spGhost.setLayoutData(gd_spGhost);
+		spGhost.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		
 		Label lblMantis = new Label(grpCrew, SWT.NONE);
 		lblMantis.setFont(Main.appFont);
-		GridData gd_lblMantis = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblMantis = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblMantis.minimumWidth = 60;
-		gd_lblMantis.widthHint = 55;
 		lblMantis.setLayoutData(gd_lblMantis);
 		lblMantis.setText("Mantis:");
 		
 		spMantis = new Spinner(grpCrew, SWT.BORDER);
-		GridData gd_spMantis = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spMantis.widthHint = 5;
-		spMantis.setLayoutData(gd_spMantis);
+		spMantis.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		spMantis.setFont(Main.appFont);
 		spMantis.setMaximum(8);
 		
 		Label lblSlug = new Label(grpCrew, SWT.NONE);
 		lblSlug.setFont(Main.appFont);
-		GridData gd_lblSlug = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblSlug = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblSlug.minimumWidth = 50;
-		gd_lblSlug.widthHint = 42;
 		lblSlug.setLayoutData(gd_lblSlug);
 		lblSlug.setText("Slug:");
 		
 		spSlug = new Spinner(grpCrew, SWT.BORDER);
-		GridData gd_spSlug = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spSlug.widthHint = 5;
-		spSlug.setLayoutData(gd_spSlug);
+		spSlug.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		spSlug.setFont(Main.appFont);
 		spSlug.setMaximum(8);
 		
 		Label lblRock = new Label(grpCrew, SWT.NONE);
 		lblRock.setFont(Main.appFont);
-		GridData gd_lblRock = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblRock = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblRock.minimumWidth = 30;
-		gd_lblRock.widthHint = 30;
 		lblRock.setLayoutData(gd_lblRock);
 		lblRock.setText("Rock:");
 		
 		spRock = new Spinner(grpCrew, SWT.BORDER);
-		GridData gd_spRock = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spRock.widthHint = 5;
-		spRock.setLayoutData(gd_spRock);
+		spRock.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		spRock.setFont(Main.appFont);
 		spRock.setMaximum(8);
 		
 		Label lblCrystal = new Label(grpCrew, SWT.NONE);
 		lblCrystal.setFont(Main.appFont);
-		GridData gd_lblCrystal = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblCrystal = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblCrystal.minimumWidth = 40;
-		gd_lblCrystal.widthHint = 40;
 		lblCrystal.setLayoutData(gd_lblCrystal);
 		lblCrystal.setText("Crystal:");
 		
 		spCrystal = new Spinner(grpCrew, SWT.BORDER);
-		GridData gd_spCrystal = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spCrystal.widthHint = 5;
-		spCrystal.setLayoutData(gd_spCrystal);
+		spCrystal.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		spCrystal.setFont(Main.appFont);
 		spCrystal.setMaximum(8);
 		
 		Label lblRandom = new Label(grpCrew, SWT.NONE);
 		lblRandom.setFont(Main.appFont);
 		lblRandom.setToolTipText("Only works on enemy ships; defaults to humans on player ships.");
-		GridData gd_lblRandom = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_lblRandom.widthHint = 47;
-		lblRandom.setLayoutData(gd_lblRandom);
+		lblRandom.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
 		lblRandom.setText("Random:");
 		
 		spRandom = new Spinner(grpCrew, SWT.BORDER);
 		spRandom.setFont(Main.appFont);
+		spRandom.setMaximum(8);
 		spRandom.setToolTipText("Only works on enemy ships; defaults to humans on player ships.");
-		GridData gd_spRandom = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spRandom.widthHint = 5;
-		spRandom.setLayoutData(gd_spRandom);
+		spRandom.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1));
 		
 		Group grpAugments = new Group(crewInfoC, SWT.NONE);
 		grpAugments.setFont(Main.appFont);
@@ -1001,23 +920,19 @@ search:		for (String s : presetsDr.getItems()) {
 		grpWeapons.setFont(Main.appFont);
 		grpWeapons.setText("Define weapons");
 		grpWeapons.setLayout(new GridLayout(1, false));
-		GridData gd_grpWeapons = new GridData(SWT.FILL, SWT.FILL, false, true, 1, 3);
-		gd_grpWeapons.widthHint = 95;
-		grpWeapons.setLayoutData(gd_grpWeapons);
+		grpWeapons.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false, 1, 3));
 		
 		btnExplicit = new Button(grpWeapons, SWT.RADIO);
 		btnExplicit.setFont(Main.appFont);
-		GridData gd_btnExplicit = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_btnExplicit = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_btnExplicit.minimumWidth = 80;
-		gd_btnExplicit.widthHint = 80;
 		btnExplicit.setLayoutData(gd_btnExplicit);
 		btnExplicit.setText("Explicitly");
 		
 		btnUseSet = new Button(grpWeapons, SWT.RADIO);
 		btnUseSet.setFont(Main.appFont);
-		GridData gd_btnUseSet = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_btnUseSet = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_btnUseSet.minimumWidth = 80;
-		gd_btnUseSet.widthHint = 80;
 		btnUseSet.setLayoutData(gd_btnUseSet);
 		btnUseSet.setText("By preset");
 		
@@ -1027,42 +942,36 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		Label lblWeaponSlots = new Label(composite_2, SWT.NONE);
 		lblWeaponSlots.setFont(Main.appFont);
-		GridData gd_lblWeaponSlots = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblWeaponSlots = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblWeaponSlots.minimumWidth = 85;
-		gd_lblWeaponSlots.widthHint = 85;
 		lblWeaponSlots.setLayoutData(gd_lblWeaponSlots);
 		lblWeaponSlots.setToolTipText("Defines the number of weapon slots available to the player.");
 		lblWeaponSlots.setText("Weapon Slots:");
 		
 		spSlots = new Spinner(composite_2, SWT.BORDER);
+		spSlots.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		spSlots.setFont(Main.appFont);
-		GridData gd_spSlots = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spSlots.widthHint = 10;
-		spSlots.setLayoutData(gd_spSlots);
 		spSlots.setMaximum(4);
 		
 		Label lblMaxWeapons = new Label(composite_2, SWT.NONE);
 		lblMaxWeapons.setFont(Main.appFont);
-		GridData gd_lblMaxWeapons = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblMaxWeapons = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblMaxWeapons.minimumWidth = 85;
-		gd_lblMaxWeapons.widthHint = 85;
 		lblMaxWeapons.setLayoutData(gd_lblMaxWeapons);
 		lblMaxWeapons.setSize(77, 15);
 		lblMaxWeapons.setToolTipText("Defines how many weapons are to be picked from the preset.");
 		lblMaxWeapons.setText("Weapon Count:");
 		
 		spMaxWeapons = new Spinner(composite_2, SWT.BORDER);
+		spMaxWeapons.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		spMaxWeapons.setFont(Main.appFont);
-		GridData gd_spMaxWeapons = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spMaxWeapons.widthHint = 10;
-		spMaxWeapons.setLayoutData(gd_spMaxWeapons);
 		spMaxWeapons.setSize(35, 22);
 		spMaxWeapons.setMaximum(spSlots.getSelection());
 		
 		Group grpPresetDefinition = new Group(weaponsC, SWT.NONE);
 		grpPresetDefinition.setFont(Main.appFont);
 		grpPresetDefinition.setLayout(new GridLayout(2, false));
-		grpPresetDefinition.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 3));
+		grpPresetDefinition.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 1, 3));
 		grpPresetDefinition.setText("Preset definition");
 		
 		presets = new Combo(grpPresetDefinition, SWT.READ_ONLY);
@@ -1076,9 +985,7 @@ search:		for (String s : presetsDr.getItems()) {
 		Group grpExplicitDefinition = new Group(weaponsC, SWT.NONE);
 		grpExplicitDefinition.setFont(Main.appFont);
 		grpExplicitDefinition.setLayout(new GridLayout(2, false));
-		GridData gd_grpExplicitDefinition = new GridData(SWT.FILL, SWT.FILL, true, true, 4, 1);
-		gd_grpExplicitDefinition.heightHint = 114;
-		grpExplicitDefinition.setLayoutData(gd_grpExplicitDefinition);
+		grpExplicitDefinition.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 4, 1));
 		grpExplicitDefinition.setText("Explicit definition");
 		
 		listWeapons = new List(grpExplicitDefinition, SWT.BORDER);
@@ -1115,23 +1022,19 @@ search:		for (String s : presetsDr.getItems()) {
 		grpDrones.setFont(Main.appFont);
 		grpDrones.setText("Define drones");
 		grpDrones.setLayout(new GridLayout(1, false));
-		GridData gd_grpDrones = new GridData(SWT.FILL, SWT.FILL, false, true, 1, 3);
-		gd_grpDrones.widthHint = 95;
-		grpDrones.setLayoutData(gd_grpDrones);
+		grpDrones.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false, 1, 3));
 		
 		btnExplicitDr = new Button(grpDrones, SWT.RADIO);
 		btnExplicitDr.setFont(Main.appFont);
-		GridData gd_btnExplicitDr = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_btnExplicitDr = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_btnExplicitDr.minimumWidth = 80;
-		gd_btnExplicitDr.widthHint = 80;
 		btnExplicitDr.setLayoutData(gd_btnExplicitDr);
 		btnExplicitDr.setText("Explicitly");
 		
 		btnUseSetDr = new Button(grpDrones, SWT.RADIO);
 		btnUseSetDr.setFont(Main.appFont);
-		GridData gd_btnUseSetDr = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_btnUseSetDr = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_btnUseSetDr.minimumWidth = 80;
-		gd_btnUseSetDr.widthHint = 80;
 		btnUseSetDr.setLayoutData(gd_btnUseSetDr);
 		btnUseSetDr.setText("By preset");
 		
@@ -1141,26 +1044,21 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		Label lblDroneSlots = new Label(composite_2dr, SWT.NONE);
 		lblDroneSlots.setFont(Main.appFont);
-		GridData gd_lblDroneSlots = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblDroneSlots = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblDroneSlots.minimumWidth = 85;
-		gd_lblDroneSlots.widthHint = 85;
 		lblDroneSlots.setLayoutData(gd_lblDroneSlots);
 		lblDroneSlots.setToolTipText("Defines the number of drone slots available to the player.");
 		lblDroneSlots.setText("Drone Slots:");
 		
 		spSlotsDr = new Spinner(composite_2dr, SWT.BORDER);
 		spSlotsDr.setFont(Main.appFont);
-		GridData gd_spSlotsDr = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spSlotsDr.minimumWidth = 10;
-		gd_spSlotsDr.widthHint = 10;
-		spSlotsDr.setLayoutData(gd_spSlotsDr);
+		spSlotsDr.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		spSlotsDr.setMaximum(4);
 		
 		Label lblMaxDrones = new Label(composite_2dr, SWT.NONE);
 		lblMaxDrones.setFont(Main.appFont);
-		GridData gd_lblMaxDrones = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblMaxDrones = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblMaxDrones.minimumWidth = 85;
-		gd_lblMaxDrones.widthHint = 85;
 		lblMaxDrones.setLayoutData(gd_lblMaxDrones);
 		lblMaxDrones.setSize(77, 15);
 		lblMaxDrones.setToolTipText("Defines how many drones are to be picked from the preset.");
@@ -1168,17 +1066,14 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spMaxDrones = new Spinner(composite_2dr, SWT.BORDER);
 		spMaxDrones.setFont(Main.appFont);
-		GridData gd_spMaxDrones = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_spMaxDrones.minimumWidth = 10;
-		gd_spMaxDrones.widthHint = 10;
-		spMaxDrones.setLayoutData(gd_spMaxDrones);
+		spMaxDrones.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		spMaxDrones.setSize(35, 22);
 		spMaxDrones.setMaximum(spSlotsDr.getSelection());
 		
 		Group grpPresetDefinitionDr = new Group(dronesC, SWT.NONE);
 		grpPresetDefinitionDr.setFont(Main.appFont);
 		grpPresetDefinitionDr.setLayout(new GridLayout(2, false));
-		grpPresetDefinitionDr.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 3));
+		grpPresetDefinitionDr.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 1, 3));
 		grpPresetDefinitionDr.setText("Preset definition");
 		
 		presetsDr = new Combo(grpPresetDefinitionDr, SWT.READ_ONLY);
@@ -1192,9 +1087,7 @@ search:		for (String s : presetsDr.getItems()) {
 		Group grpExplicitDefinitionDr = new Group(dronesC, SWT.NONE);
 		grpExplicitDefinitionDr.setFont(Main.appFont);
 		grpExplicitDefinitionDr.setLayout(new GridLayout(2, false));
-		GridData gd_grpExplicitDefinitionDr = new GridData(SWT.FILL, SWT.FILL, true, true, 4, 1);
-		gd_grpExplicitDefinitionDr.heightHint = 114;
-		grpExplicitDefinitionDr.setLayoutData(gd_grpExplicitDefinitionDr);
+		grpExplicitDefinitionDr.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 4, 1));
 		grpExplicitDefinitionDr.setText("Explicit definition");
 		
 		listDrones = new List(grpExplicitDefinitionDr, SWT.BORDER);
@@ -1223,25 +1116,23 @@ search:		for (String s : presetsDr.getItems()) {
 		gl_composite.marginWidth = 0;
 		gl_composite.marginHeight = 0;
 		composite.setLayout(gl_composite);
-		GridData gd_composite = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
-		gd_composite.heightHint = 42;
-		composite.setLayoutData(gd_composite);
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		
 		Button btnConfirm = new Button(composite, SWT.NONE);
 		btnConfirm.setFont(Main.appFont);
-		GridData gd_btnConfirm = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1);
-		gd_btnConfirm.heightHint = 25;
-		gd_btnConfirm.widthHint = 80;
+		GridData gd_btnConfirm = new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1);
+		gd_btnConfirm.minimumWidth = 80;
 		btnConfirm.setLayoutData(gd_btnConfirm);
 		btnConfirm.setText("Confirm");
 		
 		Button btnCancel = new Button(composite, SWT.NONE);
 		btnCancel.setFont(Main.appFont);
-		GridData gd_btnCancel = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_btnCancel.heightHint = 25;
+		GridData gd_btnCancel = new GridData(SWT.RIGHT, SWT.CENTER, false, true, 1, 1);
 		gd_btnCancel.widthHint = 80;
 		btnCancel.setLayoutData(gd_btnCancel);
 		btnCancel.setText("Cancel");
+		
+		shell.pack();
 
 	// === LISTENERS
 
@@ -1316,11 +1207,8 @@ search:		for (String s : presetsDr.getItems()) {
 					aug = aug.substring(aug.lastIndexOf("(")+1, aug.lastIndexOf(")"));
 					Main.ship.augmentSet.add(aug);
 				}
-				
-				ShipIO.fixImgNames();
-				ShipIO.loadWeaponStrips();
 				ShipIO.loadWeaponImages(Main.ship);
-	        	ShipIO.remapMountsToWeapons();
+				ShipIO.remapMountsToWeapons();
 				
 				shell.setVisible(false);
 			}
@@ -1474,36 +1362,36 @@ search:		for (String s : presetsDr.getItems()) {
 			}
 		});
 		
-        shell.addListener(SWT.Traverse, new Listener() {
-        	@Override
-        	public void handleEvent(Event e) {
-        		if (e.detail == SWT.TRAVERSE_ESCAPE) {
-        			e.doit = false;
-    				Main.shell.setEnabled(true);
-    				shell.setVisible(false);
-        		}
-        	}
-        });
-        
+		shell.addListener(SWT.Traverse, new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+				if (e.detail == SWT.TRAVERSE_ESCAPE) {
+					e.doit = false;
+					Main.shell.setEnabled(true);
+					shell.setVisible(false);
+				}
+			}
+		});
+		
 		spSlots.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				spMaxWeapons.setMaximum(spSlots.getSelection());
 			}
 		});
-        
+		
 		categories.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				weaponsListSet(categories.getText());
 			}
 		});
-        
+		
 		spSlotsDr.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				spMaxDrones.setMaximum(spSlotsDr.getSelection());
 			}
 		});
-        
+		
 		categoriesDr.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {

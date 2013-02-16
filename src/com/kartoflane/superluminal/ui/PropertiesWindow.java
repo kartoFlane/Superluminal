@@ -44,75 +44,65 @@ public class PropertiesWindow
 		shell.setLayout(new GridLayout(2, false));
 		
 		Label lblLevel_1 = new Label(shell, SWT.NONE);
+		lblLevel_1.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		lblLevel_1.setFont(Main.appFont);
 		lblLevel_1.setText("Level:");
 		
 		textLevel = new Spinner(shell, SWT.BORDER | SWT.CENTER);
 		textLevel.setMinimum(1);
 		textLevel.setMaximum(8);
-		GridData gd_textLevel = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_textLevel.widthHint = 20;
-		textLevel.setLayoutData(gd_textLevel);
+		textLevel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		textLevel.setFont(Main.appFont);
 		textLevel.setTextLimit(1);
 		
 		scaleLevel = new Scale(shell, SWT.NONE);
-		GridData gd_scaleLevel = new GridData(SWT.LEFT, SWT.CENTER, false, false, 5, 2);
-		gd_scaleLevel.heightHint = 40;
-		scaleLevel.setLayoutData(gd_scaleLevel);
+		scaleLevel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 5, 2));
 		scaleLevel.setFont(Main.appFont);
 		scaleLevel.setPageIncrement(1);
 		scaleLevel.setMinimum(1);
 		scaleLevel.setMaximum(8);
 		
 		Label lblPower = new Label(shell, SWT.NONE);
+		lblPower.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		lblPower.setFont(Main.appFont);
 		lblPower.setText("Power");
 		
 		textPower = new Spinner(shell, SWT.BORDER | SWT.CENTER);
 		textPower.setMinimum(1);
 		textPower.setMaximum(8);
-		GridData gd_textPower = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_textPower.widthHint = 20;
-		textPower.setLayoutData(gd_textPower);
+		textPower.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		textPower.setFont(Main.appFont);
 		textPower.setTextLimit(1);
 		
 		scalePower = new Scale(shell, SWT.NONE);
-		GridData gd_scalePower = new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 2);
-		gd_scalePower.heightHint = 40;
-		scalePower.setLayoutData(gd_scalePower);
+		scalePower.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 2));
 		scalePower.setFont(Main.appFont);
 		scalePower.setPageIncrement(1);
 		scalePower.setMaximum(8);
 		
 		btnAvailable = new Button(shell, SWT.CHECK);
-		btnAvailable.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 3, 1));
+		btnAvailable.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 3, 1));
 		btnAvailable.setFont(Main.appFont);
-		btnAvailable.setToolTipText("When set to true, this system will be available to the player since the beggining of the game.\n"
-											+"When set to false, the player will have to buy the system at a store to unlock it.\n"
-											+"The player won't be able to buy systems that have not been placed on the ship.");
+		btnAvailable.setToolTipText("When set to true, this system will be available and installed at the beggining of the game.\n"
+											+"When set to false, the system will have to be bought at a store to unlock it.\n"
+											+"Systems that have not been placed on the ship will not be functional, even after buying.");
 		btnAvailable.setText("Available At Start");
 		
 		composite = new Composite(shell, SWT.NONE);
-		composite.setLayout(new GridLayout(2, false));
-		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 5, 1));
+		composite.setLayout(new GridLayout(2, true));
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 5, 1));
 		
 		btnOk = new Button(composite, SWT.NONE);
-		GridData gd_btnOk = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1);
-		gd_btnOk.heightHint = 25;
-		gd_btnOk.widthHint = 80;
-		btnOk.setLayoutData(gd_btnOk);
+		btnOk.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		btnOk.setFont(Main.appFont);
 		btnOk.setText("OK");
 		
 		Button btnCancel = new Button(composite, SWT.NONE);
-		GridData gd_btnCancel = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_btnCancel.heightHint = 25;
-		gd_btnCancel.widthHint = 80;
-		btnCancel.setLayoutData(gd_btnCancel);
+		btnCancel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		btnCancel.setFont(Main.appFont);
 		btnCancel.setText("Cancel");
+		
+		shell.pack();
 		
 		textLevel.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent arg0) {
@@ -162,15 +152,15 @@ public class PropertiesWindow
 		});
 		
 
-        shell.addListener(SWT.Traverse, new Listener() {
-        	@Override
-        	public void handleEvent(Event e) {
-        		if (e.detail == SWT.TRAVERSE_ESCAPE) {
-        			e.doit = false;
-    				shell.setVisible(false);
-        		}
-        	}
-        });
+		shell.addListener(SWT.Traverse, new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+				if (e.detail == SWT.TRAVERSE_ESCAPE) {
+					e.doit = false;
+					shell.setVisible(false);
+				}
+			}
+		});
 	}
 
 	public void open()
@@ -181,13 +171,13 @@ public class PropertiesWindow
 		textLevel.setEnabled(false);
 		btnOk.setEnabled(false);
 		//btnAvailable.setEnabled(false);
-		
+
+		shell.setLocation(Main.shell.getLocation().x+100, Main.shell.getLocation().y+100);
 		shell.open();
 		
 		String s = Main.selectedRoom.getSystem().toString().toLowerCase();
 		s = s.substring(0, 1).toUpperCase() + s.substring(1, s.length());
 		shell.setText(s);
-		shell.setLocation(Main.shell.getLocation().x+100, Main.shell.getLocation().y+100);
 
 		int level = 0;
 		int power = 0;
@@ -217,7 +207,13 @@ public class PropertiesWindow
 		textLevel.setMaximum(scaleLevel.getMaximum());
 		textPower.setMaximum(scalePower.getMaximum());
 
-		btnAvailable.setSelection(Main.systemsMap.get(sys).isAvailable());
+		if (sys.equals(Systems.EMPTY)) {
+			btnAvailable.setSelection(true);
+			btnAvailable.setEnabled(false);
+		} else {
+			btnAvailable.setSelection(Main.systemsMap.get(sys).isAvailable());
+			btnAvailable.setEnabled(true);
+		}
 		/*
 		if (!sys.equals(Systems.EMPTY) && Main.ship.isPlayer) {
 			btnAvailable.setSelection(Main.ship.startMap.get(sys));

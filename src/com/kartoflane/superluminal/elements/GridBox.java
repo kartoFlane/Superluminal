@@ -3,7 +3,6 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
 
-import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.PaintBox;
 

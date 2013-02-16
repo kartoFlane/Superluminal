@@ -2,7 +2,6 @@ package com.kartoflane.superluminal.elements;
 
 import java.io.Serializable;
 
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
@@ -28,26 +27,59 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 	private RGB line_rgb = null;
 	private Color doorColor = null;
 	private RGB door_rgb = null;
+	private boolean move = false;
 	
 	public FTLDoor() {
 		super();
+		setBorderThickness(2);
 		setLineColor(new RGB(0,0,0));
 		setDoorColor(new RGB(255, 150, 48));
 	}
 	
 	public FTLDoor(int x, int y, boolean horizontal) {
-		new FTLDoor();
+		this();
 		this.setBounds((horizontal) ? (new Rectangle(x, y, 31, 6)) : (new Rectangle(x, y, 6, 31)));
 		this.horizontal = horizontal;
 	}
 	
 	public FTLDoor(Point pos, boolean horizontal) {
-		new FTLDoor(pos.x, pos.y, horizontal);
+		this(pos.x, pos.y, horizontal);
 	}
 	
 	public void fixRectOrientation() {
 		this.getBounds().width = (horizontal) ? (31) : (6);
 		this.getBounds().height = (horizontal) ? (6) : (31);
+	}
+	
+	public void setLocation(int x, int y) {
+		Rectangle oldBounds = Main.cloneRect(bounds);
+		Rectangle temp = Main.cloneRect(bounds);
+		
+		temp.x = Math.round(x / 35) * 35 + (horizontal ? 2 : -3);
+		temp.y = Math.round(y / 35) * 35 + (horizontal ? -3 : 2);
+		
+		if (Main.wallToDoor(temp) == null && Main.isDoorAtWall(temp)) {
+			bounds.x = temp.x;
+			bounds.y = temp.y;
+		}
+		Main.canvas.redraw(oldBounds.x-2, oldBounds.y-2, oldBounds.width+4, oldBounds.height+4, false);
+		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
+		
+		Main.updateSelectedPosText();
+	}
+	
+	public void setLocationAbsolute(int x, int y) {
+		Rectangle oldBounds = Main.cloneRect(bounds);
+		bounds.x = Math.round(x / 35) * 35 + (horizontal ? 2 : -3);
+		bounds.y = Math.round(y / 35) * 35 + (horizontal ? -3 : 2);
+		
+		Main.canvas.redraw(oldBounds.x-2, oldBounds.y-2, oldBounds.width+4, oldBounds.height+4, false);
+		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
+	}
+	
+	public Point getLocation() {
+		// no idea why, but if those values are not added, then the doors are shifted a bit towards upper left
+		return new Point(bounds.x+10, bounds.y+4);
 	}
 	
 	public void setLineColor(RGB rgb) {
@@ -66,6 +98,7 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 	
 	@Override
 	public void paintControl(PaintEvent e) {
+		setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
 		super.paintControl(e);
 		
 		Color prevBg = e.gc.getBackground();
@@ -73,7 +106,7 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 		int prevAlpha = e.gc.getAlpha();
 		int prevWidth = e.gc.getLineWidth();
 		
-		e.gc.setAlpha(255);
+		e.gc.setAlpha(alpha);
 		e.gc.setLineWidth(1);
 		e.gc.setBackground(lineColor);
 		e.gc.setForeground(lineColor);
@@ -87,6 +120,9 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 			
 			e.gc.fillRectangle(getBounds().x+6, getBounds().y+1, 20, 4);
 			e.gc.drawRectangle(getBounds().x+15, getBounds().y, 1, 5);
+			
+			if (selected && isPinned())
+				e.gc.drawImage(pin, bounds.x+9, bounds.y-15);
 		} else {
 			e.gc.fillRectangle(getBounds().x+1, getBounds().y, 4, 5);
 			e.gc.fillRectangle(getBounds().x+1, getBounds().y+getBounds().height-4, 4, 5);
@@ -96,6 +132,9 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 			
 			e.gc.fillRectangle(getBounds().x+1, getBounds().y+6, 4, 20);
 			e.gc.drawRectangle(getBounds().x, getBounds().y+15, 5, 1);
+			
+			if (selected && isPinned())
+				e.gc.drawImage(pin, bounds.x-15, bounds.y+9);
 		}
 		
 		e.gc.setAlpha(prevAlpha);
@@ -106,28 +145,26 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 
 	@Override
 	public void mouseUp(MouseEvent e) {
-		
+		move = false;
+		Main.cursor.setVisible(true);
 	}
 
 	@Override
 	public void mouseDown(MouseEvent e)
 	{
-		if (bounds.contains(e.x, e.y)) {
-			selected = true;
-			setBorderColor(new RGB(0, 0, 255));
-			Main.selectedDoor = this;
-		} else if (!Main.modShift) {
-			if (selected) {
-				setBorderColor(null);
-				Main.selectedDoor = null;
-			}
-			selected = false;
+		if (bounds.contains(e.x, e.y) && e.button == 1) {
+			if (Main.selectedDoor != null) Main.selectedDoor.deselect();
+			select();
+		} else {
+			deselect();
 		}
+		Main.cursor.setVisible(false);
 	}
 
 	@Override
 	public void mouseMove(MouseEvent e) {
-		
+		if (move && !isPinned())
+			setLocation(e.x,e.y);
 	}
 
 	@Override
@@ -138,10 +175,43 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 		Main.layeredPainter.add(this, LayeredPainter.DOOR);
 	}
 
+	public void select() {
+		selected = true;
+		move = !isPinned();
+		setBorderColor(new RGB(0,0,255));
+		setDoorColor(new RGB(200, 150, 200));
+		Main.selectedDoor = this;
+		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
+	}
+	
+	public void deselect() {
+		selected = false;
+		move = false;
+		setBorderColor(null);
+		setDoorColor(new RGB(255, 150, 48));
+		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
+	}
+	
 	public void dispose() {
 		Main.layeredPainter.remove(this);
 		Cache.checkInColor(this, line_rgb);
 		Cache.checkInColor(this, door_rgb);
+		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
 		super.dispose();
+	}
+
+	@Override
+	public void mouseHover(MouseEvent e)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setOffset(int x, int y) {}
+
+	@Override
+	public Point getOffset() {
+		return null;
 	}
 }

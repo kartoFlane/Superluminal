@@ -1,4 +1,5 @@
 package com.kartoflane.superluminal.painter;
+import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,6 +64,46 @@ public class Cache {
 		return image;
 	}
 	
+	/**
+	 * 
+	 * @param customer the interested object
+	 * @param path a path to an image wi
+	 */
+	public static Image checkOutImageAbsolute(Object customer, String path) {
+		Image image = null;
+		if (path != null) {
+			ArrayList<Object> customers = cachedImageCustomersMap.get(path);
+			if (customers == null) {
+				customers = new ArrayList<Object>();
+				cachedImageCustomersMap.put(path, customers);
+			}
+	
+			image = cachedImagesMap.get(path);
+			if (image != null && image.isDisposed()) {
+				cachedImagesMap.remove(path);
+				customers.clear();
+				image = null;
+			}
+			if (image == null) {
+				try {
+					File f = new File(path);
+					if (f.exists()) {
+						image = new Image(Display.getCurrent(), path);
+						cachedImagesMap.put(path, image);
+					} else {
+						ShipIO.errors.add(String.format("%s: Error loading \"%s\": file not found.", customer.getClass().getName(), f.getName()));
+					}
+				} catch (IllegalArgumentException e) {
+					ShipIO.errors.add(String.format("%s: Error loading \"%s\": null argument.", customer.getClass().getName(), path));
+				} catch (SWTException e) {
+					ShipIO.errors.add(String.format("%s: Error loading \"%s\": file contains invalid data.", customer.getClass().getName(), path));
+				}
+			}
+			customers.add(customer);
+		}
+		return image;
+	}
+	
 	public static Color checkOutColor(Object customer, RGB rgb) {
 		Color color = null;
 		ArrayList<Object> customers = cachedColorCustomersMap.get(rgb);
@@ -84,12 +125,13 @@ public class Cache {
 				color = new Color(Main.shell.getDisplay(), rgb);
 				cachedColorsMap.put(rgb, color);
 			} catch (IllegalArgumentException e) {
-				ShipIO.errors.add(String.format("%s: Error loading color %s: null argument.", customer.getClass().getName(), rgb));
+				//ShipIO.errors.add(String.format("%s: Error loading color %s: null RGB argument.", customer.getClass().getName(), rgb));
 			}
 		}
 		customers.add(customer);
 		return color;
 	}
+	
 
 	/**
 	 * Signals that an object is done using an image it had checked out.
@@ -100,6 +142,27 @@ public class Cache {
 
 		if (customers != null && customers.size() > 0) {
 			// Can't use equals(), so list.remove is also out.
+			Iterator<Object> it = customers.iterator();
+			while (it.hasNext()) {
+				if (it.next() == customer) {
+					it.remove();
+					break;
+				}
+			}
+		}
+		if (customers == null || customers.size() == 0) {
+			Image image = cachedImagesMap.get(path);
+			if (image != null && !image.isDisposed()) {
+				image.dispose();
+			}
+			cachedImagesMap.remove(path);
+		}
+	}
+	
+	public static void checkInImageAbsolute(Object customer, String path) {
+		ArrayList<Object> customers = cachedImageCustomersMap.get(path);
+
+		if (customers != null && customers.size() > 0) {
 			Iterator<Object> it = customers.iterator();
 			while (it.hasNext()) {
 				if (it.next() == customer) {

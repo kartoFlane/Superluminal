@@ -34,7 +34,6 @@ public class Grid
 	}
 	
 	public void setWidthCell(int w) {
-		GridBox box;
 		if (horizontalCells < w) {
 			for (int x=horizontalCells; x <= w; x++)
 				if (gridArray.get(x) == null) {
@@ -65,7 +64,6 @@ public class Grid
 	}
 	
 	public void setHeightCell(int h) {
-		GridBox box;
 		if (verticalCells < h) {
 			for (int x=1; x <= verticalCells; x++)
 				if (gridArray.get(x) == null) {
@@ -107,7 +105,7 @@ public class Grid
 		return gridArray.get(x).get(y);
 	}
 	
-	private void remove(int x, int y) {
+	public void remove(int x, int y) {
 		gridArray.get(x).get(y).dispose();
 	}
 }

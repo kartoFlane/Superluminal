@@ -63,13 +63,6 @@ public class NewShipWindow extends Dialog
 		btnEnemyShip.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 3, 1));
 		btnEnemyShip.setText("Enemy Ship");
 		
-		btnEnemyShip.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				result = 2;
-			}
-		});
-		
 		Composite composite = new Composite(shell, SWT.NONE);
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 4, 1));
 		GridLayout gl_composite = new GridLayout(4, false);
@@ -79,12 +72,28 @@ public class NewShipWindow extends Dialog
 		
 		Button btnOk = new Button(composite, SWT.NONE);
 		btnOk.setFont(Main.appFont);
-		GridData gd_btnOk = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 3, 1);
-		gd_btnOk.heightHint = 25;
-		gd_btnOk.widthHint = 80;
+		GridData gd_btnOk = new GridData(SWT.LEFT, SWT.CENTER, true, false, 3, 1);
+		gd_btnOk.minimumWidth = 80;
 		btnOk.setLayoutData(gd_btnOk);
 		btnOk.setSize(48, 25);
 		btnOk.setText("Confirm");
+
+		Button btnCancel = new Button(composite, SWT.NONE);
+		btnCancel.setFont(Main.appFont);
+		GridData gd_btnCancel = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1);
+		gd_btnCancel.minimumWidth = 80;
+		btnCancel.setLayoutData(gd_btnCancel);
+		btnCancel.setSize(80, 25);
+		btnCancel.setText("Cancel");
+		
+		shell.pack();
+		
+		btnEnemyShip.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				result = 2;
+			}
+		});
 		
 		btnOk.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -93,14 +102,6 @@ public class NewShipWindow extends Dialog
 			}
 		});
 		
-		Button btnCancel = new Button(composite, SWT.NONE);
-		btnCancel.setFont(Main.appFont);
-		GridData gd_btnCancel = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_btnCancel.heightHint = 25;
-		gd_btnCancel.widthHint = 80;
-		btnCancel.setLayoutData(gd_btnCancel);
-		btnCancel.setSize(80, 25);
-		btnCancel.setText("Cancel");
 		btnCancel.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				result = 0;

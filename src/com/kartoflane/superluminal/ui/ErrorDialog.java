@@ -14,7 +14,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 
@@ -53,40 +52,46 @@ public class ErrorDialog
 		
 		Composite consoleC = new Composite(shell, SWT.BORDER);
 		consoleC.setLayout(new FillLayout(SWT.HORIZONTAL));
-		consoleC.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
+		GridData gd_consoleC = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
+		gd_consoleC.minimumHeight = 100;
+		gd_consoleC.minimumWidth = 400;
+		consoleC.setLayoutData(gd_consoleC);
 		
 		errors = new Text(consoleC, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
 		errors.setFont(Main.appFont);
 		errors.setEditable(false);
+	
 		
 		composite = new Composite(shell, SWT.NONE);
-		composite.setLayout(new GridLayout(10, false));
-		composite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		GridLayout gl_composite = new GridLayout(3, false);
+		gl_composite.marginRight = 5;
+		gl_composite.marginLeft = 5;
+		composite.setLayout(gl_composite);
+		GridData gd_composite = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
+		gd_composite.minimumWidth = 5;
+		composite.setLayoutData(gd_composite);
 		
 		btnDebug = new Button(composite, SWT.CHECK);
+		btnDebug.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		btnDebug.setText("Debug");
 		btnDebug.setSelection(Main.debug);
-		new Label(composite, SWT.NONE);
-		new Label(composite, SWT.NONE);
-		new Label(composite, SWT.NONE);
-		new Label(composite, SWT.NONE);
-		new Label(composite, SWT.NONE);
-		new Label(composite, SWT.NONE);
-		new Label(composite, SWT.NONE);
 		
 		btnClear = new Button(composite, SWT.NONE);
 		btnClear.setFont(Main.appFont);
-		GridData gd_btnClear = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1);
-		gd_btnClear.widthHint = 80;
+		GridData gd_btnClear = new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1);
+		gd_btnClear.minimumWidth = 80;
 		btnClear.setLayoutData(gd_btnClear);
 		btnClear.setText("Clear");
 		
 		btnClose = new Button(composite, SWT.NONE);
 		btnClose.setFont(Main.appFont);
-		GridData gd_btnClose = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_btnClose = new GridData(SWT.RIGHT, SWT.CENTER, false, true, 1, 1);
 		gd_btnClose.widthHint = 80;
+		gd_btnClose.minimumWidth = 80;
 		btnClose.setLayoutData(gd_btnClose);
 		btnClose.setText("Close");
+		
+		shell.pack();
 
 		btnDebug.addSelectionListener(new SelectionAdapter() {
 			@Override

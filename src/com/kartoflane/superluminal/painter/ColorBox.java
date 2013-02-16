@@ -29,14 +29,17 @@ public class ColorBox extends PaintBox {
 		
 		if (color != null) {
 			Color prevBgColor = e.gc.getBackground();
+			int prevAlpha = e.gc.getAlpha();
 			
 			e.gc.setBackground(color);
+			e.gc.setAlpha(alpha);
 	
 			// Rect graphics funcs include the max,
 			// so 0 <= W would have been W+1 pixels wide.
 			e.gc.fillRectangle(bounds.x, bounds.y, bounds.width, bounds.height);
 	
 			e.gc.setBackground(prevBgColor);
+			e.gc.setAlpha(prevAlpha);
 		}
 	}
 

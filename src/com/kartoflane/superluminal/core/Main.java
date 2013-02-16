@@ -1,13 +1,11 @@
 package com.kartoflane.superluminal.core;
 
-import java.awt.AWTException;
 import java.awt.Desktop;
-import java.awt.Robot;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Map;
 
 import org.eclipse.swt.SWT;
@@ -25,19 +23,19 @@ import org.eclipse.swt.layout.FormAttachment;
 import com.kartoflane.superluminal.elements.Anchor;
 import com.kartoflane.superluminal.elements.CursorBox;
 import com.kartoflane.superluminal.elements.FTLDoor;
-import com.kartoflane.superluminal.elements.FTLItem;
 import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.elements.FTLRoom;
 import com.kartoflane.superluminal.elements.FTLShip;
 import com.kartoflane.superluminal.elements.Grid;
 import com.kartoflane.superluminal.elements.GridBox;
+import com.kartoflane.superluminal.elements.HullBox;
+import com.kartoflane.superluminal.elements.ShieldBox;
 import com.kartoflane.superluminal.elements.Slide;
 import com.kartoflane.superluminal.elements.SystemBox;
 import com.kartoflane.superluminal.elements.Systems;
-import com.kartoflane.superluminal.painter.ColorBox;
-import com.kartoflane.superluminal.painter.ImageBox;
+import com.kartoflane.superluminal.elements.Tooltip;
+import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.LayeredPainter;
-import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.ui.ErrorDialog;
 import com.kartoflane.superluminal.ui.ExportDialog;
 import com.kartoflane.superluminal.ui.NewShipWindow;
@@ -71,7 +69,7 @@ public class Main
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "2013.02.7";
+	public final static String VERSION = "2013.02.14";
 	
 		// === Important objects
 	public static Shell shell;
@@ -105,7 +103,6 @@ public class Main
 	public static boolean loadFloor = true;
 	public static boolean loadShield = true;
 	public static boolean loadSystem = true;
-	public static boolean constantRedraw = true;
 		// export dialog
 	public static String exportPath = "null";
 		// other
@@ -117,19 +114,13 @@ public class Main
 	public static Point dragRoomAnchor = new Point(0,0);
 	public static boolean leftMouseDown = false;
 	public static boolean rightMouseDown = false;
-	public static boolean inBounds = false;
 	
 		// === Generic booleans
-	private static boolean onCanvas = false;
-	private static boolean moveSelected = false;
-	private static boolean resizeSelected = false;
-	private static boolean hullSelected = false;
-	private static boolean shieldSelected = false;
-	public static boolean canvasActive = false;
+	public static boolean hullSelected = false;
+	public static boolean shieldSelected = false;
 	public static boolean modShift = false;
 	public static boolean modAlt = false;
-	public static boolean moveAnchor = false;
-	public static boolean allowRoomPlacement = true;
+	public static boolean modCtrl = false;
 	
 		// === Internal
 	public static boolean debug = true;
@@ -149,40 +140,27 @@ public class Main
 	public static FTLMount selectedMount = null;
 	
 		// === Rectangle variables, used for various purposes.
-	private static FTLRoom parseRoom = null;
-	private static Rectangle parseRect = null;
 	private static Rectangle phantomRect = null;
-	public static Rectangle mountRect = new Rectangle(0,0,0,0);
 	public static Rectangle shieldEllipse = new Rectangle(0,0,0,0);
 	
 		// === Flags for Weapon Mounting tool
-	private static Slide mountToolSlide = Slide.UP;
-	private static boolean mountToolMirror = true;
-	private static boolean mountToolHorizontal = true;
+	public static Slide mountToolSlide = Slide.UP;
+	public static boolean mountToolMirror = true;
+	public static boolean mountToolHorizontal = true;
 	
 		// === Image holders
 	public static Image hullImage = null;
 	public static Image floorImage = null;
 	public static Image shieldImage = null;
 	public static Image cloakImage = null;
-	public static Image tempImage;
+	public static Image tempImage = null;
 	public static Image pinImage = null;
 	public static Image tickImage = null;
 	public static Image crossImage = null;
-	public static Map<String, Integer> weaponStripMap = new HashMap<String, Integer>();
-	public static Map<String, Image> weaponImgMap = new HashMap<String, Image>();
-	public static Map<Integer, Rectangle> indexImgMapRotated = new HashMap<Integer, Rectangle>();
-	public static Map<Integer, Rectangle> indexImgMapNormal = new HashMap<Integer, Rectangle>();
-	
-		// === Weapon image maps
-	// it's probably better to just prepare all the images at once when loaded, instead of creating them as neccessary...
-	public static LinkedList<Image> rotated = new LinkedList<Image>();
-	public static LinkedList<Image> flipped = new LinkedList<Image>();
-	public static LinkedList<Image> rotatedFlipped = new LinkedList<Image>();
+	public static Map<String, Integer> weaponFrameWidthMap = new HashMap<String, Integer>();
 	
 		// === Miscellaneous
 	public static Rectangle[] corners = new Rectangle[4];
-	private static Color highlightColor = null;
 	private static String lastMsg = "";
 	/**
 	 * Path of current project file, for quick saving via Ctrl+S
@@ -194,17 +172,9 @@ public class Main
 	 */
 	public static HashSet<Integer> idList = new HashSet<Integer>();
 	/**
-	 * Preloaded data is stored in this map.
-	 */
-	public static HashMap<String, Object> loadedData = new HashMap<String, Object>();
-	/**
 	 * Images (tools and systems) are loaded once and then references are held in this map for easy access.
 	 */
 	public static HashMap<String, Image> toolsMap = new HashMap<String, Image>();
-	/**
-	 * Holds Image objects for easy reference, without the need to load them every time they're needed.
-	 */
-	//public static HashMap<Systems, Image> systemsMap = new HashMap<Systems, Image>();
 
 	// === GUI elements' variables, for use in listeners and functions that reference them
 	public static Menu menuSystem;
@@ -213,18 +183,16 @@ public class Main
 	private static Label mGridPosText;
 	private static Label shipInfoText;
 	public static MenuItem mntmClose;
-	private Text txtX;
-	private Text txtY;
+	private static Text txtX;
+	private static Text txtY;
 	private Label mPosText;
 	private Button btnHull;
-	private Button btnShields;
+	public static Button btnShields;
 	private Button btnFloor;
 	private Button btnCloak;
 	private Button btnMiniship;
 	private Label canvasBg;
-	private Canvas bgCanvas;
 	private FormData fd_canvas;
-	private FormData fd_bgCanvas;
 	private boolean shellStateChange;
 	
 	private MenuItem mntmUnload;
@@ -235,15 +203,14 @@ public class Main
 
 	private MenuItem mntmShowFloor;
 	private MenuItem mntmShowShield;
-	private Button btnCloaked;
+	public static Button btnCloaked;
 	private Button btnPirate;
-	private Button btnXminus;
-	private Button btnXplus;
-	private Button btnYminus;
-	private Button btnYplus;
+	private static Button btnXminus;
+	private static Button btnXplus;
+	private static Button btnYminus;
+	private static Button btnYplus;
 	private MenuItem mntmConToPlayer;
 	private MenuItem mntmConToEnemy;
-	
 	public static Font appFont;
 	public static ToolItem tltmPointer;
 	public static ToolItem tltmRoom;
@@ -251,22 +218,41 @@ public class Main
 	public static ToolItem tltmMount;
 	public static ToolItem tltmSystem;
 
-	
 	public static Anchor anchor;
 	public static GridBox gridBox;
 	public static HashMap<Systems, SystemBox> systemsMap = new HashMap<Systems, SystemBox>();
 	public static Grid grid;
+	public static HullBox hullBox;
+	public static ShieldBox shieldBox;
+	public static Tooltip tooltip;
 	
 	// =================================================================================================== //
 	
 	/*
 	 * === TODO
 	 * 
-	 * - weaponArt odnosi sie do animations.xml, tam dopiero jest zdefiniowany uzywany image!
-	 * - shell.pack w ship properties zamiast sztywnego ustalania wielkosci - inaczej jest clipping przyciskow na dole
-	 * - usun width hint w hull/shield/etc images - zamiast tego daj minWidth (inaczej przyciski sie nie rozciagaja i tekst jest clippowany) 
-	 * - w exportdialog text field nie jest ukrywany jak okno jest poczatkowo otwierane i ship jest player ship
+	 * - PORTING:
+	 * 	- clean up -> polacz w calosc / sprawdz czy export dziala -> zrob nowy statek from scratch
+	 * - new ship enemy/player nie dzial -> anchor sie buguje
 	 * - przetestuj autoblueprints i blueprints na Macu
+	 * - +/- przyciski do arbitrary pos --> test, zrob tak zeby nie squishowalo ich na Macu, albo zmien na klawisze
+	 * 
+	 * UI FIXING:
+	 * 	- export dialog - done
+	 * 	- ship properties - done
+	 *  - newShipDialog - done
+	 *  - room properties - done
+	 *  - ship browser - done
+	 *  - error dialog - done
+	 *  - main display - ~~done?
+	 *  ^-- test na Macu
+	 * 
+	 * == LOW PRIO:
+	 * 	- tools
+	 * 		- room:
+	 * 			- splitting
+	 * 		- mounts:
+				- indicator for mirror and slide dir
 	 * 
 	 * Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
 	 * 
@@ -283,10 +269,19 @@ public class Main
 	
 	public static void main(String[] args)
 	{
+		boolean enableCommandLine = false;
+		if (enableCommandLine) {
+			ArrayList<String> argsList = new ArrayList<String>();
+			for (String arg : args) {
+				argsList.add(arg);
+			}
+			
+			debug = argsList.contains("-debug");
+		}
+		
 		try {
 			Main window = new Main();
 			window.open();
-			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -313,25 +308,29 @@ public class Main
 		}
 		
 		// load values from config
+		
+		// browse
 		exportPath = ConfigIO.scourFor("exportPath");
 		projectPath = ConfigIO.scourFor("projectPath");
+		// files
 		dataPath = ConfigIO.scourFor("dataPath");
 		resPath = ConfigIO.scourFor("resPath");
+		// edit
 		removeDoor = ConfigIO.getBoolean("removeDoor");
-		snapMounts = ConfigIO.getBoolean("snapMounts");
-		showAnchor = ConfigIO.getBoolean("showAnchor");
-		showMounts = ConfigIO.getBoolean("showMounts");
-		showRooms = ConfigIO.getBoolean("showRooms");
-		showHull = ConfigIO.getBoolean("showHull");
-		showFloor = ConfigIO.getBoolean("showFloor");
-		showShield = ConfigIO.getBoolean("showShield");
-		snapMounts = ConfigIO.getBoolean("snapMounts");
-		snapMountsToHull = ConfigIO.getBoolean("snapMountsToHull");
+		arbitraryPosOverride = ConfigIO.getBoolean("arbitraryPosOverride");
+		//snapMounts = ConfigIO.getBoolean("snapMounts");
+		//snapMountsToHull = ConfigIO.getBoolean("snapMountsToHull");
+		// view
+		//showAnchor = ConfigIO.getBoolean("showAnchor");
+		//showMounts = ConfigIO.getBoolean("showMounts");
+		//showRooms = ConfigIO.getBoolean("showRooms");
+		//showHull = ConfigIO.getBoolean("showHull");
+		//showFloor = ConfigIO.getBoolean("showFloor");
+		//showShield = ConfigIO.getBoolean("showShield");
 		loadFloor = ConfigIO.getBoolean("loadFloor");
 		loadShield = ConfigIO.getBoolean("loadShield");
 		loadSystem = ConfigIO.getBoolean("loadSystem");
-		constantRedraw = ConfigIO.getBoolean("constantRedraw");
-		arbitraryPosOverride = ConfigIO.getBoolean("arbitraryPosOverride");
+		
 		
 		appFont = new Font(Display.getCurrent(), "Monospaced", 9, SWT.NORMAL);
 		if (appFont == null) {
@@ -362,12 +361,9 @@ public class Main
 			public void controlResized(ControlEvent e) {
 				GRID_W = ((int) ((canvasBg.getBounds().width))/35);
 				GRID_H = ((int) ((canvasBg.getBounds().height))/35);
-				fd_canvas.right.offset = GRID_W*35;
-				fd_canvas.bottom.offset = GRID_H*35;
+				fd_canvas.right.offset = GRID_W*35+5;
+				fd_canvas.bottom.offset = GRID_H*35+5;
 				canvas.setSize(GRID_W*35, GRID_H*35);
-				fd_bgCanvas.right.offset = GRID_W*35;
-				fd_bgCanvas.bottom.offset = GRID_H*35;
-				bgCanvas.setSize(GRID_W*35, GRID_H*35);
 				
 				if (grid != null)
 					grid.setSize(GRID_W*35, GRID_H*35);
@@ -386,9 +382,6 @@ public class Main
 					fd_canvas.right.offset = GRID_W*35;
 					fd_canvas.bottom.offset = GRID_H*35;
 					canvas.setSize(GRID_W*35, GRID_H*35);
-					fd_bgCanvas.right.offset = GRID_W*35;
-					fd_bgCanvas.bottom.offset = GRID_H*35;
-					bgCanvas.setSize(GRID_W*35, GRID_H*35);
 						
 					if (grid != null)
 						grid.setSize(GRID_W*35, GRID_H*35);
@@ -413,7 +406,7 @@ public class Main
 
 	protected void createContents()
 	{
-		highlightColor = shell.getDisplay().getSystemColor(SWT.COLOR_GREEN);
+		//highlightColor = shell.getDisplay().getSystemColor(SWT.COLOR_GREEN);
 		tempImage = SWTResourceManager.getImage(Main.class, "/org/eclipse/jface/dialogs/images/help.gif");
 		
 	// === Load images to a map for easy access
@@ -524,17 +517,17 @@ public class Main
 		
 		// === View -> Show anchor
 		final MenuItem mntmShowAnchor = new MenuItem(menu_view, SWT.CHECK);
-		mntmShowAnchor.setText("Show Anchor \t&1");
+		mntmShowAnchor.setText("Show Anchor \t1");
 		mntmShowAnchor.setSelection(showAnchor);
 		
 		// === View -> Show mounts
 		final MenuItem mntmShowMounts = new MenuItem(menu_view, SWT.CHECK);
-		mntmShowMounts.setText("Show Mounts \t&2");
+		mntmShowMounts.setText("Show Mounts \t2");
 		mntmShowMounts.setSelection(showMounts);
 		
 		// === View -> show rooms
 		final MenuItem mntmShowRooms = new MenuItem(menu_view, SWT.CHECK);
-		mntmShowRooms.setText("Show Rooms And Doors \t&3");
+		mntmShowRooms.setText("Show Rooms And Doors \t3");
 		mntmShowRooms.setSelection(showRooms);
 		
 		// === View -> graphics
@@ -546,17 +539,17 @@ public class Main
 		
 		// === View -> graphics -> show hull
 		final MenuItem mntmShowHull = new MenuItem(menu_graphics, SWT.CHECK);
-		mntmShowHull.setText("Show Hull \t&4");
+		mntmShowHull.setText("Show Hull \t4");
 		mntmShowHull.setSelection(showHull);
 		
 		// === View -> graphics -> show floor
 		mntmShowFloor = new MenuItem(menu_graphics, SWT.CHECK);
-		mntmShowFloor.setText("Show Floor\t&5");
+		mntmShowFloor.setText("Show Floor\t5");
 		mntmShowFloor.setSelection(showFloor);
 		
 		// === View -> graphics -> show shield
 		mntmShowShield = new MenuItem(menu_graphics, SWT.CHECK);
-		mntmShowShield.setText("Show Shield\t&6");
+		mntmShowShield.setText("Show Shield\t6");
 		mntmShowShield.setSelection(showShield);
 		
 		new MenuItem(menu_view, SWT.SEPARATOR);
@@ -576,21 +569,11 @@ public class Main
 		mntmLoadSystem.setText("Load System Graphics");
 		mntmLoadSystem.setSelection(loadSystem);
 		
-		new MenuItem(menu_view, SWT.SEPARATOR);
-		
-		// === View -> constant redraw
-		final MenuItem mntmConstantRedraw = new MenuItem(menu_view, SWT.CHECK);
-		mntmConstantRedraw.setText("Constant Redraw");
-		mntmConstantRedraw.setSelection(constantRedraw);
-		
 	// === Tool bar
 		
 		// === Container - holds all the items on the left side of the screen
 		Composite toolBarHolder = new Composite(shell, SWT.NONE);
-		GridData gd_toolBarHolder = new GridData(SWT.LEFT, SWT.CENTER, true, false, 2, 1);
-		gd_toolBarHolder.minimumHeight = -1;
-		gd_toolBarHolder.minimumWidth = -1;
-		toolBarHolder.setLayoutData(gd_toolBarHolder);
+		toolBarHolder.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 		GridLayout gl_toolBarHolder = new GridLayout(2, false);
 		gl_toolBarHolder.marginWidth = 0;
 		gl_toolBarHolder.marginHeight = 0;
@@ -599,7 +582,7 @@ public class Main
 		// === Container -> Tools - tool bar containing the tool icons
 		final ToolBar toolBar = new ToolBar(toolBarHolder, SWT.NONE);
 		toolBar.setFont(appFont);
-		GridData gd_toolBar = new GridData(SWT.LEFT, SWT.FILL, false, false, 1, 1);
+		GridData gd_toolBar = new GridData(SWT.LEFT, SWT.FILL, true, true, 1, 1);
 		gd_toolBar.minimumHeight = -1;
 		gd_toolBar.minimumWidth = -1;
 		toolBar.setLayoutData(gd_toolBar);
@@ -662,8 +645,6 @@ public class Main
 		Composite composite = new Composite(toolBarHolder, SWT.NONE);
 		GridData gd_composite = new GridData(SWT.FILL, SWT.TOP, true, false, 1, 1);
 		gd_composite.heightHint = 30;
-		gd_composite.minimumWidth = -1;
-		gd_composite.minimumHeight = -1;
 		composite.setLayoutData(gd_composite);
 		GridLayout gl_composite = new GridLayout(13, false);
 		gl_composite.marginTop = 2;
@@ -671,11 +652,11 @@ public class Main
 		composite.setLayout(gl_composite);
 		
 		Label label = new Label(composite, SWT.SEPARATOR | SWT.VERTICAL);
-		label.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1));
+		label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
 		
 		// === Container -> buttonComposite -> Hull image button
 		btnHull = new Button(composite, SWT.NONE);
-		GridData gd_btnHull = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		GridData gd_btnHull = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_btnHull.minimumWidth = 70;
 		btnHull.setLayoutData(gd_btnHull);
 		btnHull.setFont(appFont);
@@ -684,7 +665,7 @@ public class Main
 
 		// === Container -> buttonComposite -> shield image button
 		btnShields = new Button(composite, SWT.NONE);
-		GridData gd_btnShields = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		GridData gd_btnShields = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_btnShields.minimumWidth = 70;
 		btnShields.setLayoutData(gd_btnShields);
 		btnShields.setFont(appFont);
@@ -694,7 +675,7 @@ public class Main
 
 		// === Container -> buttonComposite -> floor image button
 		btnFloor = new Button(composite, SWT.NONE);
-		GridData gd_btnFloor = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		GridData gd_btnFloor = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_btnFloor.minimumWidth = 70;
 		btnFloor.setLayoutData(gd_btnFloor);
 		btnFloor.setFont(appFont);
@@ -703,7 +684,7 @@ public class Main
 
 		// === Container -> buttonComposite -> cloak image button
 		btnCloak = new Button(composite, SWT.NONE);
-		GridData gd_btnCloak = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		GridData gd_btnCloak = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_btnCloak.minimumWidth = 70;
 		btnCloak.setLayoutData(gd_btnCloak);
 		btnCloak.setSize(70, 25);
@@ -713,8 +694,8 @@ public class Main
 
 		// === Container -> buttonComposite -> miniship image button
 		btnMiniship = new Button(composite, SWT.NONE);
-		GridData gd_btnMiniship = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
-		gd_btnMiniship.minimumWidth = 70;
+		GridData gd_btnMiniship = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
+		gd_btnMiniship.minimumWidth = 85;
 		btnMiniship.setLayoutData(gd_btnMiniship);
 		btnMiniship.setSize(70, 25);
 		btnMiniship.setEnabled(false);
@@ -743,21 +724,21 @@ public class Main
 		mntmShowFile.setText("Show Directory");
 		
 		Label label_1 = new Label(composite, SWT.SEPARATOR | SWT.VERTICAL);
-		label_1.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1));
+		label_1.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
 		
 		// === Container -> Properties
 		final Button btnShipProperties = new Button(composite, SWT.NONE);
-		btnShipProperties.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
+		btnShipProperties.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		btnShipProperties.setFont(appFont);
 		btnShipProperties.setText("Properties");
 		btnShipProperties.setEnabled(false);
 		
 		Label label_2 = new Label(composite, SWT.SEPARATOR | SWT.VERTICAL);
-		label_2.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1));
+		label_2.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
 		
 		// === Container -> set position composite
 		Composite coSetPosition = new Composite(composite, SWT.NONE);
-		coSetPosition.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1));
+		coSetPosition.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1));
 		GridLayout gl_coSetPosition = new GridLayout(7, false);
 		gl_coSetPosition.marginWidth = 0;
 		gl_coSetPosition.marginHeight = 0;
@@ -766,7 +747,7 @@ public class Main
 		// === Cotnainer -> set position composite -> X
 		Label lblX = new Label(coSetPosition, SWT.NONE);
 		lblX.setFont(appFont);
-		GridData gd_lblX = new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1);
+		GridData gd_lblX = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblX.horizontalIndent = 5;
 		lblX.setLayoutData(gd_lblX);
 		lblX.setText("X:");
@@ -785,9 +766,7 @@ public class Main
 		btnXminus = new Button(setPosXBtnsCo, SWT.CENTER);
 		btnXminus.setToolTipText("Subtract 35");
 		btnXminus.setEnabled(false);
-		GridData gd_btnXminus = new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1);
-		gd_btnXminus.widthHint = 18;
-		btnXminus.setLayoutData(gd_btnXminus);
+		btnXminus.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnXminus.setFont(appFont);
 		btnXminus.setText("-");
 		btnXminus.setBounds(0, 0, 18, 25);
@@ -796,9 +775,7 @@ public class Main
 		btnXplus = new Button(setPosXBtnsCo, SWT.CENTER);
 		btnXplus.setToolTipText("Add 35");
 		btnXplus.setEnabled(false);
-		GridData gd_btnXplus = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
-		gd_btnXplus.widthHint = 18;
-		btnXplus.setLayoutData(gd_btnXplus);
+		btnXplus.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnXplus.setBounds(0, 0, 75, 25);
 		btnXplus.setFont(appFont);
 		btnXplus.setText("+");
@@ -808,11 +785,11 @@ public class Main
 		txtX.setEnabled(false);
 		txtX.setFont(appFont);
 		txtX.setTextLimit(5);
-		txtX.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1));
+		txtX.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
 
 		// === Cotnainer -> set position composite -> Y
 		Label lblY = new Label(coSetPosition, SWT.NONE);
-		GridData gd_lblY = new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1);
+		GridData gd_lblY = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_lblY.horizontalIndent = 5;
 		lblY.setLayoutData(gd_lblY);
 		lblY.setFont(appFont);
@@ -830,9 +807,7 @@ public class Main
 		// === Cotnainer -> set position composite -> Y buttons container -> Y minus
 		btnYminus = new Button(setPosYBtnsCo, SWT.CENTER);
 		btnYminus.setToolTipText("Subtract 35");
-		GridData gd_btnYminus = new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1);
-		gd_btnYminus.widthHint = 18;
-		btnYminus.setLayoutData(gd_btnYminus);
+		btnYminus.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnYminus.setFont(appFont);
 		btnYminus.setText("-");
 		btnYminus.setEnabled(false);
@@ -840,9 +815,7 @@ public class Main
 		// === Cotnainer -> set position composite -> Y buttons container -> Y plus
 		btnYplus = new Button(setPosYBtnsCo, SWT.CENTER);
 		btnYplus.setToolTipText("Add 35");
-		GridData gd_btnYplus = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
-		gd_btnYplus.widthHint = 18;
-		btnYplus.setLayoutData(gd_btnYplus);
+		btnYplus.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnYplus.setFont(appFont);
 		btnYplus.setText("+");
 		btnYplus.setEnabled(false);
@@ -856,7 +829,7 @@ public class Main
 		new Label(coSetPosition, SWT.NONE);
 		
 		Label label_3 = new Label(composite, SWT.SEPARATOR | SWT.RIGHT);
-		label_3.setLayoutData(new GridData(SWT.RIGHT, SWT.FILL, false, true, 1, 1));
+		label_3.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
 
 		// === Cotnainer -> state buttons composite
 		Composite stateBtnsCo = new Composite(composite, SWT.NONE);
@@ -865,37 +838,24 @@ public class Main
 		gl_stateBtnsCo.verticalSpacing = 0;
 		gl_stateBtnsCo.marginHeight = 0;
 		stateBtnsCo.setLayout(gl_stateBtnsCo);
-		stateBtnsCo.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1));
+		stateBtnsCo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
 
 		// === Cotnainer -> state buttons composite -> cloaked
 		btnCloaked = new Button(stateBtnsCo, SWT.TOGGLE | SWT.CENTER);
 		btnCloaked.setEnabled(false);
 		btnCloaked.setFont(appFont);
 		btnCloaked.setImage(SWTResourceManager.getImage(Main.class, "/img/smallsys/smallcloak.png"));
-		btnCloaked.setToolTipText("View the cloaked version.");
+		btnCloaked.setToolTipText("View the cloaked version of the ship.");
 		btnCloaked.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 
 		// === Cotnainer -> state buttons composite -> pirate
 		btnPirate = new Button(stateBtnsCo, SWT.TOGGLE | SWT.CENTER);
 		btnPirate.setEnabled(false);
 		btnPirate.setFont(appFont);
-		btnPirate.setToolTipText("View the pirate version.");
+		btnPirate.setToolTipText("View the pirate version of the ship.");
 		btnPirate.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnPirate.setImage(SWTResourceManager.getImage(Main.class, "/img/pirate.png"));
 		new Label(composite, SWT.NONE);
-		
-		// Info label
-		/*
-		helpIcon = new Label(toolBarHolder, SWT.NONE);
-		helpIcon.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, false, 1, 1));
-		helpIcon.setFont(appFont);
-		helpIcon.setImage(SWTResourceManager.getImage(Main.class, "/img/message_info.gif"));
-		helpIcon.setToolTipText(" -Use the Q, W, E, A, S keys to quickly select the tools (use Alt+[Key] for the first press)."
-			+ShipIO.lineDelimiter+" -Press Delete or Shift+D to delete selected object (except hull and shields)"
-			+ShipIO.lineDelimiter+" -Click on the anchor and hold to move the entire ship around"
-			+ShipIO.lineDelimiter+" -Press down Shift key while dragging the anchor to move only the anchor w/o moving the ship"
-			+ShipIO.lineDelimiter+" -Right-click on the anchor and drag to set the vertical offset of the ship");
-		*/
 		
 	// === Canvas
 		
@@ -905,7 +865,7 @@ public class Main
 		
 		// Main screen where ships are displayed
 		canvas = new Canvas(canvasHolder, SWT.NONE | SWT.TRANSPARENT | SWT.BORDER | SWT.DOUBLE_BUFFERED);
-		Color c = new Color(shell.getDisplay(), 96, 96, 96);
+		Color c = new Color(shell.getDisplay(), 64, 64, 64);
 		canvas.setBackground(c);
 		c.dispose();
 		fd_canvas = new FormData();
@@ -930,6 +890,14 @@ public class Main
 		cursor.setSize(35, 35);
 		cursor.setBorderColor(new RGB(0,0,255));
 		layeredPainter.add(cursor, LayeredPainter.SELECTION);
+		
+		hullBox = new HullBox();
+		layeredPainter.add(hullBox, LayeredPainter.HULL);
+		
+		shieldBox = new ShieldBox();
+		layeredPainter.add(shieldBox, LayeredPainter.SHIELD);
+		
+		tooltip = new Tooltip();
 
 		SystemBox tempBox = new SystemBox(Systems.PILOT);
 		tempBox.setImage("/img/systems/s_pilot_overlay.png", true);
@@ -992,23 +960,9 @@ public class Main
 		layeredPainter.add(tempBox, LayeredPainter.SYSTEM_ICON);
 		tempBox.setVisible(false);
 		
-		// canvas supposed to handle drawing of non-dynamic elements of the display (hull, grid, shields, etc), but not really used (only draws grid, IIRC)
-		// REMINDER to be scrapped, find a dedicated 2d graphical library and use that
-		bgCanvas = new Canvas(canvasHolder, SWT.NONE | SWT.BORDER);
-		c = new Color(shell.getDisplay(), 96, 96, 96);
-		bgCanvas.setBackground(c);
-		c.dispose();
-		fd_bgCanvas = new FormData();
-		fd_bgCanvas.bottom = new FormAttachment(0, GRID_H*35);
-		fd_bgCanvas.right = new FormAttachment(0, GRID_W*35);
-		fd_bgCanvas.top = new FormAttachment(0);
-		fd_bgCanvas.left = new FormAttachment(0);
-		bgCanvas.setLayoutData(fd_bgCanvas);
-		
 		canvasBg = new Label(canvasHolder, SWT.NONE);
-		c = canvas.getDisplay().getSystemColor((SWT.COLOR_DARK_GRAY));
+		c = Cache.checkOutColor(canvasBg, new RGB(96, 96, 96));
 		canvasBg.setBackground(c);
-		c.dispose();
 		FormData fd_canvasBg = new FormData();
 		fd_canvasBg.bottom = new FormAttachment(100);
 		fd_canvasBg.right = new FormAttachment(100);
@@ -1170,1475 +1124,216 @@ public class Main
 		fd_text.top = new FormAttachment(0);
 		text.setLayoutData(fd_text);
 		new Label(shell, SWT.NONE);
-		
+
 		shell.pack();
-		//shell.setMinimumSize(shell.getSize());
 		
-	//=============================================================
-	//=== LISTENERS
-		// === BOOKMARK: PAINT
-		bgCanvas.addPaintListener(new PaintListener() {
-			public void paintControl(PaintEvent e)
-			{
-				Color c;
-				Point p;
-				Point pt;
-				
-				if (canvasActive) {
-					// === DRAW SHIELD IMAGE
-					if (showShield) {
-						// find geometrical center of the ship's rooms
-						if (ship.rooms.size() > 0) {
-							p = ship.findLowBounds();
-							pt = ship.findHighBounds();
-						} else {
-							p = new Point(ship.imageRect.x, ship.imageRect.y);
-							pt = new Point(ship.imageRect.width, ship.imageRect.height);
-						}
-						pt.x = (p.x+pt.x)/2;
-						pt.y = (p.y+pt.y)/2;
-						
-						if (shieldImage != null && !shieldImage.isDisposed() && loadShield) {
-							if (ship.isPlayer) {
-								e.gc.drawImage(shieldImage, shieldEllipse.x, shieldEllipse.y);
-							} else {
-								e.gc.drawImage(shieldImage,  0, 0, shieldImage.getBounds().width, shieldImage.getBounds().height,
-										shieldEllipse.x,
-										shieldEllipse.y,
-										shieldEllipse.width, shieldEllipse.height);
-							}
-							e.gc.drawPoint(pt.x, pt.y);
-					// if no shield graphic is loaded or the image doesn't exist, draw a placeholder
-						} else {
-							c = new Color(e.display, 16, 96, 255);
-							e.gc.setBackground(c);
-							e.gc.setAlpha(36);
-							e.gc.fillOval(shieldEllipse.x, shieldEllipse.y, shieldEllipse.width, shieldEllipse.height);
-							e.gc.setAlpha(255);
-							c.dispose();
-						}
-					}
-				}
-			}
-		});
-		
-		// the method used to draw stuff on the main display.
-		// I'm pretty sure I should NOT be using it this way, putting so many conditions in there, but then I can't really think of another way to do it.
-		// Split into more paintControl methods and redraw them separately only when needed to save a bit on performance?
-		
-		/*
-		
-		canvas.addPaintListener(new PaintListener() {
-			public void paintControl(PaintEvent e)
-			{
-				Rectangle tempRect = null;
-				Rectangle tempDoor = null;
-				FTLMount tempMount = null;
-				FTLRoom tempFTLRoom = null;
-				Color c;
-				Point p;
-				Image rotatedImg = null;
-				Image flippedImg = null;
-
-				e.gc.setFont(appFont);
-				
-				if (canvasActive) {
-					// === DRAW ALREADY PLACES MOUNTS
-					if (showMounts) {
-						//int index = 0;
-						int strips = 0;
-						FTLItem it = null;
-						FTLMount m = null;
-						
-						for (int i=0; i < ship.mounts.size(); i++) {
-							m = ship.mounts.get(i);
-							if (i < ship.weaponSet.size() && !ship.weaponsBySet) {
-								it = ShipIO.getItem(ship.weaponSet.get(i));
-								if (m != null && it != null) {
-									strips = weaponStripMap.get(it.img);
-									
-									e.gc.setAlpha(255);
-									if (!m.mirror) {
-										if (m.rotate) { // player - horizontal - have to rotate 90 degrees
-											rotatedImg = rotated.get(i);
-									        
-											e.gc.drawImage(rotatedImg, 0, 0, rotatedImg.getBounds().width, rotatedImg.getBounds().height/strips,
-													m.rect.x+m.rect.width/2-rotatedImg.getBounds().width/2,
-													m.rect.y+m.rect.height/2-rotatedImg.getBounds().height/strips/2,
-													rotatedImg.getBounds().width,
-													rotatedImg.getBounds().height/strips);
-										} else { // enemy - vertical - leave them be, don't dispose since it's the base image in the map
-											rotatedImg = weaponImgMap.get(it.blueprint);
-											e.gc.drawImage(rotatedImg, 0, 0, rotatedImg.getBounds().width/strips, rotatedImg.getBounds().height,
-													m.rect.x+m.rect.width/2-rotatedImg.getBounds().width/strips/2,
-													m.rect.y+m.rect.height/2-rotatedImg.getBounds().height/2,
-													rotatedImg.getBounds().width/strips,
-													rotatedImg.getBounds().height);
-										}
-									} else {
-										if (m.rotate) { // player - horizontal - rotate, flip along H axis
-											flippedImg = rotatedFlipped.get(i);
-									        
-											e.gc.drawImage(flippedImg, 0, flippedImg.getBounds().height/strips*(strips-1),
-													flippedImg.getBounds().width, flippedImg.getBounds().height/strips,
-													m.rect.x+m.rect.width/2-flippedImg.getBounds().width/2,
-													m.rect.y+m.rect.height/2-flippedImg.getBounds().height/strips/2,
-													flippedImg.getBounds().width,
-													flippedImg.getBounds().height/strips);
-											//flippedImg.dispose();
-										} else { // enemy - vertical - don't rotate, flip along V axis
-											flippedImg = flipped.get(i);
-									        
-											e.gc.drawImage(flippedImg, flippedImg.getBounds().width/strips*(strips-1), 0,
-													flippedImg.getBounds().width/strips, flippedImg.getBounds().height,
-													m.rect.x+m.rect.width/2-flippedImg.getBounds().width/strips/2,
-													m.rect.y+m.rect.height/2-flippedImg.getBounds().height/2,
-													flippedImg.getBounds().width/strips,
-													flippedImg.getBounds().height);
-										}
-									}
-								}
-							} else {
-								// draw placeholders
-								
-								c = (selectedMount == m) ? new Color(e.display, 128, 0, 128) : new Color(e.display, 255, 255, 0);
-								e.gc.setForeground(c);
-								c.dispose();
-								c = (selectedMount == m) ? new Color(e.display, 128, 0, 128) : new Color(e.display, 128, 128, 0);
-								e.gc.setBackground(c);
-								c.dispose();
-								
-								e.gc.setLineWidth(2);
-								e.gc.setAlpha(255);
-								e.gc.drawRectangle(m.rect);
-								e.gc.setAlpha(192);
-								e.gc.fillRectangle(m.rect);
-							}
-						}
-					}
-					
-				// === DRAW SHIP HULL IMAGE
-					e.gc.setAlpha(btnCloaked.getSelection() ? 64 : 255);
-					if (showHull && hullImage != null && !hullImage.isDisposed())
-						e.gc.drawImage(hullImage, ship.imageRect.x, ship.imageRect.y);
-					if (showFloor && floorImage != null && !floorImage.isDisposed() && loadFloor && hullImage != null && !hullImage.isDisposed())
-						e.gc.drawImage(floorImage, 0, 0, floorImage.getBounds().width, floorImage.getBounds().height, ship.imageRect.x, ship.imageRect.y, ship.imageRect.width, ship.imageRect.height);
-					if (btnCloaked.getSelection()) {
-						e.gc.setAlpha(255);
-						e.gc.drawImage(cloakImage, 0, 0, cloakImage.getBounds().width, cloakImage.getBounds().height,
-										ship.imageRect.x-10, ship.imageRect.y-10, ship.imageRect.width+20, ship.imageRect.height+20);
-					}
-					
-				// === DRAW ALREADY PLACED ROOMS (INSIDES)
-					// drawn separetely, so that room borders are drawn over the grid lines, looks nicer that way.
-					if (showRooms) {
-						e.gc.setAlpha(btnCloaked.getSelection() ? 128 : 255);
-						for (FTLRoom rm : ship.rooms) {
-							c = new Color(e.display, 230, 225, 220);
-							e.gc.setBackground(c);
-							c.dispose();
-							// draw regular room color
-							e.gc.fillRectangle(rm.getBounds().x, rm.getBounds().y, rm.getBounds().width, rm.getBounds().height);
-							// draw room images
-							if (loadSystem && !ShipIO.isNull(rm.img) && rm.sysImg != null && !rm.sysImg.isDisposed()) {
-								e.gc.drawImage(rm.sysImg, 0, 0, rm.sysImg.getBounds().width, rm.sysImg.getBounds().height, rm.getBounds().x, rm.getBounds().y, rm.getBounds().width, rm.getBounds().height);
-							}
-							// draw disabled-on-start overlay
-							if (!ship.startMap.get(rm.sys) && !rm.sys.equals(Systems.EMPTY)) {
-								c = new Color(e.display, 128, 0, 0);
-								e.gc.setBackground(c);
-								c.dispose();
-								e.gc.setAlpha(btnCloaked.getSelection() ? 64 : 128);
-								e.gc.fillRectangle(rm.getBounds().x, rm.getBounds().y, rm.getBounds().width, rm.getBounds().height);
-								e.gc.setAlpha(btnCloaked.getSelection() ? 128 : 255);
-							}
-							// draw slot overlay
-							if (rm.slot != -2) {
-								e.gc.setAlpha(btnCloaked.getSelection() ? 96 : 192);
-								c = new Color(e.display, 0, 128, 128);
-								e.gc.setBackground(c);
-								if (!rm.sys.equals(Systems.MEDBAY)) {
-									e.gc.fillRectangle(getStationDirected(rm));
-								} else {
-									e.gc.fillRectangle(getRectFromStation(rm));
-								}
-								c.dispose();
-								e.gc.setAlpha(btnCloaked.getSelection() ? 128 : 255);
-							}
-							// draw room id
-							if (debug) {
-								c = new Color(e.display, 0,0,0);
-								e.gc.setForeground(c);
-								c.dispose();
-								e.gc.drawString(""+rm.id, rm.getBounds().x+5, rm.getBounds().y+rm.getBounds().height-17, true);
-							}
-						}
-					}
-					
-				// === ROOM CREATION TOOL
-					if (tltmRoom.getSelection() && onCanvas && !modShift && phantomRect != null && leftMouseDown) {
-						int signX = (phantomRect.x >= mousePos.x) ? (-1) : (0);
-						int signY = (phantomRect.y >= mousePos.y) ? (-1) : (0);
-						e.gc.setAlpha(255);
-						e.gc.setLineWidth(3);
-						
-						allowRoomPlacement = (mousePosLastClick.x > ship.anchor.x && mousePosLastClick.y > ship.anchor.y && mousePos.x > ship.anchor.x+1 && mousePos.y > ship.anchor.y+1 && !doesRectOverlap(fixRect(phantomRect), null));
-						if (allowRoomPlacement) {
-							c = new Color(e.display, 0, 255, 0);
-							e.gc.setForeground(c);
-							c.dispose();
-							c = new Color(e.display, 230, 225, 220);
-							e.gc.setBackground(c);
-							e.gc.fillRectangle(phantomRect);
-							c.dispose();
-						} else {
-							c = new Color(e.display, 255, 0 , 0);
-							e.gc.setForeground(c);
-							c.dispose();
-						}
-						e.gc.drawRectangle(phantomRect.x + 2*(signX+1), phantomRect.y + 2*(signY+1), phantomRect.width - 4*(signX+1), phantomRect.height - 4*(signY+1));
-					}
-					
-				// === DRAW GRID
-					c = new Color(e.display, 128, 128, 128);
-					e.gc.setForeground(c);
-					c.dispose();
-					e.gc.setAlpha(255);
-					e.gc.setLineWidth(1);
-					
-					for (int i=0; i <= GRID_W; i++)
-						e.gc.drawLine(i*35, 0, i*35, canvas.getSize().y);
-					for (int i=0; i <= GRID_H; i++)
-						e.gc.drawLine(0, i*35, canvas.getSize().x, i*35);
-					
-				// === DRAW ALREADY PLACED ROOMS (BORDERS) AND SYSTEM ICONS
-					if (showRooms) {
-						e.gc.setAlpha(btnCloaked.getSelection() ? 128 : 255);
-						for (FTLRoom rm : ship.rooms) {
-							e.gc.setLineWidth(4);
-							c = new Color(e.display, 0,0,0);
-							e.gc.setForeground(c);
-							c.dispose();
-							e.gc.drawRectangle(rm.getBounds().x, rm.getBounds().y, rm.getBounds().width, rm.getBounds().height);
-							if (rm.sys != Systems.EMPTY) {
-								e.gc.drawImage(systemsMap.get(rm.sys), rm.getBounds().x+(rm.getBounds().width-32)/2, rm.getBounds().y+(rm.getBounds().height-32)/2);
-							}
-						}
-						
-				// === DRAW ALREADY PLACED DOORS
-						e.gc.setLineWidth(1);
-						for (FTLDoor dr : ship.doors) {
-							dr.drawDoor(e);
-						}
-					}
-					
-					if (showMounts) {
-						int i = -1;
-						for (FTLMount m : ship.mounts) {
-							i++;
-							if (ship.weaponsBySet || i >= ship.weaponSet.size()) {
-								e.gc.setLineWidth(1);
-								c = new Color(e.display, 255, 255, 0);
-								e.gc.setForeground(c);
-								c.dispose();
-								c = new Color(e.display, 128, 0, 128);
-								e.gc.setBackground(c);
-								c.dispose();
-								FTLMount.drawMirror(e, m.rotate, m.mirror, m.rect);	
-							}
-							
-							e.gc.setAlpha(255);
-							e.gc.setLineWidth(2);
-							c = (selectedMount == m) ? new Color(e.display, 255, 255, 0) : new Color(e.display, 128, 0, 128);
-							e.gc.setForeground(c);
-							c.dispose();
-							FTLMount.drawDirection(e, m.slide, m.rect);
-						}
-					}
-					
-
-				// === DRAW ROOM & DOOR HIGHLIGHT FOR TOOLS
-					if (onCanvas && canvasActive) {
-						if (showMounts)
-							tempMount = getMountFromMouse();
-						if (showRooms) {
-							tempRect = getRectFromMouse();
-							tempDoor = getDoorFromMouse();
-							tempFTLRoom = getRoomContainingRect(tempRect);
-						}
-						
-						// === pointer tool highlights
-						if (tltmPointer.getSelection() && !moveAnchor) {
-
-							if (highlightColor != null && !highlightColor.isDisposed())
-								highlightColor.dispose();
-							highlightColor = new Color(e.display, 0, 0, 255);
-							e.gc.setForeground(highlightColor);
-							e.gc.setAlpha(255);
-							
-							// door highlight
-							if (showRooms && tempDoor != null && !moveSelected && !resizeSelected) {
-								e.gc.setLineWidth(3);
-								e.gc.drawRectangle(tempDoor);
-								
-							// mount highlight
-							} else if (showMounts && (doImagesContain(mousePos) || tempMount != null) && !moveSelected && !resizeSelected) {
-								e.gc.setLineWidth(3);
-								if (!doImagesContain(mousePos) || ship.weaponsBySet) {
-									if (tempMount != null)
-										e.gc.drawRectangle(tempMount.rect);
-								} else {
-									tempMount = getMountFromImage(mousePos);
-									if (tempMount != null && tempMount.rotate) {
-										tempRect = indexImgMapRotated.get(getMountIndex(tempMount));
-										tempRect.x = tempMount.rect.x + tempMount.rect.width/2 - tempRect.width/2;
-										tempRect.y = tempMount.rect.y + tempMount.rect.height/2 - tempRect.height/2;
-										e.gc.drawRectangle(tempRect);
-									} else if (tempMount != null) {
-										tempRect = indexImgMapNormal.get(getMountIndex(tempMount));
-										tempRect.x = tempMount.rect.x + tempMount.rect.width/2 - tempRect.width/2;
-										tempRect.y = tempMount.rect.y + tempMount.rect.height/2 - tempRect.height/2;
-										e.gc.drawRectangle(tempRect);
-									}
-								}
-								
-							// highlight already placed rooms
-							} else if (showRooms && tempRect != null && tempFTLRoom != null && !moveSelected && !resizeSelected) {
-								e.gc.setLineWidth(4);
-								e.gc.drawRectangle(tempFTLRoom.getBounds().x+2, tempFTLRoom.getBounds().y+2, tempFTLRoom.getBounds().width-4, tempFTLRoom.getBounds().height-4);
-								
-							// tile highlight (empty grid cells)
-							} else if (tempRect != null && !moveSelected && !resizeSelected) { 
-								e.gc.setLineWidth(2);
-								e.gc.drawRectangle(tempRect.x+1, tempRect.y+1, 34, 34);
-							}
-							
-						// === room creation tool highlight - colored outline
-						} else if (tltmRoom.getSelection() && !leftMouseDown) {
-							if (!modShift && tempRect != null) {
-								if (!inBounds || doesRectOverlap(tempRect, null)) {
-									c = new Color(e.display, 255, 0, 0);
-									e.gc.setForeground(c);
-									c.dispose();
-									allowRoomPlacement = false;
-								} else {
-									c = new Color(e.display, 0, 255, 0);
-									e.gc.setForeground(c);
-									c.dispose();
-									allowRoomPlacement = true;
-								}
-								e.gc.setLineWidth(2);
-								e.gc.drawRectangle(tempRect.x, tempRect.y, 35, 35);
-								
-							// === room splitting
-							} else if (modShift && tempDoor != null) {
-								tempFTLRoom = getRoomContainingRect(tempDoor);
-								if (tempFTLRoom != null) {
-									e.gc.setAlpha(255);
-									e.gc.setLineWidth(3);
-									if (!inBounds || isDoorAtWall(tempDoor)) {
-										c = new Color(e.display, 255, 0, 0);
-										e.gc.setForeground(c);
-										c.dispose();
-										allowRoomPlacement = false;
-									} else {
-										c = new Color(e.display, 0, 255, 0);
-										e.gc.setForeground(c);
-										c.dispose();
-										allowRoomPlacement = true;
-										parseRoom = tempFTLRoom;
-										parseRect = tempDoor;
-									}
-									if (tempDoor.width == 31) {
-										e.gc.drawRectangle(tempFTLRoom.getBounds().x, tempDoor.y+1, tempFTLRoom.getBounds().width, 4);
-									} else {
-										e.gc.drawRectangle(tempDoor.x+1, tempFTLRoom.getBounds().y, 4, tempFTLRoom.getBounds().height);
-									}
-								}
-							}
-							
-						// === door creation tool highlight
-						} else if (tltmDoor.getSelection() && !leftMouseDown && tempDoor != null) {
-							e.gc.setForeground(highlightColor);
-							e.gc.setBackground(highlightColor);
-							e.gc.setAlpha(64);
-							e.gc.fillRectangle(tempDoor);
-							e.gc.setAlpha(255);
-							e.gc.setLineWidth(2);
-							e.gc.drawRectangle(tempDoor);
-							
-						}
-					}
-					
-				// === DRAW SELECTION INDICATORS
-						
-					// weapon mount selection
-					if (showMounts && selectedMount != null) {
-						int i = -1;
-						int strips = 0;
-						Image temp;
-						FTLItem it;
-						for (FTLMount m : ship.mounts) {
-							i++;
-							if (m == selectedMount) break;
-						}
-						
-						FTLMount m = selectedMount; // less typing!
-						if (i < ship.weaponSet.size()) {
-							it = ShipIO.getItem(ship.weaponSet.get(i));
-							if (it != null && !ShipIO.isNull(it.img)) {
-								strips = weaponStripMap.get(it.img);
-		
-								c = new Color(e.display, 0, 0, 255);
-								e.gc.setForeground(c);
-								c.dispose();
-								e.gc.setAlpha(255);
-								e.gc.setLineWidth(3);
-								
-								if (!selectedMount.rotate) { // normal
-									temp = weaponImgMap.get(it.blueprint);
-									if (temp != null)
-										e.gc.drawRectangle(m.rect.x+m.rect.width/2-temp.getBounds().width/strips/2,
-											m.rect.y+m.rect.height/2-temp.getBounds().height/2,
-											temp.getBounds().width/strips,
-											temp.getBounds().height);
-								} else { // rotated
-									temp = rotated.get(i);
-									if (temp != null)
-										e.gc.drawRectangle(m.rect.x+m.rect.width/2-temp.getBounds().width/2,
-											m.rect.y+m.rect.height/2-temp.getBounds().height/strips/2,
-											temp.getBounds().width,
-											temp.getBounds().height/strips);
-								}
-							}
-						} else {
-							c = new Color(e.display, 0, 0, 255);
-							e.gc.setForeground(c);
-							c.dispose();
-							e.gc.setAlpha(255);
-							e.gc.setLineWidth(3);
-							e.gc.drawRectangle(m.rect);
-						}
-						
-						c = new Color(e.display, 255, 255, 255);
-						e.gc.setForeground(c);
-						c.dispose();
-						c = new Color(e.display, 0,0,0);
-						e.gc.setBackground(c);
-						c.dispose();
-						e.gc.setFont(appFont);
-						String s = " "+(getMountIndex(m)+1)+" ";
-						e.gc.drawString(s, m.rect.x, m.rect.y-e.gc.stringExtent(s).y, false);
-						
-					// door selection
-					} else if (showRooms && selectedDoor != null) {
-						c = new Color(e.display, 0, 0, 255);
-						e.gc.setBackground(c);
-						e.gc.setForeground(c);
-						c.dispose();
-						e.gc.setAlpha(128);
-						e.gc.fillRectangle(selectedDoor.rect.x-2, selectedDoor.rect.y-2, selectedDoor.rect.width+4, selectedDoor.rect.height+4);
-						
-						e.gc.setAlpha(196);
-						e.gc.setLineWidth(2);
-						e.gc.drawRectangle(selectedDoor.rect);
-						
-					// room selection
-					} else if (showRooms && selectedRoom != null) {
-						e.gc.setAlpha(255);
-						e.gc.setLineWidth(2);
-						c = new Color(e.display, 0, 0, 128);
-						e.gc.setBackground(c);
-						e.gc.setForeground(c);
-						c.dispose();
-						e.gc.drawRectangle(selectedRoom.getBounds().x+1, selectedRoom.getBounds().y+1, selectedRoom.getBounds().width-2, selectedRoom.getBounds().height-2);
-						for (int i=0; i<4; i++)
-							e.gc.fillRectangle(corners[i]);
-
-						c = new Color(e.display, 0, 0, 255);
-						e.gc.setBackground(c);
-						c.dispose();
-						e.gc.setAlpha(64);
-						e.gc.fillRectangle(selectedRoom.getBounds());
-						
-					// hull selection
-					} else if (showHull && hullSelected) {
-						e.gc.setAlpha(255);
-						e.gc.setLineWidth(3);
-						c = new Color(e.display, 0, 0, 255);
-						e.gc.setForeground(c);
-						c.dispose();
-						e.gc.drawRectangle(ship.imageRect);
-					
-					// shield selection
-					} else if (showHull && shieldSelected) {
-						e.gc.setAlpha(255);
-						e.gc.setLineWidth(3);
-						c = new Color(e.display, 0, 0, 255);
-						e.gc.setForeground(c);
-						c.dispose();
-						e.gc.drawRectangle(shieldEllipse);
-					}
-					
-				// === DOOR CREATION TOOL
-					if (tltmDoor.getSelection()) {
-						if (highlightColor != null && !highlightColor.isDisposed())
-							highlightColor.dispose();
-						highlightColor = new Color(e.display, 255, 0, 0);
-						phantomRect = getDoorFromMouse();
-						if (phantomRect != null && isDoorAtWall(phantomRect) && wallToDoor(getDoorFromMouse()) == null) {
-							if (highlightColor != null && !highlightColor.isDisposed())
-								highlightColor.dispose();
-							highlightColor = new Color(e.display, 0, 255, 0);
-							parseRect = (leftMouseDown) ? phantomRect : null;
-						}
-					}
-					
-				// === WEAPON MOUNTING TOOL
-					if (tltmMount.getSelection()) {
-						e.gc.setLineWidth(2);
-						e.gc.setAlpha(255);
-						if (mountToolHorizontal) {
-							phantomRect = new Rectangle(mousePos.x-FTLMount.MOUNT_WIDTH/2, mousePos.y-FTLMount.MOUNT_HEIGHT/2, FTLMount.MOUNT_WIDTH, FTLMount.MOUNT_HEIGHT);
-						} else {
-							phantomRect = new Rectangle(mousePos.x-FTLMount.MOUNT_HEIGHT/2, mousePos.y-FTLMount.MOUNT_WIDTH/2, FTLMount.MOUNT_HEIGHT, FTLMount.MOUNT_WIDTH);
-						}
-						if ((!mountToolSlide.equals(Slide.NO) && ship.mounts.size()==Main.ship.weaponSlots) || (ship.mounts.size()==Main.ship.weaponSlots+1)) {
-							c = new Color(e.display, 255, 0, 0);
-							e.gc.setForeground(c);
-							c.dispose();
-						} else {
-							c = new Color(e.display, 255, 255, 0);
-							e.gc.setForeground(c);
-							c.dispose();
-						}
-
-						e.gc.setAlpha(255);
-						e.gc.drawRectangle(phantomRect);
-
-						c = new Color(e.display, 128, 0, 128);
-						e.gc.setForeground(c);
-						c.dispose();
-						FTLMount.drawDirection(e, mountToolSlide, phantomRect);
-						
-						e.gc.setLineWidth(1);
-						c = new Color(e.display, 255, 255, 0);
-						e.gc.setForeground(c);
-						c.dispose();
-						FTLMount.drawMirror(e, mountToolHorizontal, mountToolMirror, phantomRect);
-						phantomRect = null;
-					}
-
-				// === SYSTEM OPERATING STATION TOOL
-					 if (tltmSystem.getSelection()) {
-						tempRect = getRectFromMouse();
-						
-						if (tempRect != null) {
-							tempFTLRoom = getRoomContainingRect(tempRect);
-							if (leftMouseDown || rightMouseDown) {
-								parseRoom = tempFTLRoom;
-								
-								parseRect = new Rectangle(0,0,0,0);
-								parseRect.x = tempRect.x;
-								parseRect.y = tempRect.y;
-								parseRect.width = tempRect.width;
-								parseRect.height = tempRect.height;
-							} else {
-								if (tempFTLRoom != null && (!tempRect.intersects(getRectFromStation(tempFTLRoom)) || tempFTLRoom.slot == -2)
-										&& (tempFTLRoom.sys.equals(Systems.PILOT) || tempFTLRoom.sys.equals(Systems.SHIELDS) || tempFTLRoom.sys.equals(Systems.WEAPONS)
-												|| tempFTLRoom.sys.equals(Systems.ENGINES) || tempFTLRoom.sys.equals(Systems.MEDBAY))) {
-									c = new Color(e.display, 0, 255, 0);
-									e.gc.setForeground(c);
-									c.dispose();
-								} else {
-									c = new Color(e.display, 255, 0, 0);
-									e.gc.setForeground(c);
-									c.dispose();
-								}
-								
-								e.gc.setLineWidth(2);
-								e.gc.setAlpha(255);
-								e.gc.drawRectangle(tempRect.x, tempRect.y, 35, 35);
-							}
-						}
-					}
-
-				// === DRAW SHIP ANCHOR
-					if (ship != null && canvasActive && showAnchor) {
-						if (ship.vertical != 0) {
-							e.gc.setAlpha(196);
-							e.gc.setLineWidth(2);
-							c = new Color(e.display, 0, 0, 255);
-							e.gc.setForeground(c);
-							c.dispose();
-							e.gc.drawLine(0, ship.anchor.y-ship.vertical, GRID_W*35, ship.anchor.y-ship.vertical);
-						}
-						ship.drawShipAnchor(e);
-					}
-					
-					if (phantomRect != null && debug) {
-						e.gc.setLineWidth(2);
-						c = new Color(e.display, 128, 0, 128);
-						e.gc.setForeground(c);
-						c.dispose();
-						e.gc.setAlpha(128);
-						e.gc.drawRectangle(phantomRect);
-					}
-					
-				// === Pinned indicator
-					e.gc.setAlpha(255);
-					if (selectedRoom != null && selectedRoom.isPinned()) // room pin indicator
-						e.gc.drawImage(pinImage, selectedRoom.getBounds().x+3, selectedRoom.getBounds().y+3);
-					if (selectedDoor != null && selectedDoor.pinned) // door pin indicator
-						e.gc.drawImage(pinImage, (selectedDoor.horizontal) ? selectedDoor.rect.x+8 : selectedDoor.rect.x+7, (selectedDoor.horizontal) ? selectedDoor.rect.y-17 : selectedDoor.rect.y+8);
-					if (selectedMount != null && selectedMount.pinned) // mount pin indicator
-						e.gc.drawImage(pinImage, selectedMount.rect.x-16, selectedMount.rect.y);
-					if (hullSelected && ship.hullPinned) // hull pin indicator
-						e.gc.drawImage(pinImage, ship.imageRect.x+5, ship.imageRect.y+5);
-					if (shieldSelected && ship.shieldPinned) // shield pin indicator
-						e.gc.drawImage(pinImage, shieldEllipse.x+5, shieldEllipse.y+5);
-					
-				} else {
-					c = new Color(e.display, 255, 255, 255);
-					e.gc.setForeground(c);
-					c.dispose();
-					Font font = new Font(shell.getDisplay(), "Helvetica", 12, SWT.BOLD);
-					e.gc.setFont(font);
-					String s = "No ship is loaded. Use the file menu to create a new ship or load an existing one.";
-					p = e.gc.stringExtent(s);
-					e.gc.drawString(s, (GRID_W*35-p.x)/2, 100, true);
-					font.dispose();
-				}
-			}
-		});
-		
-		*/
+	// =======================
+	// === BOOKMARK: LISTENERS
+	// =======================
 		
 		Integer[] ignoredLayers = {LayeredPainter.SELECTION, LayeredPainter.GRID, LayeredPainter.ANCHOR, LayeredPainter.SYSTEM_ICON};
-		MouseInputAdapter mouseListener = new MouseInputAdapter(ignoredLayers);
+		final MouseInputAdapter mouseListener = new MouseInputAdapter(ignoredLayers);
 		canvas.addMouseMoveListener(mouseListener);
 		canvas.addMouseTrackListener(mouseListener);
 		canvas.addMouseListener(mouseListener);
-		
-	// === BOOKMARK: MOUSE MOVE
-		/*
-		
-		canvas.addMouseMoveListener(new MouseMoveListener() {
-			public void mouseMove(MouseEvent e) {
-				int x = 0, y = 0;
 
-				onCanvas = true;
-				
-				mousePos.x = e.x;
-				mousePos.y = e.y;
-				
-			// === MOVE
-				if (tltmPointer.getSelection() && moveSelected && canvasActive) {
-					
-					// === Move weapon mounts
-					if (selectedMount != null && !selectedMount.pinned) {
-						if ((modShift || !leftMouseDown) && dragRoomAnchor.x == 0 && dragRoomAnchor.y == 0) {
-							dragRoomAnchor.x = selectedMount.rect.x + selectedMount.rect.width/2;
-							dragRoomAnchor.y = selectedMount.rect.y + selectedMount.rect.height/2;
-						}
-						if (!modShift && e.x != mousePosLastClick.x && e.y != mousePosLastClick.y) {
-							if (dragRoomAnchor.x != 0 && dragRoomAnchor.y != 0) {
-								dragRoomAnchor.x = 0;
-								dragRoomAnchor.y = 0;
-								selectedMount.rect.x = (int)(dragRoomAnchor.x + ((-dragRoomAnchor.x + mousePos.x)/10) - ship.offset.x*35 - selectedMount.rect.width/2);
-								selectedMount.rect.y = (int)(dragRoomAnchor.y + ((-dragRoomAnchor.y + mousePos.y)/10) - ship.offset.y*35 - selectedMount.rect.height/2);
-							} else {
-								selectedMount.rect.x = mousePos.x - selectedMount.rect.width/2;
-								selectedMount.rect.y = mousePos.y - selectedMount.rect.height/2;
-							}
-						} else {
-							selectedMount.rect.x = phantomRect.x + (mousePos.x - dragRoomAnchor.x)/10 - selectedMount.rect.width/2;
-							selectedMount.rect.y = phantomRect.y + (mousePos.y - dragRoomAnchor.y)/10 - selectedMount.rect.height/2;
-						}
-						ShipIO.updateIndexImgMaps();
-						
-						canvas.redraw();
-		
-					// === Move door
-					} else if (selectedDoor != null && !selectedDoor.isPinned()) {
-						phantomRect = new Rectangle(selectedDoor.getBounds().x, selectedDoor.getBounds().y, selectedDoor.getBounds().width, selectedDoor.getBounds().height);
-						x = e.x;
-						y = e.y;
-						
-						phantomRect.x = Math.round(x / 35) * 35 + ((selectedDoor.horizontal) ? (2) : (-3));
-						phantomRect.y = Math.round(y / 35) * 35 + ((selectedDoor.horizontal) ? (-3) : (2));
-						if (x >= ship.anchor.x && x + selectedDoor.getBounds().width < GRID_W * 35 + 35 && wallToDoor(phantomRect) == null && isDoorAtWall(phantomRect)) {
-							selectedDoor.getBounds().x = phantomRect.x;
-						}
-						if (y >= ship.anchor.y && y + selectedDoor.getBounds().height < GRID_H * 35 + 35 && wallToDoor(phantomRect) == null && isDoorAtWall(phantomRect)) {
-							selectedDoor.getBounds().y = phantomRect.y;
-						}
-						
-						canvas.redraw();
-						
-					// === Move room
-					} else if (selectedRoom != null && !selectedRoom.isPinned()) {
-						phantomRect = new Rectangle(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height);
-						x = e.x - dragRoomAnchor.x;
-						y = e.y - dragRoomAnchor.y;
-						
-						phantomRect.x = roundToGrid(x);
-						phantomRect.y = roundToGrid(y);
-						
-						phantomRect.x = (phantomRect.x+phantomRect.width < GRID_W*35+35) ? (phantomRect.x) : (selectedRoom.getBounds().x);
-						phantomRect.y = (phantomRect.y+phantomRect.height < GRID_H*35+35) ? (phantomRect.y) : (selectedRoom.getBounds().y);
-						
-						phantomRect.width =  (phantomRect.x < ship.anchor.x)
-												? (phantomRect.width + (ship.anchor.x - phantomRect.x))
-												: (selectedRoom.getBounds().width);
-												
-						phantomRect.height = (phantomRect.y < ship.anchor.y)
-												? (phantomRect.height + (ship.anchor.y - phantomRect.y))
-												: (selectedRoom.getBounds().height);
-						
-						if (!doesRectOverlap(phantomRect, selectedRoom.getBounds())) {
-							selectedRoom.getBounds().x = (x >= ship.anchor.x)
-													? ((x + selectedRoom.getBounds().width < GRID_W * 35 + 35)
-														? (phantomRect.x)
-														: (selectedRoom.getBounds().x))
-													: (ship.anchor.x);
-							selectedRoom.getBounds().y = (y >= ship.anchor.y)
-													? ((y + selectedRoom.getBounds().height < GRID_H * 35 + 35)
-														? (phantomRect.y)
-														: (selectedRoom.getBounds().y))
-													: (ship.anchor.y);
-						}
-						updateCorners(selectedRoom);
-						
-						removeUnalignedDoors();
-						
-						canvas.redraw();
-						
-					// === Move ship hull
-					} else if (hullSelected && !ship.hullPinned) {
-						if (!modShift) {
-							ship.imageRect.x = e.x - dragRoomAnchor.x;
-							ship.imageRect.y = e.y - dragRoomAnchor.y;
-						} else {
-							ship.imageRect.x = phantomRect.width + (int)((e.x - phantomRect.x)/10);
-							ship.imageRect.y = phantomRect.height + (int)((e.y - phantomRect.y)/10);
-						}
-						canvas.redraw();
-						
-					// === Move shield
-					} else if (shieldSelected && !ship.shieldPinned) {
-						if (!modShift) {
-							shieldEllipse.x = e.x - dragRoomAnchor.x;
-							shieldEllipse.y = e.y - dragRoomAnchor.y;
-						} else {
-							shieldEllipse.x = phantomRect.width + (int)((e.x - dragRoomAnchor.x)/10);
-							shieldEllipse.y = phantomRect.height + (int)((e.y - dragRoomAnchor.y)/10);
-						}
-						ship.ellipse.x = (shieldEllipse.x + shieldEllipse.width/2) - (ship.findLowBounds().x + ship.computeShipSize().x/2);
-						ship.ellipse.y = (shieldEllipse.y + shieldEllipse.height/2) - (ship.findLowBounds().y + ship.computeShipSize().y/2) - ((ship.isPlayer) ? 0 : 110);
-						ship.ellipse.width = shieldEllipse.width/2;
-						ship.ellipse.height = shieldEllipse.height/2;
-
-						canvas.redraw();
-					}
-						
-			// === RESIZE
-				// === Resize Room
-				} else if (tltmPointer.getSelection() && resizeSelected && selectedRoom != null && canvasActive && !selectedRoom.isPinned()) {
-					phantomRect = new Rectangle(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height);
-		
-					x = e.x - dragRoomAnchor.x;
-					y = e.y - dragRoomAnchor.y;
-						
-					x = (int) ((x > 0) ? roundToGrid(x)+35 : roundToGrid(x)-35);
-					y = (int) ((y > 0) ? roundToGrid(y)+35 : roundToGrid(y)-35);
-						
-						
-					if (dragRoomAnchor.equals(((FTLRoom) selectedRoom).corners[0])) {
-						phantomRect.width = x;
-						phantomRect.height = y;
-					} else if (dragRoomAnchor.equals(((FTLRoom) selectedRoom).corners[1])) {
-						phantomRect.x = dragRoomAnchor.x+x;
-						phantomRect.width = -x;
-						phantomRect.height = y;
-					} else if (dragRoomAnchor.equals(((FTLRoom) selectedRoom).corners[2])) {
-						phantomRect.width = x;
-						phantomRect.height = -y;
-						phantomRect.y = dragRoomAnchor.y+y;
-					} else if (dragRoomAnchor.equals(((FTLRoom) selectedRoom).corners[3])) {
-						phantomRect.x = dragRoomAnchor.x+x;
-						phantomRect.y = dragRoomAnchor.y+y;
-						phantomRect.width = -x;
-						phantomRect.height = -y;
-					}
-		
-					phantomRect = fixRect(phantomRect);
-					
-					if (phantomRect.x >= ship.anchor.x && phantomRect.x+phantomRect.width < GRID_W*35+35 && !doesRectOverlap(phantomRect, selectedRoom.getBounds())) {
-						selectedRoom.getBounds().x = phantomRect.x;
-						selectedRoom.getBounds().width = (phantomRect.width == 0) ? 35 : phantomRect.width;
-					}
-					if (phantomRect.y >= ship.anchor.y && phantomRect.y+phantomRect.height < GRID_H * 35+35 && !doesRectOverlap(phantomRect, selectedRoom.getBounds())) {
-						selectedRoom.getBounds().y = phantomRect.y;
-						selectedRoom.getBounds().height = (phantomRect.height == 0) ? 35 : phantomRect.height;
-					}
-					
-					updateCorners(selectedRoom);
-					
-					removeUnalignedDoors();
-					
-					canvas.redraw();
-					
-				// === Resize Shield
-				} else if (shieldSelected && !ship.shieldPinned && resizeSelected) {
-					int d = Math.abs(dragRoomAnchor.x - e.x);
-					shieldEllipse.x = dragRoomAnchor.x - d;
-					shieldEllipse.width = 2*d;
-
-					d = Math.abs(e.y - dragRoomAnchor.y);
-					shieldEllipse.y = dragRoomAnchor.y - d;
-					shieldEllipse.height = 2*d;
-					
-					ship.ellipse.x = (shieldEllipse.x + shieldEllipse.width/2) - (ship.findLowBounds().x + ship.computeShipSize().x/2);
-					ship.ellipse.y = (shieldEllipse.y + shieldEllipse.height/2) - (ship.findLowBounds().y + ship.computeShipSize().y/2) - ((ship.isPlayer) ? 0 : 110);
-					ship.ellipse.width = shieldEllipse.width/2;
-					ship.ellipse.height = shieldEllipse.height/2;
-					
-			// === MOVE ANCHOR
-				} else if (moveAnchor && canvasActive) {
-					if (leftMouseDown) {
-						Point p = ship.computeShipSize();
-						Point low = ship.findLowBounds();
-						Point a;
-						x = downToGrid(e.x);
-						y = downToGrid(e.y);
-						
-						if (e.x >= 0 && (x + p.x + low.x - ship.anchor.x) <= GRID_W*35 && e.x < GRID_W*35+35) {
-							if (!modShift) {
-								a = new Point(x, ship.anchor.y);
-								ship.updateElements(a, FTLShip.AxisFlag.X);
-								ship.anchor.x = x;
-							} else if (e.x < low.x+35) {
-								ship.anchor.x = x;
-								ship.offset.x = (ship.findLowBounds().x - ship.anchor.x) / 35;
-							}
-						}
-						if (e.y >= 0 && (y + p.y + low.y - ship.anchor.y) <= GRID_H*35 && e.y < GRID_H*35+35) {
-							if (!modShift) {
-								a = new Point(ship.anchor.x, y);
-								ship.updateElements(a, FTLShip.AxisFlag.Y);
-								ship.anchor.y = y;
-							} else if (e.y < low.y+35) {
-								ship.anchor.y = y;
-								ship.offset.y = (ship.findLowBounds().y - ship.anchor.y) / 35;
-							}
-						}
-					} else if (rightMouseDown) {
-						ship.vertical = ship.anchor.y-e.y;
-					}
-					canvas.redraw();
-					
-			// === ROOM CREATION (DRAGGING)
-				} else if (tltmRoom.getSelection() && phantomRect != null && leftMouseDown) {
-		
-					phantomRect.x = downToGrid(mousePosLastClick.x) + ((e.x > mousePosLastClick.x) ? (0) : (35));
-					phantomRect.y = downToGrid(mousePosLastClick.y) + ((e.y > mousePosLastClick.y) ? (0) : (35));
-					
-					x = ((e.x > mousePosLastClick.x)
-							? Math.min(GRID_W * 35 - phantomRect.x, upToGrid(e.x - phantomRect.x)+35)
-							: upToGrid(mousePos.x - phantomRect.x)-35);
-					y = ((e.y > mousePosLastClick.y)
-							? Math.min(GRID_H * 35 - phantomRect.y, upToGrid(e.y - phantomRect.y)+35)
-							: upToGrid(mousePos.y - phantomRect.y)-35);
-					
-					phantomRect.width = x;
-					phantomRect.height = y;
-					
-					canvas.redraw();
-				}
-				
-				if (ship != null && (e.x >= ship.anchor.x && e.y >= ship.anchor.y)) {
-					inBounds = true;
-				} else {
-					inBounds = false;
-				}
-				
-				updateSelectedPosText();
-			}
-		});
-		
-		canvas.addMouseTrackListener(new MouseTrackListener() {
-			public void mouseEnter(MouseEvent e) {
-				onCanvas = true;
-			}
-			public void mouseExit(MouseEvent e) {
-				onCanvas = false;
-			}
-			public void mouseHover(MouseEvent e) {
-				// so that the canvas is not being redrawn if no changes are being made.
-				onCanvas = false;
-			}
-		});
-
-
-	// === BOOKMARK: MOUSE DOWN
-		
-		canvas.addMouseListener(new MouseListener() {
-			@Override
-			public void mouseDown(MouseEvent e) {
-				for (FTLRoom r : ship.rooms) {
-					r.mouseDown(e);
-				}
-				
-				mousePosLastClick.x = e.x;
-				mousePosLastClick.y = e.y;
-				
-				if (e.button == 1)
-					leftMouseDown = true;
-				if (e.button == 3)
-					rightMouseDown = true;
-				
-				onCanvas = true;
-				
-				if (canvasActive) {
-					if (tltmPointer.getSelection() && showAnchor && (e.x >= ship.anchor.x-FTLShip.ANCHOR && ((ship.anchor.x == 0) ? (e.x <= FTLShip.ANCHOR) : ((e.x <= ship.anchor.x)))
-							&& e.y >= ship.anchor.y-FTLShip.ANCHOR && ((ship.anchor.y == 0) ? (e.y <= FTLShip.ANCHOR) : ((e.y <= ship.anchor.y))))) {
-						moveAnchor = true;
-					}
-					if (!moveAnchor && tltmPointer.getSelection() && onCanvas) {
-						hullSelected = false;
-						shieldSelected = false;
-						
-						// selection priorities; door > mount > room > hull
-						// cheking if previous selection variable is null prevents selecting multiple objects at once.
-						selectedDoor = (showRooms) ? wallToDoor(getDoorFromMouse()) : null;
-
-						if (showMounts && selectedDoor == null) {
-							selectedMount = getMountFromImage(mousePosLastClick);
-							selectedMount = selectedMount == null ? getMountFromMouse() : selectedMount;
-						}
-						
-						selectedRoom = (showRooms && selectedMount == null && selectedDoor == null) ? getRoomContainingRect(getRectFromClick()) : null;
-						
-						if (showHull && selectedRoom == null && selectedDoor == null && selectedMount == null) {
-							hullSelected = ship.imageRect.contains(mousePos) && leftMouseDown && !rightMouseDown;
-							shieldSelected = shieldEllipse.contains(mousePos) && !leftMouseDown && rightMouseDown;
-							
-							resizeSelected = !ship.isPlayer && shieldSelected && modAlt;
-							if (resizeSelected) {
-								dragRoomAnchor.x = shieldEllipse.x + shieldEllipse.width/2;
-								dragRoomAnchor.y = shieldEllipse.y + shieldEllipse.height/2;
-								
-								Point p = canvas.toDisplay(shieldEllipse.x+shieldEllipse.width, shieldEllipse.y+shieldEllipse.height);
-								Robot robot;
-								try {
-									robot = new Robot();
-									robot.mouseMove(p.x, p.y);
-								} catch (AWTException ex) {
-								}
-							}
-
-							moveSelected = hullSelected || (shieldSelected && !resizeSelected);
-							if (hullSelected && moveSelected) {
-								dragRoomAnchor.x = e.x - ship.imageRect.x;
-								dragRoomAnchor.y = e.y - ship.imageRect.y;
-			            		
-			            		if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
-		            			phantomRect.x = mousePos.x;
-		            			phantomRect.y = mousePos.y;
-		            			phantomRect.width = ship.imageRect.x;
-		            			phantomRect.height = ship.imageRect.y;
-							}
-							if (shieldSelected && moveSelected) {
-			            		dragRoomAnchor.x = mousePos.x - shieldEllipse.x;
-			            		dragRoomAnchor.y = mousePos.y - shieldEllipse.y;
-			            		
-			            		if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
-		            			phantomRect.x = mousePos.x;
-		            			phantomRect.y = mousePos.y;
-		            			phantomRect.width = shieldEllipse.x;
-		            			phantomRect.height = shieldEllipse.y;
-							}
-						}
-						if (selectedRoom != null) {
-							updateCorners(selectedRoom);
-							selectedDoor = null;
-						}
-						
-						updateSelectedPosText();
-					}
-					
-					if (tltmPointer.getSelection() && onCanvas && e.button == 1) {
-						if (selectedMount != null && (doImagesContain(mousePosLastClick) || selectedMount.rect.contains(mousePosLastClick))) {
-							moveSelected = true;
-		            		dragRoomAnchor.x = mousePos.x;
-		            		dragRoomAnchor.y = mousePos.y;
-		            		if (phantomRect == null) phantomRect = new Rectangle(0,0,0,0);
-	            			phantomRect.x = mousePos.x;
-	            			phantomRect.y = mousePos.y;
-	            			phantomRect.width = selectedMount.rect.x;
-	            			phantomRect.height = selectedMount.rect.y;
-						} if (selectedRoom != null && selectedRoom.getBounds().contains(mousePos)) {
-							if (corners[0].contains(mousePosLastClick) || corners[1].contains(mousePosLastClick) || corners[2].contains(mousePosLastClick) || corners[3].contains(mousePosLastClick)) {
-								dragRoomAnchor = findFarthestCorner((FTLRoom) selectedRoom, mousePosLastClick);
-								resizeSelected = true;
-							} else if (selectedRoom.getBounds().contains(mousePosLastClick)) {
-								moveSelected = true;
-								dragRoomAnchor.x = e.x - selectedRoom.getBounds().x;
-								dragRoomAnchor.y = e.y - selectedRoom.getBounds().y;
-							}
-						} else if (selectedDoor != null && selectedDoor.getBounds().contains(mousePos)) {
-							moveSelected = true;
-						}
-					} else if (tltmRoom.getSelection() && onCanvas) {
-					   	phantomRect = getRectFromClick();
-					} else if (e.button == 1) {
-						moveSelected = false;
-						resizeSelected = false;
-					}
-				}
-				
-				canvas.redraw();
-			}
-			
-	// === BOOKMARK: MOUSE UP
-			@Override
-			public void mouseUp(MouseEvent e) {
-				
-				onCanvas = true;
-				moveSelected = false;
-				
-				if (highlightColor != null && !highlightColor.isDisposed())
-					highlightColor.dispose();
-				highlightColor = new Color(shell.getDisplay(), 0, 255, 0);
-				if (canvasActive) {
-					if (selectedRoom != null && resizeSelected) {
-						//selectedRoom.getBounds() = fixRect(selectedRoom.getBounds());
-						selectedRoom.setBounds(fixRect(selectedRoom.getBounds()));
-					}
-					
-					if (tltmPointer.getSelection()) {
-						if (selectedMount != null) {
-							if (leftMouseDown && e.button == 1) {
-								dragRoomAnchor.x = 0;
-								dragRoomAnchor.y = 0;
-							}
-							if (((modShift && leftMouseDown) || !leftMouseDown) && onCanvas) {
-								selectedMount.mirror = (mousePos.x == mousePosLastClick.x && mousePos.y == mousePosLastClick.y && modShift && e.button == 1) ? !selectedMount.mirror : selectedMount.mirror;
-								selectedMount.slide = (modShift && e.button == 3)
-										? ((selectedMount.slide.equals(Slide.UP))
-											? (Slide.RIGHT)
-											: (selectedMount.slide.equals(Slide.RIGHT))
-												? (Slide.DOWN)
-												: (selectedMount.slide.equals(Slide.DOWN))
-													? (Slide.LEFT)
-													: (selectedMount.slide.equals(Slide.LEFT))
-														? (Slide.NO)
-														: (selectedMount.slide.equals(Slide.NO))
-															? (Slide.UP)
-															: selectedMount.slide)
-										: selectedMount.slide;
-
-								if (!modShift && e.button==3) {
-									selectedMount.rotate = !selectedMount.rotate;
-									selectedMount.rect.x += (selectedMount.rotate) ? (selectedMount.rect.width/2-selectedMount.rect.height/2) : (-selectedMount.rect.height/2+selectedMount.rect.width/2);
-									selectedMount.rect.y += (selectedMount.rotate) ? (selectedMount.rect.height/2-selectedMount.rect.width/2) : (-selectedMount.rect.width/2+selectedMount.rect.height/2);
-									selectedMount.rect.width = (selectedMount.rotate) ? (FTLMount.MOUNT_WIDTH) : (FTLMount.MOUNT_HEIGHT);
-									selectedMount.rect.height = (selectedMount.rotate) ? (FTLMount.MOUNT_HEIGHT) : (FTLMount.MOUNT_WIDTH);
-									ShipIO.updateIndexImgMaps();
-								}
-							} else if (leftMouseDown && !modShift && e.button == 3 && onCanvas) { // reset the position
-								ship.updateMount(selectedMount);
-							}
-							
-							// === move weapon mounts (update actual pos)
-							if (e.button != 3) {
-								// if the weapon mount gets dragged off the screen, then don't update the actual position (the mount will revert to it's last position)
-								// the below condition actually passes when the position IS to be updated.
-								if ((modShift || (e.x > 0 && e.y > 0 && e.x < GRID_W*35 && e.y < GRID_H*35)) && e.x != mousePosLastClick.x && e.y != mousePosLastClick.y) {
-									
-									mountRect.x = selectedMount.rect.x + selectedMount.rect.width/2 + ((hullImage != null) ? (-ship.anchor.x - ship.offset.x*35) : (-ship.imageRect.x));
-									mountRect.y = selectedMount.rect.y + selectedMount.rect.height/2 + ((hullImage != null) ? (-ship.anchor.y - ship.offset.y*35) : (-ship.imageRect.y));
-
-									selectedMount.rect.x = (Main.hullImage != null) ? (ship.anchor.x + ship.offset.x*35 + Main.mountRect.x) : (Main.mountRect.x);
-									selectedMount.rect.y = (Main.hullImage != null) ? (ship.anchor.y + ship.offset.y*35 + Main.mountRect.y) : (Main.mountRect.y);
-										
-									selectedMount.pos.x = selectedMount.rect.x - ship.imageRect.x;
-									selectedMount.pos.y = selectedMount.rect.y - ship.imageRect.y;
-									
-									selectedMount.rect.x -= (selectedMount.rotate) ? (FTLMount.MOUNT_WIDTH/2) : (FTLMount.MOUNT_HEIGHT/2);
-									selectedMount.rect.y -= (selectedMount.rotate) ? (FTLMount.MOUNT_HEIGHT/2) : (FTLMount.MOUNT_WIDTH/2);
-								} else if (e.x < 0 || e.y < 0 || e.x >= GRID_W*35 || e.y >= GRID_H*35) {
-									selectedMount.rect.x = 70;
-									selectedMount.rect.y = 70;
-								}
-							}
-						} else if (hullSelected && moveSelected && e.button == 1 && snapMountsToHull) {
-							if (snapMountsToHull) {
-								for (FTLMount m : ship.mounts) {
-									mountRect.x = m.pos.x - ((m.rotate) ? (FTLMount.MOUNT_WIDTH/2) : (FTLMount.MOUNT_HEIGHT/2));
-									mountRect.y = m.pos.y - ((m.rotate) ? (FTLMount.MOUNT_HEIGHT/2) : (FTLMount.MOUNT_WIDTH/2));
-									
-									m.rect.x = (hullImage != null) ? (ship.imageRect.x + mountRect.x) : (mountRect.x);
-									m.rect.y = (hullImage != null) ? (ship.imageRect.y + mountRect.y) : (mountRect.y);
-								}
-							}
-						}
-					} else if (tltmRoom.getSelection() && onCanvas && e.button == 1 && phantomRect != null) {
-						
-							//	=== room creation
-						if (!modShift && allowRoomPlacement) {
-							parseRect = fixRect(phantomRect);
-						
-							FTLRoom r = new FTLRoom(parseRect);
-	
-							r.id = getLowestId();
-							idList.add(r.id);
-	
-							ship.rooms.add(r);
-							layeredPainter.add(r, LayeredPainter.ROOM);
-							parseRect = null;
-							phantomRect = null;
-							
-							if (ship.rooms.size() > 0) {
-								btnShields.setEnabled(ship.isPlayer);
-								btnShields.setToolTipText(null);
-							}
-							
-							// === room splitting
-						} else if (modShift && parseRoom != null && parseRect != null) {
-							FTLRoom r1 = null;
-							parseRect.x = roundToGrid(parseRect.x)+35;
-							parseRect.y = roundToGrid(parseRect.y)+35;
-							if (parseRect.width == 31) {
-								// horizontal
-								r1 = new FTLRoom(parseRoom.getBounds().x, parseRoom.getBounds().y, parseRoom.getBounds().width, parseRect.y-parseRoom.getBounds().y);
-								parseRoom.getBounds().height = parseRoom.getBounds().y+parseRoom.getBounds().height-parseRect.y;
-								parseRoom.getBounds().y = parseRect.y;
-							} else {
-								// vertical
-								r1 = new FTLRoom(parseRoom.getBounds().x, parseRoom.getBounds().y, parseRect.x - parseRoom.getBounds().x, parseRoom.getBounds().height);
-								parseRoom.getBounds().width = parseRoom.getBounds().x+parseRoom.getBounds().width-parseRect.x;
-								parseRoom.getBounds().x = parseRect.x;
-							}
-							parseRoom.sys = Systems.EMPTY;
-							parseRoom = null;
-							selectedRoom = null;
-							
-							ship.rooms.add(r1);
-							layeredPainter.add(r1, LayeredPainter.ROOM);
-							r1.id = getLowestId();
-							idList.add(r1.id);
-							ship.reassignID();
-						}
-						
-						// === door creation
-					} else if (tltmDoor.getSelection() && onCanvas && parseRect != null && e.button == 1) {
-						boolean horizontal = parseRect.height == 6;
-						FTLDoor d = new FTLDoor(parseRect.x, parseRect.y, horizontal);
-						
-						d.add(ship);
-						parseRect = null;
-						
-						// === weapon mount creation
-					} else if (tltmMount.getSelection() && onCanvas) {
-						mountToolHorizontal = (!modShift && e.button == 3) ? ( (mountToolHorizontal) ? (false) : (true) ) : (mountToolHorizontal);
-						mountToolSlide = (modShift && e.button == 3)
-											? ((mountToolSlide.equals(Slide.UP))
-												? (Slide.RIGHT)
-												: (mountToolSlide.equals(Slide.RIGHT))
-													? (Slide.DOWN)
-													: (mountToolSlide.equals(Slide.DOWN))
-														? (Slide.LEFT)
-														: (mountToolSlide.equals(Slide.LEFT))
-															? (Slide.NO)
-															: (mountToolSlide.equals(Slide.NO))
-																? (Slide.UP)
-																: mountToolSlide)
-											: mountToolSlide;
-						mountToolMirror = (modShift && e.button == 1) ? !mountToolMirror : mountToolMirror ;
-						
-						if (((!mountToolSlide.equals(Slide.NO) && ship.mounts.size()<Main.ship.weaponSlots) || (mountToolSlide.equals(Slide.NO) && ship.mounts.size()<Main.ship.weaponSlots+1)) && e.button == 1 && !modShift) {
-							FTLMount m = new FTLMount();
-
-							m.rotate = mountToolHorizontal;
-							m.mirror = mountToolMirror;
-							m.gib = 0; // TODO gibs
-							m.slide = mountToolSlide;
-							m.rect.x = e.x + m.rect.width/2;
-							m.rect.y = e.y + m.rect.height/2;
-							
-							mountRect = new Rectangle(0,0,0,0);
-							mountRect.x = ((hullImage != null) ? (m.rect.x) : (m.rect.x));
-							mountRect.y = ((hullImage != null) ? (m.rect.y) : (m.rect.y));
-							
-							m.pos.x = m.rect.x - ship.imageRect.x;
-							m.pos.y = m.rect.y - ship.imageRect.y;
-
-							m.rect.width = (m.rotate) ? (FTLMount.MOUNT_WIDTH) : (FTLMount.MOUNT_HEIGHT);
-							m.rect.height = (m.rotate) ? (FTLMount.MOUNT_HEIGHT) : (FTLMount.MOUNT_WIDTH);
-							m.rect.x -= (m.rotate) ? (FTLMount.MOUNT_WIDTH/2) : (FTLMount.MOUNT_HEIGHT/2);
-							m.rect.y -= (m.rotate) ? (FTLMount.MOUNT_HEIGHT/2) : (FTLMount.MOUNT_WIDTH/2);
-							
-							ship.mounts.add(m);
-						}
-						
-						// === operating slot creation tool
-					} else if (tltmSystem.getSelection() && onCanvas && parseRect != null && parseRoom != null
-							&& (parseRoom.sys.equals(Systems.PILOT) || parseRoom.sys.equals(Systems.SHIELDS) || parseRoom.sys.equals(Systems.WEAPONS)
-									|| parseRoom.sys.equals(Systems.ENGINES) || parseRoom.sys.equals(Systems.MEDBAY))) {
-						if (!modShift) {
-							if (e.button == 1) {
-								parseRoom.slot = getStationFromRect(parseRect);
-							} else if (e.button == 3) {
-								parseRoom.slot = -2;
-							}
-						} else if (e.button == 1 && parseRoom.slot != -2) {
-							parseRoom.dir =((parseRoom.dir.equals(Slide.UP))
-											? (Slide.RIGHT)
-											: (parseRoom.dir.equals(Slide.RIGHT))
-												? (Slide.DOWN)
-												: (parseRoom.dir.equals(Slide.DOWN))
-													? (Slide.LEFT)
-													: (parseRoom.dir.equals(Slide.LEFT))
-														? (Slide.UP)
-														: (parseRoom.dir));
-						}
-					}
-					
-					parseRect = getRectFromMouse();
-					if (!shieldSelected && selectedMount == null && selectedDoor == null && !hullSelected && e.button == 3 && tltmPointer.getSelection() && onCanvas && parseRect !=null  && doesRectOverlap(parseRect, null)) {
-						menuSystem.setVisible(true);
-						selectedRoom = getRoomContainingRect(parseRect);
-						updateCorners(selectedRoom);
-					}
-				}
-					
-				parseRect = null;
-
-				moveAnchor = false;
-				moveSelected = false;
-				resizeSelected = false;
-				if (e.button == 1) {
-					leftMouseDown = false;
-				} else if (e.button == 3) {
-					rightMouseDown = false;
-				}
-				
-				canvas.redraw();
-			}
-			
-			
-			public void mouseDoubleClick(MouseEvent e) {
-				if (canvasActive) {
-					if (tltmPointer.getSelection()) {
-							// open the room level and power editing dialog
-						if (selectedRoom != null) {
-							sysDialog.open();
-						}
-					}
-				}
-			}
-		});
-
-		*/
 		// === SELECTED ITEM POSITION
+	
+		txtX.addVerifyListener(new VerifyListener() {
+			public void verifyText(VerifyEvent e) {
+				String string = e.text;
+				char[] chars = new char[string.length()];
+				string.getChars(0, chars.length, chars, 0);
+				for (int i = 0; i < chars.length; i++) {
+					if (!('0' <= chars[i] && chars[i] <= '9') && ('-'!=chars[i])) {
+						e.doit = false;
+						return;
+					}
+				}
+			}
+		});
+
+		txtY.addVerifyListener(new VerifyListener() {
+			public void verifyText(VerifyEvent e) {
+				String string = e.text;
+				char[] chars = new char[string.length()];
+				string.getChars(0, chars.length, chars, 0);
+				for (int i = 0; i < chars.length; i++) {
+					if (!('0' <= chars[i] && chars[i] <= '9') && ('-'!=chars[i])) {
+						e.doit = false;
+						return;
+					}
+				}
+			}
+		});
 		
-			txtX.addVerifyListener(new VerifyListener() {
-				public void verifyText(VerifyEvent e) {
-					String string = e.text;
-					char[] chars = new char[string.length()];
-					string.getChars(0, chars.length, chars, 0);
-					for (int i = 0; i < chars.length; i++) {
-						if (!('0' <= chars[i] && chars[i] <= '9') && ('-'!=chars[i])) {
-							e.doit = false;
-							return;
-						}
-					}
-				}
-			});
-
-			txtY.addVerifyListener(new VerifyListener() {
-				public void verifyText(VerifyEvent e) {
-					String string = e.text;
-					char[] chars = new char[string.length()];
-					string.getChars(0, chars.length, chars, 0);
-					for (int i = 0; i < chars.length; i++) {
-						if (!('0' <= chars[i] && chars[i] <= '9') && ('-'!=chars[i])) {
-							e.doit = false;
-							return;
-						}
-					}
-				}
-			});
-			
-			txtX.addTraverseListener(new TraverseListener() {
-				public void keyTraversed(TraverseEvent e) {
-					if (e.detail == SWT.TRAVERSE_RETURN) {
-						updateSelectedPosition();
-					} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
-						updateSelectedPosText();	        	  
-					}
-					canvas.forceFocus();
-					e.doit = false;
-				}
-			});
-			
-			txtY.addTraverseListener(new TraverseListener() {
-				public void keyTraversed(TraverseEvent e) {
-			        if (e.detail == SWT.TRAVERSE_RETURN) {
-						updateSelectedPosition();
-					} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
-						updateSelectedPosText();    	  
-					}
-					canvas.forceFocus();
-					e.doit = false;
-				}
-			});
-
-			btnXminus.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent e) {
-					txtX.setText(""+(Integer.valueOf(txtX.getText())-((selectedRoom==null) ? 35 : 1)));
+		txtX.addTraverseListener(new TraverseListener() {
+			public void keyTraversed(TraverseEvent e) {
+				if (e.detail == SWT.TRAVERSE_RETURN) {
 					updateSelectedPosition();
-				} });
-
-			btnXplus.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent e) {
-					txtX.setText(""+(Integer.valueOf(txtX.getText())+((selectedRoom==null) ? 35 : 1)));
+				} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
+					updateSelectedPosText();				  
+				}
+				canvas.forceFocus();
+				e.doit = false;
+			}
+		});
+		
+		txtY.addTraverseListener(new TraverseListener() {
+			public void keyTraversed(TraverseEvent e) {
+				if (e.detail == SWT.TRAVERSE_RETURN) {
 					updateSelectedPosition();
-				} });
+				} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
+					updateSelectedPosText();		  
+				}
+				canvas.forceFocus();
+				e.doit = false;
+			}
+		});
 
-			btnYminus.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent e) {
-					txtY.setText(""+(Integer.valueOf(txtY.getText())-((selectedRoom==null) ? 35 : 1)));
-					updateSelectedPosition();
-				} });
+		btnXminus.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				txtX.setText(""+(Integer.valueOf(txtX.getText())-((selectedRoom==null) ? 35 : 1)));
+				updateSelectedPosition();
+			} });
 
-			btnYplus.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent e) {
-					txtY.setText(""+(Integer.valueOf(txtY.getText())+((selectedRoom==null) ? 35 : 1)));
-					updateSelectedPosition();
-				} });
+		btnXplus.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				txtX.setText(""+(Integer.valueOf(txtX.getText())+((selectedRoom==null) ? 35 : 1)));
+				updateSelectedPosition();
+			} });
+
+		btnYminus.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				txtY.setText(""+(Integer.valueOf(txtY.getText())-((selectedRoom==null) ? 35 : 1)));
+				updateSelectedPosition();
+			} });
+
+		btnYplus.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				txtY.setText(""+(Integer.valueOf(txtY.getText())+((selectedRoom==null) ? 35 : 1)));
+				updateSelectedPosition();
+			} });
+		
 			
-			
-		// === IMAGE BUTTONS
-			
-			btnMiniship.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-					String[] filterExtensions = new String[] {"*.png"};
-					dialog.setFilterExtensions(filterExtensions);
-					dialog.setFilterPath(resPath);
-					String path = dialog.open();
-					
-					if (!ShipIO.isNull(path)) {
-						Main.ship.miniPath = path;
-					}
-					updateButtonImg();
+	// === IMAGE BUTTONS
+		
+		btnMiniship.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+				String[] filterExtensions = new String[] {"*.png"};
+				dialog.setFilterExtensions(filterExtensions);
+				dialog.setFilterPath(resPath);
+				String path = dialog.open();
+				
+				if (!ShipIO.isNull(path)) {
+					Main.ship.miniPath = path;
 				}
-			});
-			
-			btnFloor.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent e) {
-					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-					String[] filterExtensions = new String[] {"*.png"};
-					dialog.setFilterExtensions(filterExtensions);
-					dialog.setFilterPath(resPath);
-					String path = dialog.open();
+				updateButtonImg();
+			}
+		});
+		
+		btnFloor.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+				String[] filterExtensions = new String[] {"*.png"};
+				dialog.setFilterExtensions(filterExtensions);
+				dialog.setFilterPath(resPath);
+				String path = dialog.open();
+				
+				if (!ShipIO.isNull(path)) {
+					Main.ship.floorPath = path;
 					
-					if (!ShipIO.isNull(path)) {
-						Main.ship.floorPath = path;
-						
-						ShipIO.loadImage(path, "floor");
-						canvas.redraw();
-					}
-					updateButtonImg();
-				}
-			});
-			
-			btnCloak.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent e) {
-					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-					String[] filterExtensions = new String[] {"*.png"};
-					dialog.setFilterExtensions(filterExtensions);
-					dialog.setFilterPath(resPath);
-					String path = dialog.open();
-					
-					if (!ShipIO.isNull(path)) {
-						if (ShipIO.isDefaultResource(new File(path)))
-							Main.ship.cloakOverride = path;
-						
-						Main.ship.cloakPath = path;
-						btnCloaked.setEnabled(true);
-						
-						ShipIO.loadImage(path, "cloak");
-						canvas.redraw();
-					}
-					updateButtonImg();
-				}
-			});
-			
-			btnShields.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent e) {
-					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-					String[] filterExtensions = new String[] {"*.png"};
-					dialog.setFilterExtensions(filterExtensions);
-					dialog.setFilterPath(resPath);
-					String path = dialog.open();
-					Main.ship.shieldOverride = null;
-					
-					if (!ShipIO.isNull(path)) {
-						if (ShipIO.isDefaultResource(new File(path)))
-							Main.ship.shieldOverride = path;
-						
-						Main.ship.shieldPath = path;
-						
-						ShipIO.loadImage(path, "shields");
-						
-						if (ship.isPlayer)
-							if (shieldImage != null && !shieldImage.isDisposed()) {
-								Rectangle temp = shieldImage.getBounds();
-								shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - temp.width/2 + ship.ellipse.x;
-								shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - temp.height/2 + ship.ellipse.y;
-								shieldEllipse.width = temp.width;
-								shieldEllipse.height = temp.height;
-							}
-						
-						updateButtonImg();
-						
-						canvas.redraw();
-					}
-				}
-			});
-			
-			btnHull.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent e) {
-					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
-					String[] filterExtensions = new String[] {"*.png"};
-					dialog.setFilterExtensions(filterExtensions);
-					dialog.setFilterPath(resPath);
-					String path = dialog.open();
-					
-					if (!ShipIO.isNull(path)) {
-						Main.ship.imagePath = path;
-						
-						ShipIO.loadImage(path, "hull");
-						canvas.redraw();
-					}
-					updateButtonImg();
-				}
-			});
-			
-			btnShipProperties.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent e) {
-					shell.setEnabled(false);
-					shipDialog.open();
-					
-					shell.setEnabled(true);
+					ShipIO.loadImage(path, "floor");
 					canvas.redraw();
 				}
-			});
+				updateButtonImg();
+			}
+		});
+		
+		btnCloak.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+				String[] filterExtensions = new String[] {"*.png"};
+				dialog.setFilterExtensions(filterExtensions);
+				dialog.setFilterPath(resPath);
+				String path = dialog.open();
+				
+				if (!ShipIO.isNull(path)) {
+					if (ShipIO.isDefaultResource(new File(path)))
+						Main.ship.cloakOverride = path;
+					
+					Main.ship.cloakPath = path;
+					btnCloaked.setEnabled(true);
+					
+					ShipIO.loadImage(path, "cloak");
+					canvas.redraw();
+				}
+				updateButtonImg();
+			}
+		});
+		
+		btnShields.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+				String[] filterExtensions = new String[] {"*.png"};
+				dialog.setFilterExtensions(filterExtensions);
+				dialog.setFilterPath(resPath);
+				String path = dialog.open();
+				Main.ship.shieldOverride = null;
+				
+				if (!ShipIO.isNull(path)) {
+					if (ShipIO.isDefaultResource(new File(path)))
+						Main.ship.shieldOverride = path;
+					
+					Main.ship.shieldPath = path;
+					
+					ShipIO.loadImage(path, "shields");
+					
+					if (ship.isPlayer)
+						if (shieldImage != null && !shieldImage.isDisposed()) {
+							Rectangle temp = shieldImage.getBounds();
+							shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - temp.width/2 + ship.ellipse.x;
+							shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - temp.height/2 + ship.ellipse.y;
+							shieldEllipse.width = temp.width;
+							shieldEllipse.height = temp.height;
+						}
+					
+					updateButtonImg();
+					
+					canvas.redraw();
+				}
+			}
+		});
+		
+		btnHull.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+				String[] filterExtensions = new String[] {"*.png"};
+				dialog.setFilterExtensions(filterExtensions);
+				dialog.setFilterPath(resPath);
+				String path = dialog.open();
+				
+				if (!ShipIO.isNull(path)) {
+					Main.ship.imagePath = path;
+					
+					ShipIO.loadImage(path, "hull");
+					canvas.redraw();
+				}
+				updateButtonImg();
+			}
+		});
+		
+		btnShipProperties.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				shell.setEnabled(false);
+				shipDialog.open();
+				
+				shell.setEnabled(true);
+				canvas.redraw();
+			}
+		});
 
 		btnHull.addMouseListener(new MouseAdapter() {
 			public void mouseUp(MouseEvent e) {
@@ -2688,35 +1383,23 @@ public class Main
 		mntmUnload.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (sourceBtn == btnHull) {
-					ship.imagePath = null;
-					if (hullImage != null && !hullImage.isDisposed() && !ShipIO.loadingSwitch)
-						hullImage.dispose();
-					ship.imageRect.x = 0;
-					ship.imageRect.y = 0;
-					ship.imageRect.width = 0;
-					ship.imageRect.height = 0;
+					hullBox.setHullImage(null);
 				} else if (sourceBtn == btnShields) {
-					ship.shieldPath = null;
+					shieldBox.setImage(null, true);
 					ship.shieldOverride = null;
-					if (shieldImage != null && !shieldImage.isDisposed() && !ShipIO.loadingSwitch) {
-						shieldImage.dispose();
-					}
 				} else if (sourceBtn == btnFloor) {
-					ship.floorPath = null;
-					if (floorImage != null && !floorImage.isDisposed() && !ShipIO.loadingSwitch)
-						floorImage.dispose();
+					hullBox.setFloorImage(null);
 				} else if (sourceBtn == btnCloak) {
-					ship.cloakPath = null;
+					hullBox.setCloakImage(null);
 					ship.cloakOverride = null;
+					btnCloaked.setSelection(false);
 					btnCloaked.setEnabled(false);
-					if (cloakImage != null && !cloakImage.isDisposed() && !ShipIO.loadingSwitch)
-						cloakImage.dispose();
 				} else if (sourceBtn == btnMiniship) {
 					ship.miniPath = null;
 				}
 				updateButtonImg();
+				updatePainter();
 				canvas.redraw();
-				bgCanvas.redraw();
 			}
 		});
 		
@@ -2762,132 +1445,148 @@ public class Main
 		shell.getDisplay().addFilter(SWT.KeyUp, new Listener() {
 			public void handleEvent(Event e)
 			{
-            	if (e.keyCode == SWT.SHIFT)
-            		modShift = false;
-            	if (e.keyCode == SWT.ALT)
-            		modAlt = false;
-            	
-            	
-            	if (modShift && (hullSelected || shieldSelected) && moveSelected) {
-            		hullSelected = false;
-            		shieldSelected = false;
-            		moveSelected = false;
-            	}
-            	if (hullSelected && moveSelected) {
-            		dragRoomAnchor.x = mousePos.x - ship.imageRect.x;
-            		dragRoomAnchor.y = mousePos.y - ship.imageRect.y;
-            	} else if (shieldSelected && moveSelected) {
-            		dragRoomAnchor.x = mousePos.x - shieldEllipse.x;
-            		dragRoomAnchor.y = mousePos.y - shieldEllipse.y;
-            	} else if (selectedMount != null && moveSelected) {
-            		dragRoomAnchor.x = mousePos.x - selectedMount.rect.x;
-            		dragRoomAnchor.y = mousePos.y - selectedMount.rect.y;
-            	}
+				if (e.keyCode == SWT.SHIFT)
+					modShift = false;
+				if (e.keyCode == SWT.ALT)
+					modAlt = false;
+				if (e.keyCode == SWT.CTRL)
+					modCtrl = false;
 			}
 		});
 		
 		shell.getDisplay().addFilter(SWT.KeyDown, new Listener() {
-            public void handleEvent(Event e) {
-            	if (e.keyCode == SWT.ALT)
-            		modAlt = true;
-            	if (e.keyCode == SWT.SHIFT)
-            		modShift = true;
-            	
-            	// check to make sure that the hotkeys won't be triggered while the user is modifying fields in another window
-            	if (shell.isEnabled() && !txtX.isFocusControl() && !txtY.isFocusControl()) {
-            		
-            			// === element deletion
-	            	if (canvasActive && (selectedMount != null || selectedRoom != null || selectedDoor != null) && (e.keyCode == SWT.DEL || (e.stateMask == SWT.SHIFT && e.keyCode == 'd'))) {
-	            		if (selectedRoom != null) {
-	            			selectedRoom.dispose();
-	            			ship.rooms.remove(selectedRoom);
-	            			selectedRoom = null;
-	                		removeUnalignedDoors();
-	    					ship.reassignID();
-		            		canvas.redraw();
-		            		
-		            		if (ship.rooms.size() == 0) {
-		            			btnShields.setEnabled(false);
-		            			btnShields.setToolTipText("Shield is aligned in relation to rooms. Place a room before choosing shield graphic.");
-		            		}
-	            		} else if (ship.doors.remove(selectedDoor)) {
-	            			selectedDoor = null;
-	            			canvas.redraw();
-	            		} else if (ship.mounts.remove(selectedMount)) {
-	            			selectedMount = null;
-	            			canvas.redraw();
-	            		}
-	            		
-	            		// === deselect
-	            	} else if (e.keyCode == SWT.ESC) {
-	            		selectedRoom = null;
-	            		selectedDoor = null;
-	            		selectedMount = null;
-	            		canvas.redraw();
-	            		
-	            		// === file menu options
-	            	} else if (e.stateMask == SWT.CTRL && e.keyCode == 's' && mntmSaveShip.getEnabled()) {
-	            		mntmSaveShip.notifyListeners(SWT.Selection, null);
-	            	} else if (e.stateMask == SWT.CTRL && e.keyCode == 'n') {
-	            		mntmNewShip.notifyListeners(SWT.Selection, null);
-	            	} else if (e.stateMask == SWT.CTRL && e.keyCode == 'l') {
-	            		mntmLoadShip.notifyListeners(SWT.Selection, null);
-	            	} else if (e.stateMask == SWT.CTRL && e.keyCode == 'o') {
-	            		mntmLoadShipProject.notifyListeners(SWT.Selection, null);
-	            	} else if (e.stateMask == SWT.CTRL && e.keyCode == 'e' && mntmExport.getEnabled()) {
-	            		mntmExport.notifyListeners(SWT.Selection, null);
-	            		
-	            		// === show / hide graphics
-	            	} else if (e.keyCode == '1') {
-	            		showAnchor = !showAnchor;
-	            		mntmShowAnchor.setSelection(showAnchor);
-	            		canvas.redraw();
-	            	} else if (e.keyCode == '2') {
-	            		showMounts = !showMounts;
-	            		mntmShowMounts.setSelection(showMounts);
-	            		canvas.redraw();
-	            	} else if (e.keyCode == '3') {
-	            		showRooms = !showRooms;
-	            		mntmShowRooms.setSelection(showRooms);
-	            		canvas.redraw();
-	            	} else if (e.keyCode == '4') {
-	            		showHull = !showHull;
-	            		mntmShowHull.setSelection(showHull);
-	            		canvas.redraw();
-	            	} else if (e.keyCode == '5') {
-	            		showFloor = !showFloor;
-	            		mntmShowFloor.setSelection(showFloor);
-	            		canvas.redraw();
-	            	} else if (e.keyCode == '6') {
-	            		showShield = !showShield;
-	            		mntmShowShield.setSelection(showShield);
-	            		canvas.redraw();
-	            		
-	            		// === pin
-	            	} else if (e.keyCode == '`') {
-	            		if (selectedRoom != null) selectedRoom.setPinned(!selectedRoom.isPinned());
-	            		if (selectedDoor != null) selectedDoor.setPinned(!selectedDoor.isPinned());
-	            		if (selectedMount != null) selectedMount.pinned = !selectedMount.pinned;
-	            		if (hullSelected) ship.hullPinned = !ship.hullPinned;
-	            		if (shieldSelected) ship.shieldPinned = !ship.shieldPinned;
-	            		canvas.redraw();
-	            		
-	            		// === tool hotkeys
-	            	} else if (e.stateMask == SWT.NONE && (e.keyCode == 'q' || e.keyCode == 'w' || e.keyCode == 'e' || e.keyCode == 'r' || e.keyCode == 't')) {
-	            		tltmPointer.setSelection(e.keyCode == 'q');
-	            		tltmRoom.setSelection(e.keyCode == 'w');
-	            		tltmDoor.setSelection(e.keyCode == 'e');
-	            		tltmMount.setSelection(e.keyCode == 'r');
-	            		tltmSystem.setSelection(e.keyCode == 't');
-	            		
-		        		// === nudge function
-	            	} else if (e.keyCode == SWT.ARROW_UP || e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_LEFT || e.keyCode == SWT.ARROW_RIGHT) {
-	            		// sending it to an auxiliary function as to not make a clutter here
-	            		nudgeSelected(e.keyCode);
-    				}
-            	}
-            }
-        });
+			public void handleEvent(Event e) {
+				if (e.keyCode == SWT.ALT)
+					modAlt = true;
+				if (e.keyCode == SWT.SHIFT)
+					modShift = true;
+				if (e.keyCode == SWT.CTRL) {
+					modCtrl = true;
+					
+					if (mouseListener.dragee != null) {
+						mouseListener.dragee.setOffset(mouseListener.dragee.getBounds().x, mouseListener.dragee.getBounds().y);
+					}
+				}
+				
+				// check to make sure that the hotkeys won't be triggered while the user is modifying fields in another window
+				if (shell.isEnabled() && !txtX.isFocusControl() && !txtY.isFocusControl()) {
+					
+						// === element deletion
+					if ((selectedMount != null || selectedRoom != null || selectedDoor != null) && (e.keyCode == SWT.DEL || (e.stateMask == SWT.SHIFT && e.keyCode == 'd'))) {
+						Rectangle redrawBounds = null;
+						if (selectedRoom != null) {
+							redrawBounds = selectedRoom.getBounds();
+							selectedRoom.dispose();
+							ship.rooms.remove(selectedRoom);
+							removeUnalignedDoors();
+							ship.reassignID();
+							selectedRoom = null;
+							
+							if (ship.rooms.size() == 0) {
+								btnShields.setEnabled(false);
+							}
+						} else if (selectedDoor != null) {
+							redrawBounds = selectedDoor.getBounds();
+							selectedDoor.dispose();
+							ship.doors.remove(selectedDoor);
+							selectedDoor = null;
+						} else if (selectedMount != null) {
+							redrawBounds = selectedMount.getBounds();
+							
+							selectedMount.dispose();
+							ship.mounts.remove(selectedMount);
+							selectedMount = null;
+							
+							redrawBounds.x -= 40;
+							redrawBounds.y -= 40;
+							redrawBounds.width += 80;
+							redrawBounds.height += 80;
+						}
+						
+						if (redrawBounds != null)
+							canvasRedraw(redrawBounds, false);
+						
+						// === deselect
+					} else if (e.keyCode == SWT.ESC) {
+						if (selectedRoom != null) selectedRoom.deselect();
+						selectedRoom = null;
+						if (selectedDoor != null) selectedDoor.deselect();
+						selectedDoor = null;
+						if (selectedMount != null) selectedMount.deselect();
+						selectedMount = null;
+						if (hullSelected) hullBox.deselect();
+						if (shieldSelected) shieldBox.deselect();
+						
+						// === file menu options
+					} else if (e.stateMask == SWT.CTRL && e.keyCode == 's' && mntmSaveShip.getEnabled()) {
+						mntmSaveShip.notifyListeners(SWT.Selection, null);
+					} else if (e.stateMask == SWT.CTRL && e.keyCode == 'n') {
+						mntmNewShip.notifyListeners(SWT.Selection, null);
+					} else if (e.stateMask == SWT.CTRL && e.keyCode == 'l') {
+						mntmLoadShip.notifyListeners(SWT.Selection, null);
+					} else if (e.stateMask == SWT.CTRL && e.keyCode == 'o') {
+						mntmLoadShipProject.notifyListeners(SWT.Selection, null);
+					} else if (e.stateMask == SWT.CTRL && e.keyCode == 'e' && mntmExport.getEnabled()) {
+						mntmExport.notifyListeners(SWT.Selection, null);
+						
+						// === show / hide graphics
+					} else if (e.keyCode == '1') {
+						showAnchor = !showAnchor;
+						mntmShowAnchor.setSelection(showAnchor);
+						canvas.redraw();
+					} else if (e.keyCode == '2') {
+						showMounts = !showMounts;
+						showMounts();
+						mntmShowMounts.setSelection(showMounts);
+						canvas.redraw();
+					} else if (e.keyCode == '3') {
+						showRooms = !showRooms;
+						showRooms();
+						mntmShowRooms.setSelection(showRooms);
+						canvas.redraw();
+					} else if (e.keyCode == '4') {
+						showHull = !showHull;
+						hullBox.setVisible(showHull || showFloor);
+						mntmShowHull.setSelection(showHull);
+						canvas.redraw();
+					} else if (e.keyCode == '5') {
+						showFloor = !showFloor;
+						hullBox.setVisible(showHull || showFloor);
+						mntmShowFloor.setSelection(showFloor);
+						canvas.redraw();
+					} else if (e.keyCode == '6') {
+						showShield = !showShield;
+						mntmShowShield.setSelection(showShield);
+						canvas.redraw();
+						
+						// === pin
+					} else if (e.keyCode == '`' || e.keyCode == SWT.SPACE) {
+						if (selectedRoom != null) selectedRoom.setPinned(!selectedRoom.isPinned());
+						if (selectedDoor != null) selectedDoor.setPinned(!selectedDoor.isPinned());
+						if (selectedMount != null) selectedMount.setPinned(!selectedMount.isPinned());
+						if (hullSelected) hullBox.setPinned(!hullBox.isPinned());
+						if (shieldSelected) shieldBox.setPinned(!shieldBox.isPinned());
+						
+						ship.hullPinned = hullBox.isPinned();
+						ship.shieldPinned = shieldBox.isPinned();
+						canvas.redraw();
+						
+						// === tool hotkeys
+					} else if (e.stateMask == SWT.NONE && (e.keyCode == 'q' || e.keyCode == 'w' || e.keyCode == 'e' || e.keyCode == 'r' || e.keyCode == 't')) {
+						tltmPointer.setSelection(e.keyCode == 'q');
+						tltmRoom.setSelection(e.keyCode == 'w');
+						tltmDoor.setSelection(e.keyCode == 'e');
+						tltmMount.setSelection(e.keyCode == 'r');
+						tltmSystem.setSelection(e.keyCode == 't');
+						
+						// === nudge function
+					} else if (e.keyCode == SWT.ARROW_UP || e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_LEFT || e.keyCode == SWT.ARROW_RIGHT) {
+						// sending it to an auxiliary function as to not make a clutter here
+						nudgeSelected(e.keyCode);
+					}
+				}
+			}
+		});
 		
 	// === SYSTEM CONTEXT MENU
 		
@@ -3028,10 +1727,7 @@ public class Main
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path) && selectedRoom != null) {
-					selectedRoom.img = path;
-
-					ShipIO.loadSystemImage(selectedRoom);
-					canvas.redraw();
+					selectedRoom.setInterior(path);
 				}
 			}
 		});
@@ -3046,8 +1742,8 @@ public class Main
 				int create = new NewShipWindow(shell).open();
 				shell.setEnabled(true);
 				if (create != 0) {
-	        		mntmClose.notifyListeners(SWT.Selection, null);
-	        		
+					mntmClose.notifyListeners(SWT.Selection, null);
+					
 					ship = new FTLShip();
 					ship.isPlayer = create == 1;
 					ship.anchor.x = 140;
@@ -3056,7 +1752,6 @@ public class Main
 					
 					anchor.setVisible(true);
 					
-					canvasActive = true;
 					tltmPointer.setEnabled(true);
 					tltmRoom.setEnabled(true);
 					tltmDoor.setEnabled(true);
@@ -3108,8 +1803,6 @@ public class Main
 					public void widgetDisposed(DisposeEvent e)
 					{
 						if (ship != null) {
-							canvasActive = true;
-							
 							anchor.setVisible(true);
 							
 							tltmPointer.setEnabled(true);
@@ -3152,7 +1845,7 @@ public class Main
 								shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 + ship.ellipse.x - ship.ellipse.width;
 								shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 + ship.ellipse.y - ship.ellipse.height + 110;
 							}
-							ShipIO.updateIndexImgMaps();
+							//ShipIO.updateIndexImgMaps();
 							
 							btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath));
 							
@@ -3221,7 +1914,6 @@ public class Main
 				if (ship != null) {
 					anchor.setVisible(true);
 					
-					canvasActive = true;
 					tltmPointer.setEnabled(true);
 					tltmRoom.setEnabled(true);
 					tltmDoor.setEnabled(true);
@@ -3257,7 +1949,6 @@ public class Main
 						shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 + ship.ellipse.x - ship.ellipse.width;
 						shieldEllipse.y = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().y/2 + ship.ellipse.y - ship.ellipse.height + 110;
 					}
-					ShipIO.updateIndexImgMaps();
 					
 					btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath));
 
@@ -3291,35 +1982,34 @@ public class Main
 					for (FTLRoom r : ship.rooms) {
 						r.dispose();
 					}
-					ship.rooms.clear();
+					for (FTLDoor d : ship.doors) {
+						d.dispose();
+					}
+					for (FTLMount m : ship.mounts) {
+						m.dispose();
+					}
 					
+					ship.rooms.clear();
 					ship.doors.clear();
-					if (!ShipIO.loadingSwitch && hullImage != null && !hullImage.isDisposed())
-						hullImage.dispose();
-					if (!ShipIO.loadingSwitch && shieldImage != null && !shieldImage.isDisposed())
-						shieldImage.dispose();
-					if (!ShipIO.loadingSwitch && floorImage != null && !floorImage.isDisposed())
-						floorImage.dispose();
-					if (!ShipIO.loadingSwitch && cloakImage != null && !cloakImage.isDisposed())
-						cloakImage.dispose();
+					ship.mounts.clear();
+					
+					hullBox.setHullImage(null);
+					hullBox.setFloorImage(null);
+					hullBox.setCloakImage(null);
+					shieldBox.setImage(null, true);
 				}
 				
 				btnCloaked.setEnabled(false);
-				hullImage = null;
-				shieldImage = null;
-				floorImage = null;
-				ship = null;
 				idList.clear();
 				clearButtonImg();
 				currentPath = null;
+				
 				shieldEllipse.x = 0;
 				shieldEllipse.y = 0;
 				shieldEllipse.width = 0;
 				shieldEllipse.height = 0;
 				
 				anchor.setVisible(false);
-
-				canvasActive = false;
 				
 				tltmPointer.setEnabled(false);
 				tltmRoom.setEnabled(false);
@@ -3328,7 +2018,6 @@ public class Main
 				tltmSystem.setEnabled(false);
 				btnHull.setEnabled(false);
 				btnShields.setEnabled(false);
-				btnShields.setToolTipText("Shield is aligned in relation to rooms. Place a room before choosing shield graphic.");
 				btnCloak.setEnabled(false);
 				btnFloor.setEnabled(false);
 				btnMiniship.setEnabled(false);
@@ -3340,6 +2029,8 @@ public class Main
 				mntmSaveShipAs.setEnabled(false);
 				mntmExport.setEnabled(false);
 				mntmClose.setEnabled(false);
+
+				ship = null;
 				
 				canvas.redraw();
 			}
@@ -3395,6 +2086,7 @@ public class Main
 		mntmShowMounts.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				showMounts = ((MenuItem) e.widget).getSelection();
+				showMounts();
 				ConfigIO.saveConfig();
 				canvas.redraw();
 			}
@@ -3403,6 +2095,7 @@ public class Main
 		mntmShowRooms.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				showRooms = ((MenuItem) e.widget).getSelection();
+				showRooms();
 				ConfigIO.saveConfig();
 				canvas.redraw();
 			}
@@ -3411,6 +2104,7 @@ public class Main
 		mntmShowHull.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				showHull = ((MenuItem) e.widget).getSelection();
+				hullBox.setVisible(showHull || showFloor);
 				ConfigIO.saveConfig();
 				canvas.redraw();
 			}
@@ -3419,6 +2113,7 @@ public class Main
 		mntmShowFloor.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				showFloor = ((MenuItem) e.widget).getSelection();
+				hullBox.setVisible(showHull || showFloor);
 				ConfigIO.saveConfig();
 				canvas.redraw();
 			}
@@ -3453,14 +2148,6 @@ public class Main
 				loadSystem = ((MenuItem) e.widget).getSelection();
 				ConfigIO.saveConfig();
 				canvas.redraw();
-			}
-		});
-		
-		mntmConstantRedraw.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				constantRedraw = mntmConstantRedraw.getSelection();
-				ConfigIO.saveConfig();
 			}
 		});
 	}
@@ -3678,44 +2365,44 @@ public class Main
 						phantomRect = cloneRect(selectedRoom.getBounds());
 						phantomRect.y -= 35;
 						if (!doesRectOverlap(phantomRect, selectedRoom.getBounds()) && phantomRect.y >= ship.anchor.y)
-							selectedRoom.getBounds().y -= 35;
+							selectedRoom.setLocation(selectedRoom.getLocation().x, selectedRoom.getLocation().y-35);
 					}
-					if (selectedMount != null) selectedMount.rect.y -= (modShift) ? 35 : 1;
-					if (hullSelected) ship.imageRect.y -= (modShift) ? 35 : 1;
-					if (shieldSelected) shieldEllipse.y -= (modShift) ? 35 : 1;
+					if (selectedMount != null) selectedMount.setLocation(selectedMount.getLocation().x, selectedMount.getLocation().y - ((modShift) ? 35 : 1));
+					if (hullSelected) hullBox.setLocation(hullBox.getLocation().x, hullBox.getLocation().y - ((modShift) ? 35 : 1));
+					if (shieldSelected) shieldBox.setLocation(shieldBox.getLocation().x, shieldBox.getLocation().y - ((modShift) ? 35 : 1));
 					break;
 				case (SWT.ARROW_DOWN):
 					if (selectedRoom != null) {
 						phantomRect = cloneRect(selectedRoom.getBounds());
 						phantomRect.y += 35;
 						if (!doesRectOverlap(phantomRect, selectedRoom.getBounds()) && phantomRect.y + phantomRect.height <= GRID_H*35)
-							selectedRoom.getBounds().y += 35;
+							selectedRoom.setLocation(selectedRoom.getLocation().x, selectedRoom.getLocation().y+35);
 					}
-					if (selectedMount != null) selectedMount.rect.y += (modShift) ? 35 : 1;
-					if (hullSelected) ship.imageRect.y += (modShift) ? 35 : 1;
-					if (shieldSelected) shieldEllipse.y += (modShift) ? 35 : 1;
+					if (selectedMount != null) selectedMount.setLocation(selectedMount.getLocation().x, selectedMount.getLocation().y + ((modShift) ? 35 : 1));
+					if (hullSelected) hullBox.setLocation(hullBox.getLocation().x, hullBox.getLocation().y + ((modShift) ? 35 : 1));
+					if (shieldSelected) shieldBox.setLocation(shieldBox.getLocation().x, shieldBox.getLocation().y + ((modShift) ? 35 : 1));
 					break;
 				case (SWT.ARROW_LEFT):
 					if (selectedRoom != null) {
 						phantomRect = cloneRect(selectedRoom.getBounds());
 						phantomRect.x -= 35;
 						if (!doesRectOverlap(phantomRect, selectedRoom.getBounds()) && phantomRect.x >= ship.anchor.x)
-							selectedRoom.getBounds().x -= 35;
+							selectedRoom.setLocation(selectedRoom.getLocation().x-35, selectedRoom.getLocation().y);
 					}
-					if (selectedMount != null) selectedMount.rect.x -= (modShift) ? 35 : 1;
-					if (hullSelected) ship.imageRect.x -= (modShift) ? 35 : 1;
-					if (shieldSelected) shieldEllipse.x -= (modShift) ? 35 : 1;
+					if (selectedMount != null) selectedMount.setLocation(selectedMount.getLocation().x - ((modShift) ? 35 : 1), selectedMount.getLocation().y);
+					if (hullSelected) hullBox.setLocation(hullBox.getLocation().x - ((modShift) ? 35 : 1), hullBox.getLocation().y);
+					if (shieldSelected) shieldBox.setLocation(shieldBox.getLocation().x - ((modShift) ? 35 : 1), shieldBox.getLocation().y);
 					break;
 				case (SWT.ARROW_RIGHT):
 					if (selectedRoom != null) {
 						phantomRect = cloneRect(selectedRoom.getBounds());
 						phantomRect.x += 35;
 						if (!doesRectOverlap(phantomRect, selectedRoom.getBounds()) && phantomRect.x + phantomRect.width <= GRID_W*35)
-							selectedRoom.getBounds().x += 35;
+							selectedRoom.setLocation(selectedRoom.getLocation().x+35, selectedRoom.getLocation().y);
 					}
-					if (selectedMount != null) selectedMount.rect.x += (modShift) ? 35 : 1;
-					if (hullSelected) ship.imageRect.x += (modShift) ? 35 : 1;
-					if (shieldSelected) shieldEllipse.x += (modShift) ? 35 : 1;
+					if (selectedMount != null) selectedMount.setLocation(selectedMount.getLocation().x + ((modShift) ? 35 : 1), selectedMount.getLocation().y);
+					if (hullSelected) hullBox.setLocation(hullBox.getLocation().x + ((modShift) ? 35 : 1), hullBox.getLocation().y);
+					if (shieldSelected) shieldBox.setLocation(shieldBox.getLocation().x + ((modShift) ? 35 : 1), shieldBox.getLocation().y);
 					break;
 				default: break;
 			}
@@ -3802,6 +2489,7 @@ public class Main
 	}
 	
 	public static Rectangle getRectFromStation(FTLRoom r) {
+		r.slot = Main.ship.slotMap.get(r.getSystem());
 		int w = r.getBounds().width/35;
 		int y = (int) Math.floor(r.slot/w);
 		int x = r.slot - y* w;
@@ -3825,6 +2513,7 @@ public class Main
 	public static Rectangle getStationDirected(FTLRoom r) {
 		final int STATION_SIZE = 15;
 		Rectangle rect = getRectFromStation(r);
+		r.dir = Main.ship.slotDirMap.get(r.getSystem());
 		
 		if (r.dir.equals(Slide.UP)) {
 			rect.height = STATION_SIZE;
@@ -3845,11 +2534,14 @@ public class Main
 	// === DOOR RELATED
 	
 	public static void removeUnalignedDoors() {
-		if (removeDoor) {
+		if (removeDoor && Main.ship != null) {
+			// can't iterate over ship.doors because it throws concurrentModification exception
+			// dump doors to an object array and iterate over it
 			Object[] array = ship.doors.toArray();
 			for (Object o : array) {
 				FTLDoor d = (FTLDoor) o;
 				if (!isDoorAtWall(d.getBounds())) {
+					d.dispose();
 					ship.doors.remove(d);
 					d = null;
 				}
@@ -3863,7 +2555,7 @@ public class Main
 	 * @param rect Rectangle which matches the parameters of a wall;
 	 * @return FTLDoor at the given rect, if there is one.
 	 */
-	public FTLDoor wallToDoor(Rectangle rect) {
+	public static FTLDoor wallToDoor(Rectangle rect) {
 		for (FTLDoor dr : ship.doors) {
 			if (rect != null && rect.intersects(dr.getBounds()) && rect.width == dr.getBounds().width) {
 				return dr;
@@ -3918,34 +2610,6 @@ public class Main
 	//=================
 	// === MOUNT RELATED
 	
-	public static FTLMount getMountFromImage(Point p) {
-		for (Integer index : indexImgMapNormal.keySet()) {
-			if (indexImgMapNormal.get(index).contains(p)) {
-				return ship.mounts.get(index);
-			}
-		}
-		for (Integer index : indexImgMapRotated.keySet()) {
-			if (indexImgMapRotated.get(index).contains(p)) {
-				return ship.mounts.get(index);
-			}
-		}
-		return null;
-	}
-	
-	public static boolean doImagesContain(Point p) {
-		boolean result = false;
-		for (Integer index : indexImgMapNormal.keySet()) {
-			result = indexImgMapNormal.get(index).contains(p);
-			if (result) break;
-		}
-		if (!result) {
-			for (Integer index : indexImgMapRotated.keySet()) {
-				result = indexImgMapRotated.get(index).contains(p);
-				if (result) break;
-			}
-		}
-		return result;
-	}
 	
 	public static int getMountIndex(FTLMount m) {
 		int i = -1;
@@ -3956,9 +2620,9 @@ public class Main
 		return i;
 	}
 	
-	public static FTLMount getMountFromMouse() {
+	public static FTLMount getMountFromPoint(int x, int y) {
 		for (FTLMount m : ship.mounts) {
-			if (m.rect.contains(mousePos)) {
+			if (m.getBounds().contains(x, y)) {
 				return m;
 			}
 		}
@@ -3985,42 +2649,40 @@ public class Main
 		btnMiniship.setImage((ShipIO.isNull(ship.miniPath) ? crossImage : tickImage));
 	}
 	
-	public void updateSelectedPosText() {
-		if (canvasActive) {
-			boolean enable = selectedMount != null || selectedRoom != null || hullSelected || shieldSelected;
-			
-			txtX.setEnabled(enable);
-			btnXplus.setEnabled(enable);
-			btnXminus.setEnabled(enable);
-			txtY.setEnabled(enable);
-			btnYplus.setEnabled(enable);
-			btnYminus.setEnabled(enable);
-			
-			if (!enable) {
-				txtX.setText("");
-				txtY.setText("");
-			}
-			
-			if (selectedMount != null) {
-				txtX.setText(""+(selectedMount.rect.x+selectedMount.rect.width/2));
-				txtY.setText(""+(selectedMount.rect.y+selectedMount.rect.height/2));
-			} else if (selectedDoor != null) {
-				txtX.setText(""+(selectedDoor.getBounds().x/35+1));
-				txtY.setText(""+(selectedDoor.getBounds().y/35+1));
-			} else if (selectedRoom != null) {
-				txtX.setText(""+(selectedRoom.getBounds().x/35+1));
-				txtY.setText(""+(selectedRoom.getBounds().y/35+1));
-			} else if (hullSelected) {
-				txtX.setText(""+(ship.imageRect.x));
-				txtY.setText(""+(ship.imageRect.y));
-			} else if (shieldSelected) {
-				txtX.setText(""+(shieldEllipse.x));
-				txtY.setText(""+(shieldEllipse.y));
-			}
+	public static void updateSelectedPosText() {
+		boolean enable = selectedMount != null || selectedRoom != null || hullSelected || shieldSelected;
+		
+		txtX.setEnabled(enable);
+		btnXplus.setEnabled(enable);
+		btnXminus.setEnabled(enable);
+		txtY.setEnabled(enable);
+		btnYplus.setEnabled(enable);
+		btnYminus.setEnabled(enable);
+		
+		if (!enable) {
+			txtX.setText("");
+			txtY.setText("");
+		}
+		
+		if (selectedMount != null) {
+			txtX.setText(""+(selectedMount.getBounds().x+selectedMount.getBounds().width/2));
+			txtY.setText(""+(selectedMount.getBounds().y+selectedMount.getBounds().height/2));
+		} else if (selectedDoor != null) {
+			txtX.setText(""+(selectedDoor.getBounds().x/35+1));
+			txtY.setText(""+(selectedDoor.getBounds().y/35+1));
+		} else if (selectedRoom != null) {
+			txtX.setText(""+(selectedRoom.getBounds().x/35+1));
+			txtY.setText(""+(selectedRoom.getBounds().y/35+1));
+		} else if (hullSelected) {
+			txtX.setText(""+(ship.imageRect.x));
+			txtY.setText(""+(ship.imageRect.y));
+		} else if (shieldSelected) {
+			txtX.setText(""+(shieldEllipse.x));
+			txtY.setText(""+(shieldEllipse.y));
 		}
 	}
 	
-	public void updateSelectedPosition() {
+	public static void updateSelectedPosition() {
 		int x=0, y=0;
 		boolean doit = true;
 		try {
@@ -4032,21 +2694,15 @@ public class Main
 		}
 		
 		if (doit) {
-			if (selectedMount != null && (!selectedMount.pinned || arbitraryPosOverride)) {
+			if (selectedMount != null && (!selectedMount.isPinned() || arbitraryPosOverride)) {
 				if (x >= GRID_W*35) x = GRID_W*35-15;
 				if (y >= GRID_H*35) y = GRID_H*35-15;
-				if (x <= -selectedMount.rect.width) x = 15-selectedMount.rect.width;
-				if (y <= -selectedMount.rect.height) y = 15-selectedMount.rect.height;
+				if (x <= -selectedMount.getBounds().width) x = 15-selectedMount.getBounds().width;
+				if (y <= -selectedMount.getBounds().height) y = 15-selectedMount.getBounds().height;
 				
-				selectedMount.rect.x = x;
-				selectedMount.rect.y = y;
-				selectedMount.pos.x = selectedMount.rect.x - ship.imageRect.x;
-				selectedMount.pos.y = selectedMount.rect.y - ship.imageRect.y;
-				
-				selectedMount.rect.x -= (selectedMount.rotate) ? (FTLMount.MOUNT_WIDTH/2) : (FTLMount.MOUNT_HEIGHT/2);
-				selectedMount.rect.y -= (selectedMount.rotate) ? (FTLMount.MOUNT_HEIGHT/2) : (FTLMount.MOUNT_WIDTH/2);
+				selectedMount.setLocation(x, y);
 			} else if (selectedDoor != null && (!selectedDoor.isPinned() || arbitraryPosOverride)) {
-				//selectedDoor.rect.x = 
+				//selectedDoor.setLocation(x, y);
 			} else if (selectedRoom != null && (!selectedRoom.isPinned() || arbitraryPosOverride)) {
 				if (x > GRID_W-selectedRoom.getBounds().width/35) x = GRID_W - selectedRoom.getBounds().width/35 + 1;
 				if (y > GRID_H-selectedRoom.getBounds().height/35) y = GRID_H - selectedRoom.getBounds().height/35 + 1;
@@ -4055,28 +2711,25 @@ public class Main
 				
 				Rectangle collisionCheck = new Rectangle((x-1)*35, (y-1)*35, selectedRoom.getBounds().width, selectedRoom.getBounds().height);
 				if (!doesRectOverlap(collisionCheck, selectedRoom.getBounds())) {
-					selectedRoom.getBounds().x = (x-1) * 35;
-					selectedRoom.getBounds().y = (y-1) * 35;
-					updateCorners(selectedRoom);
+					x = (x-1) * 35;
+					y = (y-1) * 35;
+					selectedRoom.setLocation(x, y);
+					//updateCorners(selectedRoom);
 				}
 			} else if (hullSelected && (!ship.hullPinned || arbitraryPosOverride)) {
 				if (x >= GRID_W*35) x = GRID_W*35-15;
 				if (y >= GRID_H*35) y = GRID_H*35-15;
 				if (x <= -ship.imageRect.width) x = 15-ship.imageRect.width;
 				if (y <= -ship.imageRect.height) y = 15-ship.imageRect.height;
-				
-				ship.imageRect.x = x;
-				ship.imageRect.y = y;
+
+				hullBox.setLocation(x, y);
 			} else if (shieldSelected && (!ship.shieldPinned || arbitraryPosOverride)) {
 				if (x >= GRID_W*35) x = GRID_W*35-15;
 				if (y >= GRID_H*35) y = GRID_H*35-15;
 				if (x <= -shieldEllipse.width) x = 15-shieldEllipse.width;
 				if (y <= -shieldEllipse.height) y = 15-shieldEllipse.height;
-				
-				shieldEllipse.x = x;
-				shieldEllipse.y = y;
-				ship.ellipse.x = (shieldEllipse.x + shieldEllipse.width/2) - (ship.findLowBounds().x + ship.computeShipSize().x/2);
-				ship.ellipse.y = (shieldEllipse.y + shieldEllipse.height/2) - (ship.findLowBounds().y + ship.computeShipSize().y/2) - ((ship.isPlayer) ? 0 : 110);
+
+				shieldBox.setLocation(x, y);
 			}
 			
 			canvas.redraw();
@@ -4103,101 +2756,54 @@ public class Main
 			System.out.println(msg);
 	}
 	
-	
-	// === Graphics
-	
-	static ImageData flip(ImageData srcData, boolean vertical) {
-		int bytesPerPixel = srcData.bytesPerLine / srcData.width;
-		int destBytesPerLine = srcData.width * bytesPerPixel;
-		byte[] newData = new byte[srcData.data.length];
-	    
-		for (int srcY = 0; srcY < srcData.height; srcY++) {
-			for (int srcX = 0; srcX < srcData.width; srcX++) {
-				int destX = 0, destY = 0, destIndex = 0, srcIndex = 0;
-				if (vertical) {
-					destX = srcX;
-					destY = srcData.height - srcY - 1;
-				} else {
-					destX = srcData.width - srcX - 1;
-					destY = srcY;
-				}
-				destIndex = (destY * destBytesPerLine)
-						+ (destX * bytesPerPixel);
-				srcIndex = (srcY * srcData.bytesPerLine)
-						+ (srcX * bytesPerPixel);
-				System.arraycopy(srcData.data, srcIndex, newData, destIndex,
-						bytesPerPixel);
-			}
-		}
-		// destBytesPerLine is used as scanlinePad to ensure that no padding is
-		// required
-
-	    Color white = shell.getDisplay().getSystemColor(SWT.COLOR_WHITE);
-	    Color black = shell.getDisplay().getSystemColor(SWT.COLOR_BLACK);
-	    PaletteData palette = new PaletteData(new RGB[] { white.getRGB(), black.getRGB() });
-	    final ImageData sourceData = new ImageData(srcData.width, srcData.height, srcData.depth, palette, destBytesPerLine, newData);
-	    sourceData.transparentPixel = 0;
-	    
-		//return new ImageData(srcData.width, srcData.height, srcData.depth, srcData.palette, destBytesPerLine, newData);
-	    return sourceData;
-	}
-	
-	public static ImageData rotate(ImageData srcData, int direction) {
-		int bytesPerPixel = srcData.bytesPerLine / srcData.width;
-		int destBytesPerLine = (direction == SWT.DOWN) ? srcData.width
-				* bytesPerPixel : srcData.height * bytesPerPixel;
-		byte[] newData = new byte[srcData.data.length];
-		int width = 0, height = 0;
-		
-		for (int srcY = 0; srcY < srcData.height; srcY++) {
-			for (int srcX = 0; srcX < srcData.width; srcX++) {
-				int destX = 0, destY = 0, destIndex = 0, srcIndex = 0;
-				switch (direction) {
-		        	case SWT.LEFT: // left 90 degrees
-		        		destX = srcY;
-		        		destY = srcData.width - srcX - 1;
-		        		width = srcData.height;
-		        		height = srcData.width;
-		        		break;
-		        	case SWT.RIGHT: // right 90 degrees
-		        		destX = srcData.height - srcY - 1;
-		        		destY = srcX;
-		        		width = srcData.height;
-		        		height = srcData.width;
-		        		break;
-		        	case SWT.DOWN: // 180 degrees
-		        		destX = srcData.width - srcX - 1;
-		        		destY = srcData.height - srcY - 1;
-		        		width = srcData.width;
-		        		height = srcData.height;
-		        		break;
-		        }
-				destIndex = (destY * destBytesPerLine)
-						+ (destX * bytesPerPixel);
-				srcIndex = (srcY * srcData.bytesPerLine)
-						+ (srcX * bytesPerPixel);
-				System.arraycopy(srcData.data, srcIndex, newData, destIndex, bytesPerPixel);
-			}
-		}
-		// destBytesPerLine is used as scanlinePad to ensure that no padding is
-		// required
-
-	    Color white = shell.getDisplay().getSystemColor(SWT.COLOR_WHITE);
-	    Color black = shell.getDisplay().getSystemColor(SWT.COLOR_BLACK);
-	    PaletteData palette = new PaletteData(new RGB[] { white.getRGB(), black.getRGB() });
-	    final ImageData sourceData = new ImageData(width, height, srcData.depth, palette, destBytesPerLine, newData);
-	    sourceData.transparentPixel = 0;
-	    
-		//return new ImageData(width, height, srcData.depth, srcData.palette, destBytesPerLine, newData);
-		return sourceData;
-	}
-	
 	public static void updatePainter() {
 		anchor.setLocation(ship.anchor.x, ship.anchor.y,true);
 		for (FTLRoom rm : ship.rooms) {
 			rm.assignSystem(rm.getSystem());
 			if (!rm.getSystem().equals(Systems.EMPTY)) {
 				rm.getSysBox().setVisible(true);
+			}
+		}
+		
+		hullBox.setHullImage(ship.imagePath);
+		hullBox.setCloakImage(ship.cloakPath);
+		if (ship.isPlayer) {
+			hullBox.setFloorImage(ship.floorPath);
+		} else {
+			hullBox.setFloorImage(null);
+		}
+		hullBox.setLocation(ship.imageRect.x, ship.imageRect.y);
+
+		shieldBox.setImage(ship.shieldPath, true);
+		
+		for (FTLMount m : ship.mounts)
+			m.setLocation(ship.imageRect.x + m.pos.x, ship.imageRect.y + m.pos.y);
+		
+		showRooms();
+		showMounts();
+		shieldBox.setVisible(showShield);
+		hullBox.setVisible(showHull || showFloor);
+	}
+	
+	public static void showRooms() {
+		if (ship != null) {
+			for (FTLRoom r : ship.rooms) {
+				r.setVisible(showRooms);
+			}
+			for (FTLDoor d : ship.doors) {
+				d.setVisible(showRooms);
+			}
+			for (Systems sys : systemsMap.keySet()) {
+				SystemBox sysbox = systemsMap.get(sys); 
+				sysbox.setVisible(showRooms && sysbox.getRoom() != null);
+			}
+		}
+	}
+	
+	public static void showMounts() {
+		if (ship != null) {
+			for (FTLMount m : ship.mounts) {
+				m.setVisible(showMounts);
 			}
 		}
 	}

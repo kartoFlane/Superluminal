@@ -88,40 +88,36 @@ public class ShipBrowser
 		
 		dataDir = new Text(composite_2, SWT.BORDER);
 		dataDir.setFont(Main.appFont);
-		GridData gd_dataDir = new GridData(SWT.LEFT, SWT.FILL, true, true, 1, 1);
+		GridData gd_dataDir = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
 		gd_dataDir.minimumWidth = 290;
-		gd_dataDir.widthHint = 290;
 		dataDir.setLayoutData(gd_dataDir);
 		dataDir.setText("Data-unpacked directory");
 		
 		Button btnData = new Button(composite_2, SWT.NONE);
 		btnData.setFont(Main.appFont);
-		GridData gd_btnData = new GridData(SWT.RIGHT, SWT.FILL, false, false, 1, 1);
+		GridData gd_btnData = new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1);
 		gd_btnData.minimumWidth = 70;
-		gd_btnData.widthHint = 70;
 		btnData.setLayoutData(gd_btnData);
 		btnData.setText("Browse...");
 		
 		resDir = new Text(composite_2, SWT.BORDER);
 		resDir.setFont(Main.appFont);
-		GridData gd_resDir = new GridData(SWT.LEFT, SWT.FILL, true, true, 1, 1);
+		GridData gd_resDir = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
 		gd_resDir.minimumWidth = 290;
-		gd_resDir.widthHint = 290;
 		resDir.setLayoutData(gd_resDir);
 		resDir.setText("Resources-unpacked directory");
 		
 		Button btnRes = new Button(composite_2, SWT.NONE);
 		btnRes.setFont(Main.appFont);
-		GridData gd_btnRes = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_btnRes = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_btnRes.minimumWidth = 70;
-		gd_btnRes.widthHint = 70;
 		btnRes.setLayoutData(gd_btnRes);
 		btnRes.setText("Browse...");
 		
 		tree = new Tree(shell, SWT.BORDER);
 		tree.setFont(Main.appFont);
 		GridData gd_tree = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 2);
-		gd_tree.heightHint = 339;
+		gd_tree.heightHint = 200;
 		tree.setLayoutData(gd_tree);
 		
 		trtmPlayer = new TreeItem(tree, SWT.NONE);
@@ -137,22 +133,26 @@ public class ShipBrowser
 		trtmOther.setExpanded(true);
 		
 		Composite composite_1 = new Composite(shell, SWT.NONE);
-		composite_1.setLayout(null);
-		GridData gd_composite_1 = new GridData(SWT.FILL, SWT.BOTTOM, true, false, 2, 1);
-		gd_composite_1.heightHint = 25;
-		gd_composite_1.widthHint = 419;
-		composite_1.setLayoutData(gd_composite_1);
+		composite_1.setLayout(new GridLayout(2, false));
+		composite_1.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));
 		
 		btnConfirm = new Button(composite_1, SWT.NONE);
+		GridData gd_btnConfirm = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1);
+		gd_btnConfirm.minimumWidth = 80;
+		btnConfirm.setLayoutData(gd_btnConfirm);
 		btnConfirm.setFont(Main.appFont);
-		btnConfirm.setBounds(228, 0, 75, 25);
 		btnConfirm.setText("Load");
 		btnConfirm.setEnabled(false);
 		
 		Button btnCancel = new Button(composite_1, SWT.NONE);
+		GridData gd_btnCancel = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		gd_btnCancel.widthHint = 80;
+		gd_btnCancel.minimumWidth = 80;
+		btnCancel.setLayoutData(gd_btnCancel);
 		btnCancel.setFont(Main.appFont);
-		btnCancel.setBounds(309, 0, 75, 25);
 		btnCancel.setText("Cancel");
+		
+		shell.pack();
 		
 	//=====================================
 	// === BOOKMARK LISTENERS
@@ -213,20 +213,20 @@ public class ShipBrowser
 		tree.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event e) {
 				String s;
-		        TreeItem[] selection = tree.getSelection();
-		        
-		        for (int i = 0; i < selection.length; i++) {
-		        	if (ships.contains(selection[i])) {
-		        		btnConfirm.setEnabled(true);
-		        		
-		        		s = selection[i].getText();
-		        		s = s.substring(s.indexOf("(")+1, s.indexOf(")"));
+				TreeItem[] selection = tree.getSelection();
+				
+				for (int i = 0; i < selection.length; i++) {
+					if (ships.contains(selection[i])) {
+						btnConfirm.setEnabled(true);
+						
+						s = selection[i].getText();
+						s = s.substring(s.indexOf("(")+1, s.indexOf(")"));
 
-		        		selectedShip = s;
-		        	} else {
-		        		btnConfirm.setEnabled(false);
-		        	}
-		        }
+						selectedShip = s;
+					} else {
+						btnConfirm.setEnabled(false);
+					}
+				}
 			}
 		});
 

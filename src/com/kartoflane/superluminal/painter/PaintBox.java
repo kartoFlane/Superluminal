@@ -2,6 +2,7 @@ package com.kartoflane.superluminal.painter;
 
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
@@ -19,9 +20,14 @@ public class PaintBox {
 	protected boolean visible = true;
 	protected boolean selected = false;
 	protected boolean pinned = false;
+	protected Image pin;
+	protected String pathPin;
+	protected int alpha;
 
 	public PaintBox() {
 		this(PaintBox.BORDER_RECTANGLE);
+		pathPin = "/img/pin.png";
+		pin = Cache.checkOutImage(this, pathPin);
 	}
 
 	public PaintBox(int borderShape) {
@@ -35,6 +41,14 @@ public class PaintBox {
 	
 	public boolean isPinned() {
 		return pinned;
+	}
+	
+	public void setAlpha(int newAlpha) {
+		alpha = newAlpha;
+	}
+	
+	public int getAlpha() {
+		return alpha;
 	}
 
 	/**
@@ -110,11 +124,13 @@ public class PaintBox {
 		if (borderColor != null) {
 			Color prevColor = e.gc.getForeground();
 			int prevLineWidth = e.gc.getLineWidth();
+			int prevAlpha = e.gc.getAlpha();
 
 			// Lines grow out from the center, which makes
 			// math a little funky to accomodate odd/even widths.
 			e.gc.setForeground(borderColor);
 			e.gc.setLineWidth(borderThickness);
+			e.gc.setAlpha(alpha);
 			
 			if (borderShape == PaintBox.BORDER_RECTANGLE) {
 				e.gc.drawRectangle(bounds.x, bounds.y, bounds.width, bounds.height);
@@ -124,10 +140,12 @@ public class PaintBox {
 
 			e.gc.setForeground(prevColor);
 			e.gc.setLineWidth(prevLineWidth);
+			e.gc.setAlpha(prevAlpha);
 		}
 	}
 
 	public void dispose() {
 		Cache.checkInColor(this, border_rgb);
+		Cache.checkInImage(this, pathPin);
 	}
 }

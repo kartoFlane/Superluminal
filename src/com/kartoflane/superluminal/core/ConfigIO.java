@@ -35,16 +35,15 @@ public class ConfigIO {
 			//out.write("snapMountsToHull = " + Main.snapMountsToHull + ShipIO.lineDelimiter);
 			out.write("arbitraryPosOverride = " + Main.arbitraryPosOverride + ShipIO.lineDelimiter);
 		// === view
-			out.write("showAnchor = " + Main.showAnchor + ShipIO.lineDelimiter);
-			out.write("showMounts = " + Main.showMounts + ShipIO.lineDelimiter);
-			out.write("showRooms = " + Main.showRooms + ShipIO.lineDelimiter);
-			out.write("showHull = " + Main.showHull + ShipIO.lineDelimiter);
-			out.write("showFloor = " + Main.showFloor + ShipIO.lineDelimiter);
-			out.write("showShield = " + Main.showShield + ShipIO.lineDelimiter);
+			//out.write("showAnchor = " + Main.showAnchor + ShipIO.lineDelimiter);
+			//out.write("showMounts = " + Main.showMounts + ShipIO.lineDelimiter);
+			//out.write("showRooms = " + Main.showRooms + ShipIO.lineDelimiter);
+			//out.write("showHull = " + Main.showHull + ShipIO.lineDelimiter);
+			//out.write("showFloor = " + Main.showFloor + ShipIO.lineDelimiter);
+			//out.write("showShield = " + Main.showShield + ShipIO.lineDelimiter);
 			out.write("loadFloor = " + Main.loadFloor + ShipIO.lineDelimiter);
 			out.write("loadShield = " + Main.loadShield + ShipIO.lineDelimiter);
 			out.write("loadSystem = " + Main.loadSystem + ShipIO.lineDelimiter);
-			out.write("constantRedraw = " + Main.constantRedraw + ShipIO.lineDelimiter);
 			
 			out.close();
 		} catch (IOException e) {
@@ -69,11 +68,11 @@ public class ConfigIO {
 		Matcher matcher;
 		
 		try {
-    		fr = new FileReader("superluminal.ini");
+			fr = new FileReader("superluminal.ini");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-    	
+		
 		Scanner sc = new Scanner(fr);
 		sc.useDelimiter(Pattern.compile("[\\n]"));
 		pattern = Pattern.compile("(.*?)( = )(.*?)$");

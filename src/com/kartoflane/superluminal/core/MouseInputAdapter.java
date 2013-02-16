@@ -1,7 +1,7 @@
 package com.kartoflane.superluminal.core;
-import com.kartoflane.superluminal.elements.CursorBox;
 import com.kartoflane.superluminal.elements.DraggableBox;
 import com.kartoflane.superluminal.elements.FTLDoor;
+import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.elements.FTLRoom;
 import com.kartoflane.superluminal.painter.ImageBox;
 import com.kartoflane.superluminal.painter.LayeredPainter;
@@ -18,10 +18,7 @@ import org.eclipse.swt.graphics.Rectangle;
 public class MouseInputAdapter implements MouseListener, MouseMoveListener, MouseTrackListener, MouseWheelListener {
 	private Integer[] selectableLayerIds;
 	private Rectangle oldBounds;
-	private DraggableBox dragee = null;
-	private int offsetX = 0, offsetY = 0;
-	private boolean moved = false;
-	private int origX = 0, origY = 0; // Idea: Remember pre-drag pos to revert bad drops.
+	public DraggableBox dragee = null;
 
 	/**
 	 * 
@@ -48,76 +45,111 @@ public class MouseInputAdapter implements MouseListener, MouseMoveListener, Mous
 
 	@Override
 	public void mouseDown(MouseEvent e) {
-		Main.anchor.mouseDown(e);
+		if (e.button == 1) Main.leftMouseDown = true;
+		if (e.button == 3) Main.rightMouseDown = true;
 		
-		if (!Main.anchor.moveAnchor && !Main.anchor.moveVertical) {
-			for (int i=selectableLayerIds.length-1; i >= 0; i--) {
-				if (selectableLayerIds[i] != null) {
-					dragee = (DraggableBox) Main.layeredPainter.getBoxAt(e.x, e.y, selectableLayerIds[i]);
-					if (dragee != null) {
-						dragee.mouseDown(e);
-						break;
+		if (Main.ship == null) return;
+		
+		Main.cursor.mouseDown(e);
+		
+		if (Main.tltmPointer.getSelection()) {
+			Main.tooltip.setVisible(false);
+			Main.anchor.mouseDown(e);
+			
+			if (!Main.anchor.moveAnchor && !Main.anchor.moveVertical) {
+				for (int i=selectableLayerIds.length-1; i >= 0; i--) {
+					if (selectableLayerIds[i] != null) {
+						dragee = (DraggableBox) Main.layeredPainter.getBoxAt(e.x, e.y, selectableLayerIds[i]);
+						if (dragee != null && dragee.isVisible() && (Main.getMountFromPoint(e.x, e.y)==null || !Main.showMounts || selectableLayerIds[i] != LayeredPainter.HULL)) {
+							dragee.mouseDown(e);
+							break;
+						}
 					}
 				}
 			}
-		}
-		if (!(dragee instanceof FTLRoom)) {
-			if (Main.selectedRoom != null) Main.selectedRoom.deselect();
-			Main.selectedRoom = null;
-		}
-		/*
-		if (Main.ship != null) {
-			for (FTLRoom r : Main.ship.rooms) {
-				r.mouseDown(e);
+			if (!(dragee instanceof FTLRoom)) {
+				if (Main.selectedRoom != null) Main.selectedRoom.deselect();
+				Main.selectedRoom = null;
 			}
-			for (FTLDoor d : Main.ship.doors) {
-				d.mouseDown(e);
+			if (!(dragee instanceof FTLDoor)) {
+				if (Main.selectedDoor != null) Main.selectedDoor.deselect();
+				Main.selectedDoor = null;
 			}
+			if (!(dragee instanceof FTLMount)) {
+				if (Main.selectedMount != null) Main.selectedMount.deselect();
+				Main.selectedMount = null;
+			}
+			if (!Main.hullBox.move && Main.hullSelected) {
+				Main.hullBox.deselect();
+				Main.hullSelected = false;
+			}
+			if (!Main.shieldBox.move && Main.shieldSelected) {
+				Main.shieldBox.deselect();
+				Main.shieldSelected = false;
+			}
+			
+			Main.updateSelectedPosText();
 		}
-		*/
-		// Idea: Extra criteria to detect unselectable objects and return.
-		/*
-		setSelectedBox(dragee);
-		if (dragee != null) {
-			Rectangle drageeBounds = dragee.getBounds();
-			origX = drageeBounds.x;
-			origY = drageeBounds.y;
-			offsetX = e.x-drageeBounds.x;
-			offsetY = e.y-drageeBounds.y;
-			cursorBox.setVisible(false);
-			canvasRedraw(cursorBox.getBounds(), false);
-		}
-		*/
 	}
 
 	@Override
 	public void mouseMove(MouseEvent e) {
 		Main.mousePos.x = e.x;
 		Main.mousePos.y = e.y;
+		Main.tooltip.setVisible(false);
+		
+		Main.cursor.mouseMove(e);
+		
+		if (Main.ship == null) return;
 		
 		Main.anchor.mouseMove(e);
-		Main.cursor.mouseMove(e);
+		Main.hullBox.mouseMove(e);
+		Main.shieldBox.mouseMove(e);
 		if (Main.ship != null) {
 			for (FTLRoom r : Main.ship.rooms) {
 				r.mouseMove(e);
+			}
+			for (FTLDoor d : Main.ship.doors) {
+				d.mouseMove(e);
+			}
+			for (FTLMount m : Main.ship.mounts) {
+				m.mouseMove(e);
 			}
 		}
 	}
 
 	@Override
 	public void mouseUp(MouseEvent e) {
-		Main.anchor.mouseUp(e);
+		if (e.button == 1) Main.leftMouseDown = false;
+		if (e.button == 3) Main.rightMouseDown = false;
+		
+		if (Main.ship == null) return;
+		
 		Main.cursor.mouseUp(e);
-		if (Main.ship != null) {
-			for (FTLRoom r : Main.ship.rooms) {
-				r.mouseUp(e);
+		
+		if (Main.tltmPointer.getSelection()) {
+			Main.anchor.mouseUp(e);
+			Main.hullBox.mouseUp(e);
+			Main.shieldBox.mouseUp(e);
+			
+			if (Main.ship != null) {
+				for (FTLRoom r : Main.ship.rooms) {
+					if (r.isVisible())
+						r.mouseUp(e);
+				}
+				for (FTLDoor d : Main.ship.doors) {
+					if (d.isVisible())
+						d.mouseUp(e);
+				}
+				for (FTLMount m : Main.ship.mounts) {
+					if (m.isVisible())
+						m.mouseUp(e);
+				}
 			}
+			
+			Main.cursor.setVisible(true);
+			Main.canvasRedraw(Main.cursor.getBounds(), false);
 		}
-		
-		// Idea: Math.min()/Math.max() x,y to limit draggable region.
-		
-		Main.cursor.setVisible(true);
-		Main.canvasRedraw(Main.cursor.getBounds(), false);
 	}
 
 	@Override
@@ -157,25 +189,22 @@ public class MouseInputAdapter implements MouseListener, MouseMoveListener, Mous
 	}
 
 	@Override
-	public void mouseScrolled(MouseEvent e)
-	{
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseScrolled(MouseEvent e) {}
 
 	@Override
-	public void mouseHover(MouseEvent e)
-	{
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseHover(MouseEvent e) {}
 
 	@Override
 	public void mouseDoubleClick(MouseEvent e)
 	{
-		if (Main.ship != null) {
-			for (FTLRoom r : Main.ship.rooms) {
-				r.mouseDoubleClick(e);
+		if (Main.tltmPointer.getSelection()) {
+			if (Main.ship != null) {
+				for (FTLRoom r : Main.ship.rooms) {
+					r.mouseDoubleClick(e);
+				}
+			}
+			if (e.button == 1 && dragee != null && !(dragee instanceof FTLRoom)) {
+				dragee.mouseHover(e);
 			}
 		}
 	}

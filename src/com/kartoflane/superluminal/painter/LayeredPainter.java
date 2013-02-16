@@ -6,6 +6,8 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Rectangle;
 
+import com.kartoflane.superluminal.core.Main;
+
 /**
  * @author Vhati
  */
@@ -13,15 +15,15 @@ public class LayeredPainter implements PaintListener {
 	public static final Integer SHIELD = new Integer(0);
 	public static final Integer MOUNT = new Integer(1);
 	public static final Integer HULL = new Integer(2);
-	public static final Integer FLOOR = new Integer(3);
-	public static final Integer GRID = new Integer(4);
-	public static final Integer ROOM = new Integer(5);
+	public static final Integer GRID = new Integer(3);
+	public static final Integer ROOM = new Integer(4);
+	public static final Integer ROOM_INTERIOR = new Integer(5);
 	public static final Integer SYSTEM_ICON = new Integer(6);
 	public static final Integer DOOR = new Integer(7);
 	public static final Integer OVERLAY = new Integer(8);
 	public static final Integer ANCHOR = new Integer(9);
 	public static final Integer SELECTION = new Integer(10);
-	private static Integer[] layerIds = {SHIELD, MOUNT, HULL, FLOOR, GRID, ROOM, SYSTEM_ICON, DOOR, OVERLAY, ANCHOR, SELECTION};
+	private static Integer[] layerIds = {SHIELD, MOUNT, HULL, GRID, ROOM, ROOM_INTERIOR, SYSTEM_ICON, DOOR, OVERLAY, ANCHOR, SELECTION};
 	
 	private HashMap<Integer, ArrayList<PaintBox>> layerMap = new HashMap<Integer, ArrayList<PaintBox>>();
 
@@ -66,6 +68,7 @@ public class LayeredPainter implements PaintListener {
 
 	public void paintControl(PaintEvent e) {
 		Rectangle dirtyRect = new Rectangle(e.x-2, e.y-2, e.width+4, e.height+4);
+		e.gc.setFont(Main.appFont);
 
 		for (Integer layerId : layerIds) {
 			for (PaintBox box : layerMap.get(layerId)) {

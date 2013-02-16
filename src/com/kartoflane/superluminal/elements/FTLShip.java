@@ -7,9 +7,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.PaintEvent;
-import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 
@@ -96,6 +93,8 @@ public class FTLShip implements Serializable
 	public HashMap<Systems, Integer> powerMap;
 	public HashMap<Systems, Integer> levelMap;
 	public HashMap<Systems, Boolean> startMap;
+	public HashMap<Systems, Integer> slotMap;
+	public HashMap<Systems, Slide> slotDirMap;
 	
 	public FTLShip() {
 		rooms = new HashSet<FTLRoom>();
@@ -109,6 +108,8 @@ public class FTLShip implements Serializable
 		powerMap = new HashMap<Systems, Integer>();
 		levelMap = new HashMap<Systems, Integer>();
 		startMap = new HashMap<Systems, Boolean>();
+		slotMap = new HashMap<Systems, Integer>();
+		slotDirMap = new HashMap<Systems, Slide>();
 		
 		minSec = 0;
 		maxSec = 0;
@@ -145,47 +146,14 @@ public class FTLShip implements Serializable
 		crewMap.put("ghost", 0);
 		crewMap.put("random", 0);
 		
-		levelMap.put(Systems.ARTILLERY, 0);
-		levelMap.put(Systems.CLOAKING, 0);
-		levelMap.put(Systems.DOORS, 0);
-		levelMap.put(Systems.DRONES, 0);
-		levelMap.put(Systems.EMPTY, 0);
-		levelMap.put(Systems.ENGINES, 0);
-		levelMap.put(Systems.MEDBAY, 0);
-		levelMap.put(Systems.OXYGEN, 0);
-		levelMap.put(Systems.PILOT, 0);
-		levelMap.put(Systems.SENSORS, 0);
-		levelMap.put(Systems.SHIELDS, 0);
-		levelMap.put(Systems.TELEPORTER, 0);
-		levelMap.put(Systems.WEAPONS, 0);
-		
-		powerMap.put(Systems.ARTILLERY, 0);
-		powerMap.put(Systems.CLOAKING, 0);
-		powerMap.put(Systems.DOORS, 0);
-		powerMap.put(Systems.DRONES, 0);
-		powerMap.put(Systems.EMPTY, 0);
-		powerMap.put(Systems.ENGINES, 0);
-		powerMap.put(Systems.MEDBAY, 0);
-		powerMap.put(Systems.OXYGEN, 0);
-		powerMap.put(Systems.PILOT, 0);
-		powerMap.put(Systems.SENSORS, 0);
-		powerMap.put(Systems.SHIELDS, 0);
-		powerMap.put(Systems.TELEPORTER, 0);
-		powerMap.put(Systems.WEAPONS, 0);
-		
-		startMap.put(Systems.ARTILLERY, true);
-		startMap.put(Systems.CLOAKING, true);
-		startMap.put(Systems.DOORS, true);
-		startMap.put(Systems.DRONES, true);
-		startMap.put(Systems.EMPTY, true);
-		startMap.put(Systems.ENGINES, true);
-		startMap.put(Systems.MEDBAY, true);
-		startMap.put(Systems.OXYGEN, true);
-		startMap.put(Systems.PILOT, true);
-		startMap.put(Systems.SENSORS, true);
-		startMap.put(Systems.SHIELDS, true);
-		startMap.put(Systems.TELEPORTER, true);
-		startMap.put(Systems.WEAPONS, true);
+		for (Systems key : Systems.values()) {
+			levelMap.put(key, 0);
+			powerMap.put(key, 0);
+			startMap.put(key, true);
+			
+			slotMap.put(key, -2);
+			slotDirMap.put(key, Slide.UP);
+		}
 	}
 	
 	public FTLShip(int x, int y) {
@@ -222,59 +190,28 @@ public class FTLShip implements Serializable
 	 */
 	public void updateElements(Point newAnchor, AxisFlag flag) {
 		Point p;
-		Main.mountRect = new Rectangle(0,0,0,0);
-		int dist = 0;
 		
 		for (FTLRoom r : rooms) {
-			//dist = newAnchor.x - anchor.x;
-			//r.rect.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
-			//dist = newAnchor.y - anchor.y;
-			//r.rect.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
 			p = r.getLocation();
-			r.setAbsoluteLocation(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y);
+			r.setLocationAbsolute(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y);
 		}
 		for (FTLDoor d : doors) {
 			p = d.getLocation();
-			d.setLocation(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y);
-			//dist = newAnchor.x - anchor.x;
-			//d.rect.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
-			//dist = newAnchor.y - anchor.y;
-			//d.rect.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
+			d.setLocationAbsolute(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y);
 		}
-		if (Main.ship != null && Main.ship.imageRect != null) {
-			dist = newAnchor.x - anchor.x;
-			Main.ship.imageRect.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
-			dist = newAnchor.y - anchor.y;
-			Main.ship.imageRect.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
-		}
-		if (Main.ship != null && Main.shieldEllipse != null) {
-			dist = newAnchor.x - anchor.x;
-			Main.shieldEllipse.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
-			dist = newAnchor.y - anchor.y;
-			Main.shieldEllipse.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
+		if (Main.ship != null) {
+			p = Main.hullBox.getLocation();
+			Main.hullBox.setLocation(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y);
+			p = Main.shieldBox.getLocation();
+			Main.shieldBox.setLocation(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y);
 		}
 		for (FTLMount m : mounts) {
-			dist = newAnchor.x - anchor.x;
-			m.rect.x += (flag == AxisFlag.X || flag == AxisFlag.BOTH) ? dist : 0;
-			dist = newAnchor.y - anchor.y;
-			m.rect.y += (flag == AxisFlag.Y || flag == AxisFlag.BOTH) ? dist : 0;
-			
-			m.rect.width = (m.rotate) ? (FTLMount.MOUNT_WIDTH) : (FTLMount.MOUNT_HEIGHT);
-			m.rect.height = (m.rotate) ? (FTLMount.MOUNT_HEIGHT) : (FTLMount.MOUNT_WIDTH);
+			p = m.getLocation();
+			m.setLocation(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y);
 		}
-	}
-	
-	public void updateMount(FTLMount m) {
-		m.rect.x = (Main.hullImage != null) ? (anchor.x + offset.x*35 + Main.mountRect.x) : (Main.mountRect.x);
-		m.rect.y = (Main.hullImage != null) ? (anchor.y + offset.y*35 + Main.mountRect.y) : (Main.mountRect.y);
 		
-		m.pos.x = m.rect.x + m.rect.width - imageRect.x;
-		m.pos.y = m.rect.y + m.rect.height - imageRect.y;
-		
-		m.rect.x -= (m.rotate) ? (FTLMount.MOUNT_WIDTH/2) : (FTLMount.MOUNT_HEIGHT/2);
-		m.rect.y -= (m.rotate) ? (FTLMount.MOUNT_HEIGHT/2) : (FTLMount.MOUNT_WIDTH/2);
-		m.rect.width = (m.rotate) ? (FTLMount.MOUNT_WIDTH) : (FTLMount.MOUNT_HEIGHT);
-		m.rect.height = (m.rotate) ? (FTLMount.MOUNT_HEIGHT) : (FTLMount.MOUNT_WIDTH);
+		anchor.x = newAnchor.x;
+		anchor.y = newAnchor.y;
 	}
 	
 	/**
@@ -364,41 +301,4 @@ public class FTLShip implements Serializable
 			i++;
 		}
 	}
-
-	
-	
-	/*
-	public void updateBounds() {
-		// low bounds
-		int x=2000, y=2000;
-		for (FTLRoom r : rooms) {
-			if (r!=null && r.rect.x <= x) {
-				x = r.rect.x;
-			}
-			if (r!=null && r.rect.y <= y) {
-				y = r.rect.y;
-			}
-		}
-		
-		x=(y==1000) ? 0 : x;
-		y=(y==1000) ? 0 : y;
-		
-		lowBounds.x = x;
-		lowBounds.y = y;
-		
-		x = 0;
-		y = 0;
-		
-		for (FTLRoom r : rooms) {
-			if (r!=null && r.rect.x+r.rect.width >= x) {
-				x = r.rect.x+r.rect.width;
-			}
-			if (r!=null && r.rect.y+r.rect.height >= y) {
-				y = r.rect.y+r.rect.height;
-			}
-		}
-		highBounds.x = x;
-		highBounds.y = y;
-	}
-	*/
 }
