@@ -21,6 +21,7 @@ import com.kartoflane.superluminal.painter.LayeredPainter;
  */
 public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	private static final long serialVersionUID = 6519211644795332479L;
+	
 	public Point pos;
 	private Point orig;
 	private boolean move;
@@ -51,6 +52,21 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	 * Gib id to which the weapon is attached when the ship explodes TODO
 	 */
 	public int gib;
+	
+	public void stripUnserializable() {
+		super.stripUnserializable();
+		Cache.checkInColor(this, dir_rgb);
+		dirColor = null;
+		Cache.checkInImage(this, path);
+		Cache.checkInImageAbsolute(this, path);
+		image = null;
+	}
+	
+	public void loadUnserializable() {
+		super.loadUnserializable();
+		dirColor = Cache.checkOutColor(this, dir_rgb);
+		//image taken care of by ShipIO.loadWeaponImages
+	}
 	
 	public FTLMount() {
 		super();

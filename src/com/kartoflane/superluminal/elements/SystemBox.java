@@ -1,12 +1,15 @@
 package com.kartoflane.superluminal.elements;
 
+import java.io.Serializable;
+
 import org.eclipse.swt.graphics.Rectangle;
 
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.ImageBox;
 
 
-public class SystemBox extends ImageBox {
+public class SystemBox extends ImageBox implements Serializable {
+	private static final long serialVersionUID = -7733605782672884932L;
 	private FTLRoom room;
 	private Systems sys;
 	private boolean availableAtStart = true;

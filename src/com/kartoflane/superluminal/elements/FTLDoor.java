@@ -29,6 +29,20 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 	private RGB door_rgb = null;
 	private boolean move = false;
 	
+	public void stripUnserializable() {
+		super.stripUnserializable();
+		Cache.checkInColor(this, line_rgb);
+		lineColor = null;
+		Cache.checkInColor(this, door_rgb);
+		doorColor = null;
+	}
+	
+	public void loadUnserializable() {
+		super.loadUnserializable();
+		lineColor = Cache.checkOutColor(this, line_rgb);
+		doorColor = Cache.checkOutColor(this, door_rgb);
+	}
+	
 	public FTLDoor() {
 		super();
 		setBorderThickness(2);

@@ -15,6 +15,7 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ImageBox;
 
+@SuppressWarnings("serial")
 public class ShieldBox extends ImageBox implements DraggableBox {
 	public boolean move = false;
 	private Point orig;
@@ -37,8 +38,11 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 		bounds.y = y;
 		Main.shieldEllipse.x = x;
 		Main.shieldEllipse.y = y;
-		Main.ship.ellipse.x = (Main.shieldEllipse.x + Main.shieldEllipse.width/2) - (Main.ship.findLowBounds().x + Main.ship.computeShipSize().x/2);
-		Main.ship.ellipse.y = (Main.shieldEllipse.y + Main.shieldEllipse.height/2) - (Main.ship.findLowBounds().y + Main.ship.computeShipSize().y/2) - ((Main.ship.isPlayer) ? 0 : 110);
+		
+		if (Main.ship != null) {
+			Main.ship.ellipse.x = (Main.shieldEllipse.x + Main.shieldEllipse.width/2) - (Main.ship.findLowBounds().x + Main.ship.computeShipSize().x/2);
+			Main.ship.ellipse.y = (Main.shieldEllipse.y + Main.shieldEllipse.height/2) - (Main.ship.findLowBounds().y + Main.ship.computeShipSize().y/2) - ((Main.ship.isPlayer) ? 0 : 110);
+		}
 		
 		Main.canvasRedraw(oldBounds, false);
 		Main.canvasRedraw(bounds, false);
@@ -52,8 +56,11 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 		bounds.height = h;
 		Main.shieldEllipse.width = w;
 		Main.shieldEllipse.height = h;
-		Main.ship.ellipse.width = Main.shieldEllipse.width/2;
-		Main.ship.ellipse.height = Main.shieldEllipse.height/2;
+		
+		if (Main.ship != null) {
+			Main.ship.ellipse.width = Main.shieldEllipse.width/2;
+			Main.ship.ellipse.height = Main.shieldEllipse.height/2;
+		}
 		
 		Main.canvasRedraw(oldBounds, false);
 		Main.canvasRedraw(bounds, false);

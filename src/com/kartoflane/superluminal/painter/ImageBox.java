@@ -1,18 +1,33 @@
 package com.kartoflane.superluminal.painter;
 
+import java.io.Serializable;
+
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Transform;
 
 
-public class ImageBox extends PaintBox {
+public class ImageBox extends PaintBox implements Serializable {
+	private static final long serialVersionUID = -8262925655442154701L;
+	
 	protected String path;
 	protected Image image;
 	protected int alpha = 255;
 	protected int rotation = 0;
 	protected Rectangle redrawBounds;
 	protected boolean shrinkWrap = false;
+	
+	public void stripUnserializable() {
+		super.stripUnserializable();
+		Cache.checkInImage(this, path);
+		image = null;
+	}
+	
+	public void loadUnserializable() {
+		super.loadUnserializable();
+		image = Cache.checkOutImage(this, path);
+	}
 	
 	public ImageBox() {
 		redrawBounds = new Rectangle(bounds.x,bounds.y,bounds.width,bounds.height);

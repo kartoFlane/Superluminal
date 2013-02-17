@@ -13,6 +13,7 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ImageBox;
 
+@SuppressWarnings("serial")
 public class HullBox extends ImageBox implements DraggableBox {
 	protected String floorPath;
 	protected Image floorImage;
@@ -74,8 +75,11 @@ public class HullBox extends ImageBox implements DraggableBox {
 		Rectangle oldBounds = Main.cloneRect(bounds);
 		bounds.x = x;
 		bounds.y = y;
-		Main.ship.imageRect.x = x;
-		Main.ship.imageRect.y = y;
+		
+		if (Main.ship != null) {
+			Main.ship.imageRect.x = x;
+			Main.ship.imageRect.y = y;
+		}
 		
 		//setVisible(Main.canvas.getBounds().contains(x, y) && Main.canvas.getBounds().contains(x+bounds.width, y+bounds.height));
 		Main.canvasRedraw(oldBounds, false);
@@ -126,9 +130,7 @@ public class HullBox extends ImageBox implements DraggableBox {
 		
 		if (Main.hullSelected && isPinned())
 			e.gc.drawImage(pin, bounds.x+5, bounds.y+5);
-		
-		
-		
+
 		e.gc.setAlpha(prevAlpha);
 		e.gc.setBackground(prevBg);
 	}
@@ -136,8 +138,10 @@ public class HullBox extends ImageBox implements DraggableBox {
 	@Override
 	public void mouseUp(MouseEvent e)
 	{
-		if (move)
+		if (move) {
 			Main.cursor.setLocationAbsolute(bounds.x, bounds.y);
+			Main.cursor.setSize(bounds.width, bounds.height);
+		}
 		move = false;
 		Main.cursor.setVisible(true);
 		if (!Main.canvas.getBounds().contains(bounds.x+bounds.width-35, bounds.y+bounds.height-35) 

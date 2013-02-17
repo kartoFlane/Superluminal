@@ -9,6 +9,7 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.PaintBox;
 
 
+@SuppressWarnings("serial")
 public class Anchor extends PaintBox implements DraggableBox {
 	private Color color;
 	private Color pressedColor;
@@ -161,6 +162,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 			y = Math.max(y, 0);
 			x = Math.min(x, Main.GRID_W*35-35 - size.x - Main.ship.offset.x*35);
 			y = Math.min(y, Main.GRID_H*35-35 - size.y - Main.ship.offset.y*35);
+			
 			
 			x = Main.roundToGrid(x);
 			y = Main.roundToGrid(y);

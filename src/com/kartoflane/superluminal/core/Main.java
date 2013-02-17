@@ -69,7 +69,7 @@ public class Main
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "2013.02.14";
+	public final static String VERSION = "2013.02.18";
 	
 		// === Important objects
 	public static Shell shell;
@@ -123,7 +123,7 @@ public class Main
 	public static boolean modCtrl = false;
 	
 		// === Internal
-	public static boolean debug = true;
+	public static boolean debug = false;
 	/**
 	 * when set to true, all ship data is pre-loaded into hashmaps/sets when the ship browser is opened for the first time.
 	 * no need to do this, only one ship is being used at any given time.
@@ -162,6 +162,7 @@ public class Main
 		// === Miscellaneous
 	public static Rectangle[] corners = new Rectangle[4];
 	private static String lastMsg = "";
+	private static String interiorPath;
 	/**
 	 * Path of current project file, for quick saving via Ctrl+S
 	 */
@@ -231,22 +232,6 @@ public class Main
 	/*
 	 * === TODO
 	 * 
-	 * - PORTING:
-	 * 	- clean up -> polacz w calosc / sprawdz czy export dziala -> zrob nowy statek from scratch
-	 * - new ship enemy/player nie dzial -> anchor sie buguje
-	 * - przetestuj autoblueprints i blueprints na Macu
-	 * - +/- przyciski do arbitrary pos --> test, zrob tak zeby nie squishowalo ich na Macu, albo zmien na klawisze
-	 * 
-	 * UI FIXING:
-	 * 	- export dialog - done
-	 * 	- ship properties - done
-	 *  - newShipDialog - done
-	 *  - room properties - done
-	 *  - ship browser - done
-	 *  - error dialog - done
-	 *  - main display - ~~done?
-	 *  ^-- test na Macu
-	 * 
 	 * == LOW PRIO:
 	 * 	- tools
 	 * 		- room:
@@ -269,7 +254,7 @@ public class Main
 	
 	public static void main(String[] args)
 	{
-		boolean enableCommandLine = false;
+		boolean enableCommandLine = true;
 		if (enableCommandLine) {
 			ArrayList<String> argsList = new ArrayList<String>();
 			for (String arg : args) {
@@ -277,6 +262,7 @@ public class Main
 			}
 			
 			debug = argsList.contains("-debug");
+			ShipIO.IOdebug = argsList.contains("-IOdebug");
 		}
 		
 		try {
@@ -1075,7 +1061,7 @@ public class Main
 		// === Systems -> Set System Image
 		final MenuItem mntmSysImage = new MenuItem(menuSystem, SWT.NONE);
 		mntmSysImage.setEnabled(false);
-		mntmSysImage.setText("Set System Image...");
+		mntmSysImage.setText("Set Interior Image...");
 		
 		// === Text Info Fields
 		
@@ -1475,12 +1461,34 @@ public class Main
 					if ((selectedMount != null || selectedRoom != null || selectedDoor != null) && (e.keyCode == SWT.DEL || (e.stateMask == SWT.SHIFT && e.keyCode == 'd'))) {
 						Rectangle redrawBounds = null;
 						if (selectedRoom != null) {
+							Point oldLow = null;
+							Point oldHigh = null;
+							if (Main.ship != null) {
+								oldLow = Main.ship.findLowBounds();
+								oldHigh = Main.ship.findHighBounds();
+								oldLow.x = oldLow.x + (oldHigh.x - oldLow.x)/2;
+								oldLow.y = oldLow.y + (oldHigh.y - oldLow.y)/2;
+							}
+							
 							redrawBounds = selectedRoom.getBounds();
 							selectedRoom.dispose();
 							ship.rooms.remove(selectedRoom);
 							removeUnalignedDoors();
 							ship.reassignID();
 							selectedRoom = null;
+							
+							if (Main.ship != null) {
+								Point p = Main.ship.findLowBounds();
+								Point pt = Main.ship.findHighBounds();
+								p.x = p.x + (pt.x - p.x)/2;
+								p.y = p.y + (pt.y - p.y)/2;
+								
+								pt.x = p.x - oldLow.x;
+								pt.y = p.y - oldLow.y;
+								
+								p = Main.shieldBox.getLocation();
+								Main.shieldBox.setLocation(p.x + pt.x, p.y + pt.y);
+							}
 							
 							if (ship.rooms.size() == 0) {
 								btnShields.setEnabled(false);
@@ -1722,11 +1730,15 @@ public class Main
 				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
+				
+				if (ShipIO.isNull(interiorPath)) interiorPath = resPath;
+				dialog.setFilterPath(interiorPath);
+				
 				dialog.setText("");
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path) && selectedRoom != null) {
+					interiorPath = path.substring(0, path.lastIndexOf(ShipIO.pathDelimiter));
 					selectedRoom.setInterior(path);
 				}
 			}
@@ -1746,8 +1758,12 @@ public class Main
 					
 					ship = new FTLShip();
 					ship.isPlayer = create == 1;
-					ship.anchor.x = 140;
-					ship.anchor.y = 140;
+					anchor.setLocation(140, 140);
+					Main.ship.anchor.x = 140;
+					Main.ship.anchor.y = 140;
+					Main.ship.offset.x = 0;
+					Main.ship.offset.y = 0;
+					
 					print("New ship created.");
 					
 					anchor.setVisible(true);
@@ -2008,6 +2024,11 @@ public class Main
 				shieldEllipse.y = 0;
 				shieldEllipse.width = 0;
 				shieldEllipse.height = 0;
+				
+				hullBox.setLocation(0, 0);
+				hullBox.setSize(0, 0);
+				shieldBox.setLocation(0, 0);
+				shieldBox.setSize(0, 0);
 				
 				anchor.setVisible(false);
 				
@@ -2783,6 +2804,50 @@ public class Main
 		showMounts();
 		shieldBox.setVisible(showShield);
 		hullBox.setVisible(showHull || showFloor);
+	}
+	
+	public static void registerItemsForPainter() {
+		if (ship != null) {
+			for (FTLRoom r : ship.rooms) {
+				layeredPainter.add(r, LayeredPainter.ROOM);
+				idList.add(r.id);
+			}
+			
+			if (ship.rooms.size() > 0) {
+				Main.btnShields.setEnabled(ship.isPlayer);
+				Main.btnShields.setToolTipText(null);
+			}
+			
+			for (FTLDoor d : ship.doors) {
+				layeredPainter.add(d, LayeredPainter.DOOR);
+			}
+			for (FTLMount m : ship.mounts) {
+				layeredPainter.add(m, LayeredPainter.MOUNT);
+			}
+		}
+	}
+	
+	public static void stripUnserializable() {
+		if (ship != null) {
+			for (FTLRoom r : ship.rooms)
+				r.stripUnserializable();
+			for (FTLDoor d : ship.doors)
+				d.stripUnserializable();
+			for (FTLMount m : ship.mounts)
+				m.stripUnserializable();
+		}
+	}
+	
+	public static void loadUnserializable() {
+		if (ship != null) {
+			for (FTLRoom r : ship.rooms) {
+				r.loadUnserializable();
+			}
+			for (FTLDoor d : ship.doors)
+				d.loadUnserializable();
+			for (FTLMount m : ship.mounts)
+				m.loadUnserializable();
+		}
 	}
 	
 	public static void showRooms() {

@@ -173,7 +173,7 @@ public class ExportDialog extends Dialog
 		lblSaveDirectory.setText("Save directory:");
 		
 		exportDir = new Text(composite, SWT.BORDER);
-		exportDir.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
+		exportDir.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
 		exportDir.setFont(Main.appFont);
 		exportDir.setToolTipText("Export directory");
 		

@@ -26,6 +26,8 @@ public class LayeredPainter implements PaintListener {
 	private static Integer[] layerIds = {SHIELD, MOUNT, HULL, GRID, ROOM, ROOM_INTERIOR, SYSTEM_ICON, DOOR, OVERLAY, ANCHOR, SELECTION};
 	
 	private HashMap<Integer, ArrayList<PaintBox>> layerMap = new HashMap<Integer, ArrayList<PaintBox>>();
+	
+	private boolean suppress = false;
 
 	public LayeredPainter() {
 		// Add a bunch of empty lists to hold layers.
@@ -67,16 +69,29 @@ public class LayeredPainter implements PaintListener {
 	}
 
 	public void paintControl(PaintEvent e) {
-		Rectangle dirtyRect = new Rectangle(e.x-2, e.y-2, e.width+4, e.height+4);
-		e.gc.setFont(Main.appFont);
-
-		for (Integer layerId : layerIds) {
-			for (PaintBox box : layerMap.get(layerId)) {
-				if (box.getBounds().intersects(dirtyRect)) {
-					box.redraw(e);
+		if (!suppress) {
+			Rectangle dirtyRect = new Rectangle(e.x-2, e.y-2, e.width+4, e.height+4);
+			e.gc.setFont(Main.appFont);
+	
+			for (Integer layerId : layerIds) {
+				for (PaintBox box : layerMap.get(layerId)) {
+					if (box.getBounds().intersects(dirtyRect)) {
+						box.redraw(e);
+					}
 				}
 			}
 		}
 		e.gc.dispose();
+	}
+	
+	/**
+	 * Allows to suppress the painter, preventing it from performing drawing.
+	 */
+	public void setSuppressed(boolean suppress) {
+		this.suppress = suppress;
+	}
+	
+	public boolean isSuppressed() {
+		return suppress;
 	}
 }

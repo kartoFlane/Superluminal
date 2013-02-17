@@ -7,6 +7,7 @@ import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.PaintBox;
 
 
+@SuppressWarnings("serial")
 public class GridBox extends PaintBox {
 	private Color gridColor;
 	private RGB grid_rgb;
@@ -21,7 +22,7 @@ public class GridBox extends PaintBox {
 		grid_rgb = rgb;
 	}
 	
-	public Color getGridColor(Object customer) {
+	public Color getGridColor() {
 		// not returned via Cache, since grid will never be disposed before rooms.
 		return gridColor;
 	}

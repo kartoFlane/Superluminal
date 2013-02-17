@@ -1,5 +1,7 @@
 package com.kartoflane.superluminal.painter;
 
+import java.io.Serializable;
+
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
@@ -8,7 +10,9 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 
 
-public class PaintBox {
+public class PaintBox implements Serializable {
+	private static final long serialVersionUID = 1856558606237917617L;
+	
 	public static final int BORDER_RECTANGLE = 0;
 	public static final int BORDER_OVAL = 1;
 
@@ -23,6 +27,18 @@ public class PaintBox {
 	protected Image pin;
 	protected String pathPin;
 	protected int alpha;
+	
+	public void stripUnserializable() {
+		Cache.checkInColor(this, border_rgb);
+		borderColor = null;
+		Cache.checkInImage(this, pathPin);
+		pin = null;
+	}
+	
+	public void loadUnserializable() {
+		borderColor = Cache.checkOutColor(this, border_rgb);
+		pin = Cache.checkOutImage(this, pathPin);
+	}
 
 	public PaintBox() {
 		this(PaintBox.BORDER_RECTANGLE);

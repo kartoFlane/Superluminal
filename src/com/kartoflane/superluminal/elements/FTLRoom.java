@@ -41,6 +41,24 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	private boolean move = false;
 	private boolean resize = false;
 	
+	public void stripUnserializable() {
+		grid_color = null;
+		Cache.checkInColor(this, slot_rgb);
+		slotColor = null;
+		sysBox = null;
+		Cache.checkInImageAbsolute(this, img);
+		sysImg = null;
+		super.stripUnserializable();
+	}
+	
+	public void loadUnserializable() {
+		grid_color = Main.grid.getCellAt(1,1).getGridColor();
+		slotColor = Cache.checkOutColor(this, slot_rgb);
+		sysBox = Main.systemsMap.get(sys);
+		sysImg = Cache.checkOutImageAbsolute(this, img);
+		super.loadUnserializable();
+	}
+	
 	public FTLRoom(int x, int y, int w, int h) {
 		super(new RGB(230, 225, 220));
 		origin = new Rectangle(x, y, w, h);
@@ -56,7 +74,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		this.sys = Systems.EMPTY;
 		this.slot = -2;
 		this.dir = Slide.UP;
-		grid_color = Main.grid.getCellAt(1,1).getGridColor(this);
+		grid_color = Main.grid.getCellAt(1,1).getGridColor();
 		slot_rgb = new RGB(128, 0, 128);
 		slotColor = Cache.checkOutColor(this, slot_rgb);
 	}
@@ -150,6 +168,15 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		origin.x = bounds.x;
 		origin.y = bounds.y;
 		
+		Point oldLow = null;
+		Point oldHigh = null;
+		if (Main.ship != null) {
+			oldLow = Main.ship.findLowBounds();
+			oldHigh = Main.ship.findHighBounds();
+			oldLow.x = oldLow.x + (oldHigh.x - oldLow.x)/2;
+			oldLow.y = oldLow.y + (oldHigh.y - oldLow.y)/2;
+		}
+		
 		if (Main.ship != null) {
 			x = Math.max(Main.ship.anchor.x, x);
 			y = Math.max(Main.ship.anchor.y, y);
@@ -188,6 +215,19 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 				sysBox.updateLocation();
 			
 			Main.updateSelectedPosText();
+		}
+		
+		if (Main.ship != null) {
+			Point p = Main.ship.findLowBounds();
+			Point pt = Main.ship.findHighBounds();
+			p.x = p.x + (pt.x - p.x)/2;
+			p.y = p.y + (pt.y - p.y)/2;
+			
+			pt.x = p.x - oldLow.x;
+			pt.y = p.y - oldLow.y;
+			
+			p = Main.shieldBox.getLocation();
+			Main.shieldBox.setLocation(p.x + pt.x, p.y + pt.y);
 		}
 	}
 	
@@ -451,6 +491,15 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	}
 	
 	public void add(FTLShip ship) {
+		Point oldLow = null;
+		Point oldHigh = null;
+		if (Main.ship != null) {
+			oldLow = Main.ship.findLowBounds();
+			oldHigh = Main.ship.findHighBounds();
+			oldLow.x = oldLow.x + (oldHigh.x - oldLow.x)/2;
+			oldLow.y = oldLow.y + (oldHigh.y - oldLow.y)/2;
+		}
+		
 		ship.rooms.add(this);
 		Main.layeredPainter.add(this, LayeredPainter.ROOM);
 		Main.idList.add(id);
@@ -458,6 +507,28 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		if (ship.rooms.size() > 0) {
 			Main.btnShields.setEnabled(ship.isPlayer);
 			Main.btnShields.setToolTipText(null);
+		}
+		
+		if (Main.ship != null) {
+			Point p = Main.ship.findLowBounds();
+			int x = Math.min(bounds.x, p.x);
+			int y = Math.min(bounds.y, p.y);
+			
+			Main.ship.offset.x = (p.x - x)/35;
+			Main.ship.offset.y = (p.y - y)/35;
+		}
+		
+		if (Main.ship != null) {
+			Point p = Main.ship.findLowBounds();
+			Point pt = Main.ship.findHighBounds();
+			p.x = p.x + (pt.x - p.x)/2;
+			p.y = p.y + (pt.y - p.y)/2;
+			
+			pt.x = p.x - oldLow.x;
+			pt.y = p.y - oldLow.y;
+			
+			p = Main.shieldBox.getLocation();
+			Main.shieldBox.setLocation(p.x + pt.x, p.y + pt.y);
 		}
 	}
 

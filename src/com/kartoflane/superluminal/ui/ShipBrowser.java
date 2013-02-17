@@ -88,7 +88,7 @@ public class ShipBrowser
 		
 		dataDir = new Text(composite_2, SWT.BORDER);
 		dataDir.setFont(Main.appFont);
-		GridData gd_dataDir = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
+		GridData gd_dataDir = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_dataDir.minimumWidth = 290;
 		dataDir.setLayoutData(gd_dataDir);
 		dataDir.setText("Data-unpacked directory");
@@ -102,7 +102,7 @@ public class ShipBrowser
 		
 		resDir = new Text(composite_2, SWT.BORDER);
 		resDir.setFont(Main.appFont);
-		GridData gd_resDir = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
+		GridData gd_resDir = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_resDir.minimumWidth = 290;
 		resDir.setLayoutData(gd_resDir);
 		resDir.setText("Resources-unpacked directory");

@@ -1,12 +1,27 @@
 package com.kartoflane.superluminal.painter;
+import java.io.Serializable;
+
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
 
 
-public class ColorBox extends PaintBox {
-	private Color color = null;
-	private RGB color_rgb = null;
+public class ColorBox extends PaintBox implements Serializable {
+	private static final long serialVersionUID = 2204901082991211380L;
+	
+	protected Color color = null;
+	protected RGB color_rgb = null;
+	
+	public void stripUnserializable() {
+		super.stripUnserializable();
+		Cache.checkInColor(this, color_rgb);
+		color = null;
+	}
+	
+	public void loadUnserializable() {
+		super.loadUnserializable();
+		color = Cache.checkOutColor(this, color_rgb);
+	}
 	
 	public ColorBox() {
 	}

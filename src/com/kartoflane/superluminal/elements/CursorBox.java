@@ -11,6 +11,7 @@ import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.PaintBox;
 
 
+@SuppressWarnings("serial")
 public class CursorBox extends PaintBox implements DraggableBox {
 	private Point lastClick;
 	private Color greenColor;
