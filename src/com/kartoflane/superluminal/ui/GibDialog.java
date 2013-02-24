@@ -34,6 +34,7 @@ public class GibDialog {
 	public HashSet<String> letters = new HashSet<String>();
 	private Button btnAnimate;
 	public boolean animating = false;
+	private String dialog_path = Main.resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship";
 	
 	public GibDialog(Shell shl) {
 		shell = new Shell(shl, SWT.BORDER | SWT.TITLE);
@@ -112,7 +113,6 @@ public class GibDialog {
 		btnAnimate.setEnabled(false);
 		btnAnimate.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		btnAnimate.setText("Animate");
-		new Label(shell, SWT.NONE);
 		
 		list.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -172,8 +172,9 @@ public class GibDialog {
 				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(Main.resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship");
+				dialog.setFilterPath(dialog_path);
 				String path = dialog.open();
+				dialog_path = new String(path);
 				
 				if (!ShipIO.isNull(path)) {
 					FTLGib g = new FTLGib();

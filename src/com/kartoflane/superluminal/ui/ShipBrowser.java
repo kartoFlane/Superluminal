@@ -15,8 +15,6 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.widgets.Text;
-
 import com.kartoflane.superluminal.core.ConfigIO;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
@@ -25,14 +23,10 @@ import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 
 
-public class ShipBrowser
-{
+public class ShipBrowser {
 	public static Shell shell;
 	public boolean abort;
 	DirectoryDialog dialog;
-	
-	private Text dataDir;
-	private Text resDir;
 	
 	// === GUI ELEMENTS' VARIABLES
 	Button btnConfirm;
@@ -47,8 +41,7 @@ public class ShipBrowser
 	public static HashSet<TreeItem> ships;
 	static String selectedShip;
 
-	public ShipBrowser(Shell sh)
-	{
+	public ShipBrowser(Shell sh) {
 		shell = new Shell(sh, SWT.BORDER | SWT.TITLE);
 		dialog = new DirectoryDialog(Main.shell, SWT.OPEN);
 		ships = new HashSet<TreeItem>();
@@ -64,60 +57,22 @@ public class ShipBrowser
 			
 			ShipIO.loadTree();
 		}
-		if (!isNull(Main.dataPath)) {
-			dataDir.setText(Main.dataPath);
-		}
-		if (!isNull(Main.resPath)) {
-			resDir.setText(Main.resPath);
-		}
 	}
 
 	/**
 	 * Create contents of the shell.
 	 */
-	protected void createContents()
-	{
+	protected void createContents() {
 		shell.setText(Main.APPNAME + " - Ship Browser");
 		shell.setFont(Main.appFont);
 		shell.setSize(400, 400);
 		shell.setLayout(new GridLayout(2, false));
 		
-		Composite composite_2 = new Composite(shell, SWT.NONE);
-		composite_2.setLayout(new GridLayout(2, false));
-		composite_2.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));
-		
-		dataDir = new Text(composite_2, SWT.BORDER);
-		dataDir.setFont(Main.appFont);
-		GridData gd_dataDir = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
-		gd_dataDir.minimumWidth = 290;
-		dataDir.setLayoutData(gd_dataDir);
-		dataDir.setText("Data-unpacked directory");
-		
-		Button btnData = new Button(composite_2, SWT.NONE);
-		btnData.setFont(Main.appFont);
-		GridData gd_btnData = new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1);
-		gd_btnData.minimumWidth = 70;
-		btnData.setLayoutData(gd_btnData);
-		btnData.setText("Browse...");
-		
-		resDir = new Text(composite_2, SWT.BORDER);
-		resDir.setFont(Main.appFont);
-		GridData gd_resDir = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
-		gd_resDir.minimumWidth = 290;
-		resDir.setLayoutData(gd_resDir);
-		resDir.setText("Resources-unpacked directory");
-		
-		Button btnRes = new Button(composite_2, SWT.NONE);
-		btnRes.setFont(Main.appFont);
-		GridData gd_btnRes = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
-		gd_btnRes.minimumWidth = 70;
-		btnRes.setLayoutData(gd_btnRes);
-		btnRes.setText("Browse...");
-		
 		tree = new Tree(shell, SWT.BORDER);
 		tree.setFont(Main.appFont);
 		GridData gd_tree = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 2);
-		gd_tree.heightHint = 200;
+		gd_tree.widthHint = 320;
+		gd_tree.heightHint = 250;
 		tree.setLayoutData(gd_tree);
 		
 		trtmPlayer = new TreeItem(tree, SWT.NONE);
@@ -156,43 +111,6 @@ public class ShipBrowser
 		
 	//=====================================
 	// === BOOKMARK LISTENERS
-		
-		btnData.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				String s = dialog.open();
-				if (!isNull(s)) {
-					Main.dataPath = s;
-					dataDir.setText(Main.dataPath);
-					
-					// check if the other path is set too
-					if (!isNull(Main.resPath)) {
-						clearTrees();
-						ShipIO.reloadBlueprints();
-						tree.setEnabled(true);
-						ConfigIO.saveConfig();
-					}
-				}
-			}
-		});
-		
-		btnRes.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				String s = dialog.open();
-				if (!isNull(s)) {
-					Main.resPath = s;
-					resDir.setText(Main.resPath);
-					
-					// check if the other path is set too
-					if (!isNull(Main.dataPath)) {
-						ShipIO.reloadBlueprints();
-						tree.setEnabled(true);
-						ConfigIO.saveConfig();
-					}
-				}
-			}
-		});
 		
 		shell.addListener(SWT.Close, new Listener() {
 			@Override
@@ -260,15 +178,18 @@ public class ShipBrowser
 	
 	public static void clearTrees() {
 		for (TreeItem trtm : trtmPlayer.getItems()) {
-			trtm.dispose();
+			if (!trtm.isDisposed())
+				trtm.dispose();
 		}
 		trtmPlayer.clearAll(true);
 		for (TreeItem trtm : trtmEnemy.getItems()) {
-			trtm.dispose();
+			if (!trtm.isDisposed())
+				trtm.dispose();
 		}
 		trtmEnemy.clearAll(true);
 		for (TreeItem trtm : trtmOther.getItems()) {
-			trtm.dispose();
+			if (!trtm.isDisposed())
+				trtm.dispose();
 		}
 		trtmOther.clearAll(true);
 	}

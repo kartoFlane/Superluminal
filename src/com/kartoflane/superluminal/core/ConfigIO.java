@@ -74,7 +74,7 @@ public class ConfigIO {
 		}
 		
 		Scanner sc = new Scanner(fr);
-		sc.useDelimiter(Pattern.compile("[\\n]"));
+		sc.useDelimiter(Pattern.compile(ShipIO.lineDelimiter));
 		pattern = Pattern.compile("(.*?)(\\s*=\\s*)(.*?)$");
 scan:	while(sc.hasNext()) {
 			s = sc.next();

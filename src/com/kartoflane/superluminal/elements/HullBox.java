@@ -40,7 +40,11 @@ public class HullBox extends ImageBox implements DraggableBox {
 
 		if (path != null) {
 			image = Cache.checkOutImageAbsolute(this, path);
-			setSize(image.getBounds().width, image.getBounds().height);
+			try {
+				setSize(image.getBounds().width, image.getBounds().height);
+			} catch (NullPointerException e) {
+				Main.erDialog.add("Error: tried to load " + path + " as hull, returned null; image not found.");
+			}
 		}
 	}
 	

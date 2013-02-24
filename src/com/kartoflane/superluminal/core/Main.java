@@ -41,6 +41,7 @@ import com.kartoflane.superluminal.elements.Systems;
 import com.kartoflane.superluminal.elements.Tooltip;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.LayeredPainter;
+import com.kartoflane.superluminal.ui.DirectoriesWindow;
 import com.kartoflane.superluminal.ui.ErrorDialog;
 import com.kartoflane.superluminal.ui.ExportDialog;
 import com.kartoflane.superluminal.ui.GibDialog;
@@ -91,11 +92,13 @@ public class Main {
 	public static Transform currentTransform;
 	public static LayeredPainter layeredPainter;
 	public static CursorBox cursor;
+	public static DirectoriesWindow dirWindow;
+	public static ShipBrowser browser;
 	
 		// === Preferences
 		// ship explorer
-	public static String dataPath = "null";
-	public static String resPath = "null";
+	public static String dataPath = "";
+	public static String resPath = "";
 		// edit menu
 	public static boolean removeDoor = true;
 	public static boolean snapMounts = true;
@@ -112,9 +115,9 @@ public class Main {
 	public static boolean loadShield = true;
 	public static boolean loadSystem = true;
 		// export dialog
-	public static String exportPath = "null";
+	public static String exportPath = "";
 		// other
-	public static String projectPath = "null";
+	public static String projectPath = "";
 	
 		// ===  Mouse related
 	public static Point mousePos = new Point(0,0);
@@ -162,7 +165,7 @@ public class Main {
 		// === Miscellaneous
 	public static Rectangle[] corners = new Rectangle[4];
 	private static String lastMsg = "";
-	private static String interiorPath;
+	private static String interiorPath = "";
 	/**
 	 * Path of current project file, for quick saving via Ctrl+S
 	 */
@@ -233,41 +236,30 @@ public class Main {
 	// =================================================================================================== //
 	
 	/*
-	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON RELEASES!
+	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES!
 	 * === TODO
-	 * 	- gibs editor
-			- animation
+	 * 	- gibs editor - animation
 	 * 	- .ftl loading - fix negative offset issue
 	 * 		- detect if ship has negative offset, if yes then move all rooms by that offset as much as possible, and set offset to 0
-	 * 	- when exporting room interior, look for glow files and export them too.
-	 * 		- room interior -> make it part of SysBox, not FTLRoom, also add possibility to link glow and other images, and automatically correctly export them.
-	 * 	- separate data/respath browser from ship browser -> show it when no config is found / data/respath is not found
+	 * 		- something's fucked up with loading; it's saying that the blueprint is not found in the file, even though it is there. WTF.
+	 * 	- weapon i drone presets are not being loaded
 	 * 	- variables to store dialogs current directory - separate for each dialog
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 
 	 * == LOW PRIO:
 	 * 	- tools
-	 * 		- room:
-	 * 			- splitting
-	 * 		- mounts:
-				- indicator for mirror and slide dir
-	 * 
-	 * Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
-	 * 
-	 * ======
-	 * Pirate version of ships viewable, similar to cloak?
+	 * 		- room splitting
+	 * 		- mounts - indicator for mirror and slide dir
+	 *  - room interior -> make it part of SysBox, not FTLRoom + maybe add possibility to link glow and other images, and automatically correctly export them?
+	 *  - change from ConfigIO to Properties java class
+	 * 	- Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
+	 * 	- Pirate version of ships viewable, similar to cloak?
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * 	- fixed augments list not loading properly
-	 * 	- fixed several crashes
-	 *  - fixed shield graphic getting misplaced when loading more images and loading projects
-	 *  - fixed shield graphic not having its position updated when new rooms were placed / removed / resized / moved
-	 *  - fixed "default resources list missing" bug
-	 * 	- added gibs editor
-	 *  - added possibility to load ships from .ftl packages; known bugs:
-	 *  	- ships which have negative offset values in shipname.txt are not being loaded correctly - you will have some adjusting to make
-	 *  	- custom weapons and drones are not being properly loaded yet;
+	 * 	- glow images can now be exported along with the interior image they are associated with, however they HAVE TO BE NAMED ACCORDINGLY
+	 * 	- archives are now unpacked automatically by the editor. The only thing you have to do is point it to original, packed, .dat archives inside /resources/ folder in your FTL installation.
+	 * 
 	 */
 	
 	// =================================================================================================== //
@@ -360,10 +352,23 @@ public class Main {
 		erDialog = new ErrorDialog(shell);
 		gibDialog = new GibDialog(shell);
 		gibWindow = new GibPropertiesWindow(shell);
+		dirWindow = new DirectoriesWindow(shell);
+		browser = new ShipBrowser(shell);
 		
 		createContents();
 		
 		shell.setFont(appFont);
+		
+		shell.setEnabled(true);
+		
+		if (ShipIO.isNull(dataPath) || ShipIO.isNull(resPath) || !(new File("archives")).exists()) {
+			dataPath = null;
+			resPath = null;
+			shell.setEnabled(false);
+			dirWindow.btnClose.setEnabled(false);
+			dirWindow.label.setText("Please, browse to your FTL installation directory and select data.dat and resource.dat archives.");
+			dirWindow.open();
+		}
 		
 		if (!ShipIO.isNull(dataPath) && !ShipIO.isNull(resPath))
 			ShipIO.fetchShipNames();
@@ -474,6 +479,12 @@ public class Main {
 		final MenuItem mntmLoadShipProject = new MenuItem(menu_file, SWT.NONE);
 		mntmLoadShipProject.setText("Open Project...\tCtrl + O");
 
+		new MenuItem(menu_file, SWT.SEPARATOR);
+		
+		// === File -> Change archives
+		MenuItem mntmArchives = new MenuItem(menu_file, SWT.NONE);
+		mntmArchives.setText("Change Archives...");
+		
 		new MenuItem(menu_file, SWT.SEPARATOR);
 		
 		// === File -> Save project
@@ -1315,7 +1326,8 @@ public class Main {
 				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
+				dialog.setFilterPath(ship.shieldPath == null ? resPath : ship.shieldPath);
+				
 				String path = dialog.open();
 				Main.ship.shieldOverride = null;
 				
@@ -1827,7 +1839,7 @@ public class Main {
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path) && selectedRoom != null) {
-					interiorPath = path.substring(0, path.lastIndexOf(ShipIO.pathDelimiter));
+					interiorPath = new String(path);
 					selectedRoom.setInterior(path);
 				}
 			}
@@ -2248,6 +2260,17 @@ public class Main {
 					Main.erDialog.open();
 					ShipIO.errors.clear();
 				}
+			}
+		});
+		
+		mntmArchives.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				shell.setEnabled(false);
+				dirWindow.label.setText("If you wish to unpack the archives again, just browse to the .dat files again." + ShipIO.lineDelimiter
+						+ "Note however that the old unpacked archives used by Superluminal will be deleted.");
+				dirWindow.btnClose.setEnabled(true);
+				dirWindow.open();
 			}
 		});
 		
@@ -3212,6 +3235,14 @@ public class Main {
 		};
 		
 		mntm.addSelectionListener(adapter);
+	}
+	
+	public static String getFilename(String path) {
+		return path.substring(path.lastIndexOf(ShipIO.pathDelimiter)+1) + ShipIO.pathDelimiter;
+	}
+	
+	public static String getParent(String path) {
+		return path.substring(0, path.lastIndexOf(ShipIO.pathDelimiter)) + ShipIO.pathDelimiter;
 	}
 }
 

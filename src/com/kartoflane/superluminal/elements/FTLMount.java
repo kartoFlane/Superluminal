@@ -80,6 +80,22 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		slide = Slide.NO;
 		orig = new Point(0,0);
 	}
+
+	public void setImage(String path, boolean shrinkWrap) {
+		this.shrinkWrap = shrinkWrap;
+		if (this.path != null) {
+			Cache.checkInImage(this, this.path);
+			Cache.checkInImageAbsolute(this, this.path);
+		}
+		if (path == null) {
+			this.path = "/img/weapon.png";
+			image = Cache.checkOutImage(this, this.path);
+		} else {
+			this.path = path;
+			image = Cache.checkOutImageAbsolute(this, this.path);
+		}
+		
+	}
 	
 	public void setImage(String path) {
 		setImage(path, true);
@@ -90,6 +106,10 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	public void setImage(String path, int frameW) {
 		setImage(path, true);
 		this.frameW = frameW;
+		if (image == null) {
+			Main.erDialog.add("Error: tried to load " + path + " as weapon image, but no file was found. Reverting to default image.");
+			setImage(null, true);
+		}
 		setSize((rotate ? image.getBounds().height : frameW), (!rotate ? image.getBounds().height : frameW));
 		//setRotated(rotate);
 		updateRedrawBounds();
@@ -234,23 +254,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	public boolean isMirrored() {
 		return mirror;
 	}
-
-	public void setImage(String path, boolean shrinkWrap) {
-		this.shrinkWrap = shrinkWrap;
-		if (this.path != null) {
-			Cache.checkInImage(this, this.path);
-			Cache.checkInImageAbsolute(this, this.path);
-		}
-		if (path == null) {
-			this.path = "/img/weapon.png";
-			image = Cache.checkOutImage(this, this.path);
-		} else {
-			this.path = path;
-			image = Cache.checkOutImageAbsolute(this, this.path);
-		}
-		
-	}
-
+	
 	public static void drawDirection(PaintEvent e, Slide s, Rectangle rect) {
 		final int LENGTH = 40;
 		final int ARROWHEAD = 8;
