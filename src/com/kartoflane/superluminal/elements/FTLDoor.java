@@ -112,49 +112,51 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 	
 	@Override
 	public void paintControl(PaintEvent e) {
-		setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
-		super.paintControl(e);
-		
-		Color prevBg = e.gc.getBackground();
-		Color prevFg = e.gc.getForeground();
-		int prevAlpha = e.gc.getAlpha();
-		int prevWidth = e.gc.getLineWidth();
-		
-		e.gc.setAlpha(alpha);
-		e.gc.setLineWidth(1);
-		e.gc.setBackground(lineColor);
-		e.gc.setForeground(lineColor);
-
-		if (horizontal) {
-			e.gc.fillRectangle(getBounds().x, getBounds().y+1, 5, 4);
-			e.gc.fillRectangle(getBounds().x+getBounds().width-4, getBounds().y+1, 5, 4);
-			e.gc.drawRectangle(getBounds().x+5, getBounds().y, 21, 5);
+		if (!Main.tltmGib.getSelection()) {
+			setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
+			super.paintControl(e);
+			
+			Color prevBg = e.gc.getBackground();
+			Color prevFg = e.gc.getForeground();
+			int prevAlpha = e.gc.getAlpha();
+			int prevWidth = e.gc.getLineWidth();
+			
+			e.gc.setAlpha(alpha);
+			e.gc.setLineWidth(1);
+			e.gc.setBackground(lineColor);
+			e.gc.setForeground(lineColor);
 	
-			e.gc.setBackground(doorColor);
-			
-			e.gc.fillRectangle(getBounds().x+6, getBounds().y+1, 20, 4);
-			e.gc.drawRectangle(getBounds().x+15, getBounds().y, 1, 5);
-			
-			if (selected && isPinned())
-				e.gc.drawImage(pin, bounds.x+9, bounds.y-15);
-		} else {
-			e.gc.fillRectangle(getBounds().x+1, getBounds().y, 4, 5);
-			e.gc.fillRectangle(getBounds().x+1, getBounds().y+getBounds().height-4, 4, 5);
-			e.gc.drawRectangle(getBounds().x, getBounds().y+5, 5, 21);
-
-			e.gc.setBackground(doorColor);
-			
-			e.gc.fillRectangle(getBounds().x+1, getBounds().y+6, 4, 20);
-			e.gc.drawRectangle(getBounds().x, getBounds().y+15, 5, 1);
-			
-			if (selected && isPinned())
-				e.gc.drawImage(pin, bounds.x-15, bounds.y+9);
-		}
+			if (horizontal) {
+				e.gc.fillRectangle(getBounds().x, getBounds().y+1, 5, 4);
+				e.gc.fillRectangle(getBounds().x+getBounds().width-4, getBounds().y+1, 5, 4);
+				e.gc.drawRectangle(getBounds().x+5, getBounds().y, 21, 5);
 		
-		e.gc.setAlpha(prevAlpha);
-		e.gc.setLineWidth(prevWidth);
-		e.gc.setBackground(prevBg);
-		e.gc.setForeground(prevFg);
+				e.gc.setBackground(doorColor);
+				
+				e.gc.fillRectangle(getBounds().x+6, getBounds().y+1, 20, 4);
+				e.gc.drawRectangle(getBounds().x+15, getBounds().y, 1, 5);
+				
+				if (selected && isPinned())
+					e.gc.drawImage(pin, bounds.x+9, bounds.y-15);
+			} else {
+				e.gc.fillRectangle(getBounds().x+1, getBounds().y, 4, 5);
+				e.gc.fillRectangle(getBounds().x+1, getBounds().y+getBounds().height-4, 4, 5);
+				e.gc.drawRectangle(getBounds().x, getBounds().y+5, 5, 21);
+	
+				e.gc.setBackground(doorColor);
+				
+				e.gc.fillRectangle(getBounds().x+1, getBounds().y+6, 4, 20);
+				e.gc.drawRectangle(getBounds().x, getBounds().y+15, 5, 1);
+				
+				if (selected && isPinned())
+					e.gc.drawImage(pin, bounds.x-15, bounds.y+9);
+			}
+			
+			e.gc.setAlpha(prevAlpha);
+			e.gc.setLineWidth(prevWidth);
+			e.gc.setBackground(prevBg);
+			e.gc.setForeground(prevFg);
+		}
 	}
 
 	@Override

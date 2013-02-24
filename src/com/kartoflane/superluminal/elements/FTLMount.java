@@ -374,37 +374,49 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	@Override
 	public void mouseDown(MouseEvent e)
 	{
-		if (bounds.contains(e.x, e.y)) {
-			select();
-			offset.x = e.x - (Main.hullBox.getBounds().x + pos.x);
-			offset.y = e.y - (Main.hullBox.getBounds().y + pos.y);
-		} else {
-			deselect();
-		}
-		
-		if (e.button == 1) {
-			if (Main.modShift)
-				setMirrored(!mirror);
-		} else if (e.button == 3) {
-			if (Main.modShift) {
-				Slide slideOld = slide;
-				slide = ((slide.equals(Slide.UP))
-							? (Slide.RIGHT)
-							: (slide.equals(Slide.RIGHT))
-								? (Slide.DOWN)
-								: (slide.equals(Slide.DOWN))
-									? (Slide.LEFT)
-									: (slide.equals(Slide.LEFT))
-										? (Slide.NO)
-										: (slide.equals(Slide.NO))
-											? (Slide.UP)
-											: slide);
-				
-				redrawLoc(slideOld);
+		if (Main.tltmPointer.getSelection()) {
+			if (bounds.contains(e.x, e.y)) {
+				select();
+				offset.x = e.x - (Main.hullBox.getBounds().x + pos.x);
+				offset.y = e.y - (Main.hullBox.getBounds().y + pos.y);
 			} else {
-				setRotated(!rotate);
+				deselect();
+			}
+			
+			if (e.button == 1) {
+				if (Main.modShift)
+					setMirrored(!mirror);
+			} else if (e.button == 3) {
+				if (Main.modShift) {
+					Slide slideOld = slide;
+					slide = ((slide.equals(Slide.UP))
+								? (Slide.RIGHT)
+								: (slide.equals(Slide.RIGHT))
+									? (Slide.DOWN)
+									: (slide.equals(Slide.DOWN))
+										? (Slide.LEFT)
+										: (slide.equals(Slide.LEFT))
+											? (Slide.NO)
+											: (slide.equals(Slide.NO))
+												? (Slide.UP)
+												: slide);
+					
+					redrawLoc(slideOld);
+				} else {
+					setRotated(!rotate);
+				}
+			}
+		} else if (Main.tltmGib.getSelection() && bounds.contains(e.x, e.y)) {
+			if (e.button == 1) {
+				select();
+				move = false;
+			} else if (e.button == 3) {
+				select();
+				move = false;
+				Main.menuGib.setVisible(true);
 			}
 		}
+		
 		Main.cursor.setVisible(false);
 	}
 
@@ -427,6 +439,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	public void mouseHover(MouseEvent e) {
 		if (bounds.contains(e.x, e.y)) {
 			Main.tooltip.setText("Mount number: "+(Main.getMountIndex(this)+1)
+					+ ShipIO.lineDelimiter + "Attached gib: " +gib
 					+ ShipIO.lineDelimiter + "Direction: " + slide.toString().toLowerCase()
 					+ ((isPinned()) ? (ShipIO.lineDelimiter + "Pinned") : "")
 					+ ((isMirrored()) ? (ShipIO.lineDelimiter + "Mirrored") : ""));
@@ -438,6 +451,10 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	@Override
 	public void select()
 	{
+		if (Main.tltmGib.getSelection()) {
+			if (Main.selectedGib != null) Main.selectedGib.deselect();
+			Main.selectedGib = null;
+		}
 		if (Main.selectedMount != null)
 			Main.selectedMount.deselect();
 		selected = true;

@@ -53,8 +53,8 @@ public class ErrorDialog
 		Composite consoleC = new Composite(shell, SWT.BORDER);
 		consoleC.setLayout(new FillLayout(SWT.HORIZONTAL));
 		GridData gd_consoleC = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
-		gd_consoleC.minimumHeight = 100;
-		gd_consoleC.minimumWidth = 400;
+		gd_consoleC.minimumHeight = 130;
+		gd_consoleC.minimumWidth = 550;
 		consoleC.setLayoutData(gd_consoleC);
 		
 		errors = new Text(consoleC, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
@@ -114,6 +114,11 @@ public class ErrorDialog
 				shell.setVisible(false);
 			}
 		});
+	}
+	
+	public void add(String s) {
+		Main.debug(s, true);
+		ShipIO.errors.add(s);
 	}
 	
 	public void print(String s) {

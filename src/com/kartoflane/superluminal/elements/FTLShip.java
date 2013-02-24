@@ -25,6 +25,15 @@ public class FTLShip implements Serializable
 	 * Size of the anchor handle;
 	 */
 	final static public int ANCHOR = 12;
+	
+	/**
+	 * The most recent designation
+	 */
+	final public static int VERSION = 7;
+	/**
+	 * Ship's own designation
+	 */
+	public int version = 0;
 
 	public enum AxisFlag
 	{ X, Y, BOTH };
@@ -36,6 +45,7 @@ public class FTLShip implements Serializable
 	public Set<FTLRoom> rooms;
 	public Set<FTLDoor> doors;
 	public List<FTLMount> mounts;
+	public List<FTLGib> gibs;
 	
 	// === Images
 		// hull
@@ -100,6 +110,7 @@ public class FTLShip implements Serializable
 		rooms = new HashSet<FTLRoom>();
 		doors = new HashSet<FTLDoor>();
 		mounts = new LinkedList<FTLMount>();
+		gibs = new LinkedList<FTLGib>();
 		
 		weaponSet = new LinkedList<String>();
 		droneSet = new LinkedList<String>();

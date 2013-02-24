@@ -50,10 +50,10 @@ public class PropertiesWindow
 		
 		textLevel = new Spinner(shell, SWT.BORDER | SWT.CENTER);
 		textLevel.setMinimum(1);
-		textLevel.setMaximum(8);
+		textLevel.setMaximum(99);
 		textLevel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		textLevel.setFont(Main.appFont);
-		textLevel.setTextLimit(1);
+		textLevel.setTextLimit(2);
 		
 		scaleLevel = new Scale(shell, SWT.NONE);
 		scaleLevel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 5, 2));
@@ -69,10 +69,10 @@ public class PropertiesWindow
 		
 		textPower = new Spinner(shell, SWT.BORDER | SWT.CENTER);
 		textPower.setMinimum(1);
-		textPower.setMaximum(8);
+		textPower.setMaximum(99);
 		textPower.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		textPower.setFont(Main.appFont);
-		textPower.setTextLimit(1);
+		textPower.setTextLimit(2);
 		
 		scalePower = new Scale(shell, SWT.NONE);
 		scalePower.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 2));
@@ -193,6 +193,7 @@ public class PropertiesWindow
 				: (sys.equals(Systems.ARTILLERY))
 					? 4
 					: 0;
+			
 			max = (!Main.ship.isPlayer && (sys.equals(Systems.WEAPONS) || sys.equals(Systems.ENGINES) || sys.equals(Systems.SHIELDS)))
 					? 10
 					: max;
@@ -235,7 +236,7 @@ public class PropertiesWindow
 		
 		
 		Display display = shell.getParent().getDisplay();
-		while (!shell.isDisposed()) {
+		while (!shell.isVisible()) {
 			if (!display.readAndDispatch()) {
 				display.sleep();
 			}

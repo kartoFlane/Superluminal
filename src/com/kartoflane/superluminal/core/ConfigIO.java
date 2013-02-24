@@ -75,7 +75,7 @@ public class ConfigIO {
 		
 		Scanner sc = new Scanner(fr);
 		sc.useDelimiter(Pattern.compile("[\\n]"));
-		pattern = Pattern.compile("(.*?)( = )(.*?)$");
+		pattern = Pattern.compile("(.*?)(\\s*=\\s*)(.*?)$");
 scan:	while(sc.hasNext()) {
 			s = sc.next();
 			matcher = pattern.matcher(s);

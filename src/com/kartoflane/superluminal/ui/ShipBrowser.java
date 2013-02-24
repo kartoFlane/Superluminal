@@ -244,9 +244,7 @@ public class ShipBrowser
 
 				Main.mntmClose.notifyListeners(SWT.Selection, null);
 				
-				ShipIO.loadShip(selectedShip, true);
-
-				//Main.ship.updateReactor();
+				ShipIO.loadShip(selectedShip, null);
 				
 				ConfigIO.saveConfig();
 				shell.dispose();

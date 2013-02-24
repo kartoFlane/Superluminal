@@ -8,6 +8,7 @@ import org.eclipse.swt.graphics.Rectangle;
 
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.Cache;
+import com.kartoflane.superluminal.painter.LayeredPainter;
 import com.kartoflane.superluminal.painter.PaintBox;
 
 
@@ -67,7 +68,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 
 		e.gc.setLineWidth(borderThickness);
 		
-		if (Main.tltmPointer.getSelection() && borderColor != null) {			
+		if ((Main.tltmPointer.getSelection() || Main.tltmGib.getSelection()) && borderColor != null) {
 			e.gc.setForeground(borderColor);
 		} else if (Main.tltmRoom.getSelection()) {
 			if (room_canBePlaced) {
@@ -109,11 +110,12 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			}
 			e.gc.setAlpha(64);
 			e.gc.fillRectangle(bounds);
+		} else if (Main.tltmGib.getSelection()) {
 		}
 
 		e.gc.setAlpha(255);
 		e.gc.drawRectangle(bounds.x+1, bounds.y+1, bounds.width-2, bounds.height-2);
-
+		
 		e.gc.setForeground(prevFg);
 		e.gc.setBackground(prevBg);
 		e.gc.setLineWidth(prevLineWidth);
@@ -331,6 +333,19 @@ public class CursorBox extends PaintBox implements DraggableBox {
 						slot_sys = tempRoom.getSystem();
 					}
 					slot_canBePlaced = tempRoom != null && canPlaceSlot(tempRoom);
+				}
+				
+				Main.canvas.redraw(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+6, false);
+				Main.canvas.redraw(oldBounds.x-3, oldBounds.y-3, oldBounds.width+6, oldBounds.height+6, false);
+			} else if (Main.tltmGib.getSelection()) {
+				temp = Main.getRectAt(e.x, e.y);
+				Main.copyRect(temp, bounds);
+				if (Main.ship != null && Main.showMounts && Main.getMountFromPoint(e.x, e.y) != null) {
+					Main.copyRect(Main.getMountFromPoint(e.x, e.y).getBounds(), bounds);
+				} else {
+					PaintBox box = Main.layeredPainter.getBottomBoxAt(e.x, e.y, LayeredPainter.GIB);
+					if (box != null)
+						Main.copyRect(box.getBounds(), bounds);
 				}
 				
 				Main.canvas.redraw(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+6, false);

@@ -105,7 +105,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	
 	@Override
 	protected void paintBorder(PaintEvent e) {
-		if (borderColor != null && Main.shieldSelected) {
+		if (borderColor != null && Main.shieldSelected && !Main.tltmGib.getSelection()) {
 			Color prevColor = e.gc.getForeground();
 			int prevLineWidth = e.gc.getLineWidth();
 			
@@ -121,7 +121,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	
 	@Override
 	public void paintControl(PaintEvent e) {
-		if (Main.ship != null && isVisible() && Main.showShield) {
+		if (Main.ship != null && isVisible() && Main.showShield && !Main.tltmGib.getSelection()) {
 			int prevAlpha = e.gc.getAlpha();
 			Color prevBg = e.gc.getBackground();
 			

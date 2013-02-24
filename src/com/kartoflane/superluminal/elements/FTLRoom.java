@@ -100,8 +100,11 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	public void setInterior(String path) {
 		if (img != null)
 			Cache.checkInImageAbsolute(this, img);
-		img = path;
-		sysImg = Cache.checkOutImageAbsolute(this, img);
+		img = null;
+		if (!sys.equals(Systems.EMPTY) && !sys.equals(Systems.TELEPORTER)) {
+			img = path;
+			sysImg = Cache.checkOutImageAbsolute(this, img);
+		}
 		Main.canvasRedraw(bounds, false);
 	}
 	
@@ -256,6 +259,15 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		origin.width = bounds.width;
 		origin.height = bounds.height;
 		
+		Point oldLow = null;
+		Point oldHigh = null;
+		if (Main.ship != null) {
+			oldLow = Main.ship.findLowBounds();
+			oldHigh = Main.ship.findHighBounds();
+			oldLow.x = oldLow.x + (oldHigh.x - oldLow.x)/2;
+			oldLow.y = oldLow.y + (oldHigh.y - oldLow.y)/2;
+		}
+		
 		w = Main.roundToGrid(w);
 		h = Main.roundToGrid(h);
 		
@@ -310,6 +322,19 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		
 		if (Main.ship != null) {
 			Point p = Main.ship.findLowBounds();
+			Point pt = Main.ship.findHighBounds();
+			p.x = p.x + (pt.x - p.x)/2;
+			p.y = p.y + (pt.y - p.y)/2;
+			
+			pt.x = p.x - oldLow.x;
+			pt.y = p.y - oldLow.y;
+			
+			p = Main.shieldBox.getLocation();
+			Main.shieldBox.setLocation(p.x + pt.x, p.y + pt.y);
+		}
+		
+		if (Main.ship != null) {
+			Point p = Main.ship.findLowBounds();
 			Main.ship.offset.x = (p.x - Main.ship.anchor.x + 10)/35;
 			Main.ship.offset.y = (p.y - Main.ship.anchor.y + 10)/35;
 		}
@@ -348,57 +373,61 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	
 	@Override
 	public void paintControl(PaintEvent e) {
-		setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
-		if (sysBox != null)
-			sysBox.setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
-		super.paintControl(e);
-		
-		int prevAlpha = e.gc.getAlpha();
-		int prevWidth = e.gc.getLineWidth();
-		Color prevBg = e.gc.getForeground();
-		
-		e.gc.setAlpha(alpha);
-		e.gc.setLineWidth(1);
-		e.gc.setForeground(grid_color);
-		
-		for (int i=1; i < bounds.width/35; i++)
-			e.gc.drawLine(bounds.x + i*35, bounds.y, bounds.x + i*35, bounds.y+bounds.height);
-		for (int i=1; i < bounds.height/35; i++)
-			e.gc.drawLine(bounds.x, bounds.y + i*35, bounds.x+bounds.width, bounds.y + i*35);
-
-		if (sysImg != null)
-			e.gc.drawImage(sysImg, 0, 0, sysImg.getBounds().width, sysImg.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
-		
-		e.gc.setForeground(prevBg);
-		if (selected) {
-			prevBg = e.gc.getBackground();
-
-			e.gc.setBackground(getBorderColor());
-			e.gc.setAlpha(128);
-			// resize corners
-			e.gc.fillRectangle(bounds.x, bounds.y, 10, 10);
-			e.gc.fillRectangle(bounds.x+bounds.width-10, bounds.y, 10, 10);
-			e.gc.fillRectangle(bounds.x, bounds.y+bounds.height-10, 10, 10);
-			e.gc.fillRectangle(bounds.x+bounds.width-10, bounds.y+bounds.height-10, 10, 10);
+		drawBorder = !Main.tltmGib.getSelection();
+		if (!Main.tltmGib.getSelection()) {
 			
-			e.gc.setAlpha(255);
-			if (isPinned())
-				e.gc.drawImage(pin, bounds.x+10, bounds.y+3);
-		}
-		if (Main.ship != null && Main.ship.slotMap.keySet().contains(sys) && Main.ship.slotMap.get(getSystem()) != -2) {
-			e.gc.setAlpha(Main.btnCloaked.getSelection() ? 80 : 160);
-			e.gc.setBackground(slotColor);
+			setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
+			if (sysBox != null)
+				sysBox.setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
+			super.paintControl(e);
 			
-			if (!sys.equals(Systems.MEDBAY)) {
-				e.gc.fillRectangle(Main.getStationDirected(this));
-			} else {
-				e.gc.fillRectangle(Main.getRectFromStation(this));
+			int prevAlpha = e.gc.getAlpha();
+			int prevWidth = e.gc.getLineWidth();
+			Color prevBg = e.gc.getForeground();
+			
+			e.gc.setAlpha(alpha);
+			e.gc.setLineWidth(1);
+			e.gc.setForeground(grid_color);
+			
+			for (int i=1; i < bounds.width/35; i++)
+				e.gc.drawLine(bounds.x + i*35, bounds.y, bounds.x + i*35, bounds.y+bounds.height);
+			for (int i=1; i < bounds.height/35; i++)
+				e.gc.drawLine(bounds.x, bounds.y + i*35, bounds.x+bounds.width, bounds.y + i*35);
+	
+			if (sysImg != null)
+				e.gc.drawImage(sysImg, 0, 0, sysImg.getBounds().width, sysImg.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
+			
+			e.gc.setForeground(prevBg);
+			if (selected) {
+				prevBg = e.gc.getBackground();
+	
+				e.gc.setBackground(getBorderColor());
+				e.gc.setAlpha(128);
+				// resize corners
+				e.gc.fillRectangle(bounds.x, bounds.y, 10, 10);
+				e.gc.fillRectangle(bounds.x+bounds.width-10, bounds.y, 10, 10);
+				e.gc.fillRectangle(bounds.x, bounds.y+bounds.height-10, 10, 10);
+				e.gc.fillRectangle(bounds.x+bounds.width-10, bounds.y+bounds.height-10, 10, 10);
+				
+				e.gc.setAlpha(255);
+				if (isPinned())
+					e.gc.drawImage(pin, bounds.x+10, bounds.y+3);
 			}
+			if (Main.ship != null && Main.ship.slotMap.keySet().contains(sys) && Main.ship.slotMap.get(getSystem()) != -2) {
+				e.gc.setAlpha(Main.btnCloaked.getSelection() ? 80 : 160);
+				e.gc.setBackground(slotColor);
+				
+				if (!sys.equals(Systems.MEDBAY)) {
+					e.gc.fillRectangle(Main.getStationDirected(this));
+				} else {
+					e.gc.fillRectangle(Main.getRectFromStation(this));
+				}
+			}
+	
+			e.gc.setBackground(prevBg);
+			e.gc.setLineWidth(prevWidth);
+			e.gc.setAlpha(prevAlpha);
 		}
-
-		e.gc.setBackground(prevBg);
-		e.gc.setLineWidth(prevWidth);
-		e.gc.setAlpha(prevAlpha);
 	}
 	
 	@Override

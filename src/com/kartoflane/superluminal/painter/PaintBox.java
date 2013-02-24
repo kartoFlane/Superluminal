@@ -22,6 +22,7 @@ public class PaintBox implements Serializable {
 	protected int borderThickness = 3;
 	protected int borderShape = 0;
 	protected boolean visible = true;
+	protected boolean drawBorder = true;
 	protected boolean selected = false;
 	protected boolean pinned = false;
 	protected Image pin;
@@ -128,7 +129,8 @@ public class PaintBox implements Serializable {
 	public void redraw(PaintEvent e) {
 		if (visible) {
 			paintControl(e);
-			paintBorder(e);
+			if (drawBorder) 
+				paintBorder(e);
 		}
 	}
 

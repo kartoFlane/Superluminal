@@ -13,7 +13,6 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 
 import com.kartoflane.superluminal.core.Main;
-import com.kartoflane.superluminal.core.ShipIO;
 
 /**
  * @author Vhati
@@ -55,9 +54,9 @@ public class Cache {
 				image = new Image(Display.getCurrent(), stream);
 				cachedImagesMap.put(path, image);
 			} catch (IllegalArgumentException e) {
-				ShipIO.errors.add(String.format("%s: Error loading \"%s\": resource not found.", customer.getClass().getName(), path));
+				Main.erDialog.add(String.format("%s: Error loading \"%s\": resource not found.", customer.getClass().getSimpleName(), path));
 			} catch (SWTException e) {
-				ShipIO.errors.add(String.format("%s: Error loading \"%s\": resource contains invalid data.", customer.getClass().getName(), path));
+				Main.erDialog.add(String.format("%s: Error loading \"%s\": resource contains invalid data.", customer.getClass().getSimpleName(), path));
 			}
 		}
 		customers.add(customer);
@@ -91,12 +90,12 @@ public class Cache {
 						image = new Image(Display.getCurrent(), path);
 						cachedImagesMap.put(path, image);
 					} else {
-						ShipIO.errors.add(String.format("%s: Error loading \"%s\": file not found.", customer.getClass().getName(), f.getName()));
+						Main.erDialog.add(String.format("%s: Error loading \"%s\": file not found.", customer.getClass().getSimpleName(), f.getName()));
 					}
 				} catch (IllegalArgumentException e) {
-					ShipIO.errors.add(String.format("%s: Error loading \"%s\": null argument.", customer.getClass().getName(), path));
+					Main.erDialog.add(String.format("%s: Error loading \"%s\": null argument.", customer.getClass().getSimpleName(), path));
 				} catch (SWTException e) {
-					ShipIO.errors.add(String.format("%s: Error loading \"%s\": file contains invalid data.", customer.getClass().getName(), path));
+					Main.erDialog.add(String.format("%s: Error loading \"%s\": file contains invalid data.", customer.getClass().getSimpleName(), path));
 				}
 			}
 			customers.add(customer);
@@ -125,7 +124,7 @@ public class Cache {
 				color = new Color(Main.shell.getDisplay(), rgb);
 				cachedColorsMap.put(rgb, color);
 			} catch (IllegalArgumentException e) {
-				//ShipIO.errors.add(String.format("%s: Error loading color %s: null RGB argument.", customer.getClass().getName(), rgb));
+				//Main.erDialog.add(String.format("%s: Error loading color %s: null RGB argument.", customer.getClass().getSimpleName(), rgb));
 			}
 		}
 		customers.add(customer);

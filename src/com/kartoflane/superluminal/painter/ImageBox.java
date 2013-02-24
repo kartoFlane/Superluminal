@@ -30,6 +30,7 @@ public class ImageBox extends PaintBox implements Serializable {
 	}
 	
 	public ImageBox() {
+		super();
 		redrawBounds = new Rectangle(bounds.x,bounds.y,bounds.width,bounds.height);
 	}
 	
@@ -42,6 +43,10 @@ public class ImageBox extends PaintBox implements Serializable {
 		this.path = path;
 		image = Cache.checkOutImage(this, path);
 		setSize(image.getBounds().width, image.getBounds().height);
+	}
+	
+	public String getPath() {
+		return path;
 	}
 	
 	public void setShrinkBounds(boolean shrink) {

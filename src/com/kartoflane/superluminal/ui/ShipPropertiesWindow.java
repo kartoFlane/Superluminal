@@ -90,6 +90,7 @@ public class ShipPropertiesWindow extends Dialog
 	private Spinner spRandom;
 	private Spinner spMinSec;
 	private Spinner spMaxSec;
+	private Combo augments;
 
 	public ShipPropertiesWindow(Shell parent)
 	{
@@ -272,6 +273,9 @@ search:		for (String s : presetsDr.getItems()) {
 		}
 		
 	// augments
+		for (FTLItem it : ShipIO.augMap.values()) {
+			augments.add(it.name + " (" + it.blueprint + ")");
+		}
 		listAugments.removeAll();
 		
 		FTLItem it = null;
@@ -341,6 +345,8 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		presets.select(-1);
 		presetsDr.select(-1);
+		
+		augments.removeAll();
 	}
 	
 	
@@ -898,15 +904,10 @@ search:		for (String s : presetsDr.getItems()) {
 		listAugments.setToolTipText("Double-click on an item to delete it.");
 		listAugments.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		
-		final Combo augments = new Combo(grpAugments, SWT.READ_ONLY);
+		augments = new Combo(grpAugments, SWT.READ_ONLY);
 		augments.setFont(Main.appFont);
 		augments.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
 		augments.setBounds(0, 0, 400, 23);
-		FTLItem it = null;
-		for (String s : ShipIO.augMap.keySet()) {
-			it = ShipIO.augMap.get(s);
-			augments.add(it.name + " (" + it.blueprint + ")");
-		}
 		
 	// === Weapons
 		TabItem tbtmWeapons = new TabItem(tabFolder, SWT.NONE);

@@ -1,6 +1,7 @@
 package com.kartoflane.superluminal.core;
 import com.kartoflane.superluminal.elements.DraggableBox;
 import com.kartoflane.superluminal.elements.FTLDoor;
+import com.kartoflane.superluminal.elements.FTLGib;
 import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.elements.FTLRoom;
 import com.kartoflane.superluminal.painter.ImageBox;
@@ -21,7 +22,6 @@ public class MouseInputAdapter implements MouseListener, MouseMoveListener, Mous
 	public DraggableBox dragee = null;
 
 	/**
-	 * 
 	 * @param layerIds layers to be ignored by selection
 	 */
 	public MouseInputAdapter(Integer[] layerIds) {
@@ -30,13 +30,13 @@ public class MouseInputAdapter implements MouseListener, MouseMoveListener, Mous
 
 		for (int i=0; i < allLayerIds.length; i++) {
 			// Leave uninteresting layers as null.
-			if (layerIds == null || !isLayerContained(allLayerIds[i], layerIds)) {
+			if (layerIds == null || !containsLayer(layerIds, allLayerIds[i])) {
 				selectableLayerIds[i] = allLayerIds[i];
 			}
 		}
 	}
 	
-	private boolean isLayerContained(Integer layer, Integer[] layerIds) {
+	private boolean containsLayer(Integer[] layerIds, Integer layer) {
 		for (int i=0; i < layerIds.length; i++) {
 			if (layerIds[i].equals(layer)) return true;
 		}
@@ -89,6 +89,28 @@ public class MouseInputAdapter implements MouseListener, MouseMoveListener, Mous
 			}
 			
 			Main.updateSelectedPosText();
+			
+		} else if (Main.tltmGib.getSelection()) {
+			if (e.button==1 && !Main.gibWindow.isVisible()) {
+				Integer[] layers = {LayeredPainter.MOUNT, LayeredPainter.GIB};
+				for (int i=0; i <= layers.length-1; i++) {
+					if (layers[i] != null) {
+						dragee = (DraggableBox) Main.layeredPainter.getBottomBoxAt(e.x, e.y, layers[i]);
+						if (dragee != null && dragee.isVisible()) {
+							dragee.mouseDown(e);
+							break;
+						} else {
+							if (Main.selectedMount != null) Main.selectedMount.deselect();
+							Main.selectedMount = null;
+							for (FTLGib g : Main.ship.gibs)
+								g.deselect();
+						}
+					}
+				}
+			} else if (e.button==3) {
+				for (FTLMount m : Main.ship.mounts) m.mouseDown(e);
+				if (Main.selectedGib != null) Main.selectedGib.mouseDown(e);
+			}
 		}
 	}
 
@@ -115,6 +137,9 @@ public class MouseInputAdapter implements MouseListener, MouseMoveListener, Mous
 			for (FTLMount m : Main.ship.mounts) {
 				m.mouseMove(e);
 			}
+			if (Main.tltmGib.getSelection())
+				for (FTLGib g : Main.ship.gibs)
+					g.mouseMove(e);
 		}
 	}
 
@@ -149,6 +174,10 @@ public class MouseInputAdapter implements MouseListener, MouseMoveListener, Mous
 			
 			Main.cursor.setVisible(true);
 			Main.canvasRedraw(Main.cursor.getBounds(), false);
+		} else if (Main.tltmGib.getSelection()) {
+			if (Main.selectedMount != null) Main.selectedMount.mouseUp(e);
+			for (FTLGib g : Main.ship.gibs)
+				g.mouseUp(e);
 		}
 	}
 
@@ -206,6 +235,9 @@ public class MouseInputAdapter implements MouseListener, MouseMoveListener, Mous
 			if (e.button == 1 && dragee != null && !(dragee instanceof FTLRoom)) {
 				dragee.mouseHover(e);
 			}
+		} else if (Main.tltmGib.getSelection()) {
+			if (Main.selectedGib != null) Main.selectedGib.mouseDoubleClick(e);
+			if (Main.selectedMount != null) Main.selectedMount.mouseHover(e);
 		}
 	}
 	

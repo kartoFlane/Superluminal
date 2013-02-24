@@ -79,6 +79,10 @@ public class HullBox extends ImageBox implements DraggableBox {
 		if (Main.ship != null) {
 			Main.ship.imageRect.x = x;
 			Main.ship.imageRect.y = y;
+			
+			for (FTLGib g : Main.ship.gibs) {
+				g.setLocationRelative(g.position.x, g.position.y);
+			}
 		}
 		
 		//setVisible(Main.canvas.getBounds().contains(x, y) && Main.canvas.getBounds().contains(x+bounds.width, y+bounds.height));
@@ -90,7 +94,7 @@ public class HullBox extends ImageBox implements DraggableBox {
 	
 	@Override
 	protected void paintBorder(PaintEvent e) {
-		if (borderColor != null) {
+		if (borderColor != null && !Main.tltmGib.getSelection()) {
 			Color prevColor = e.gc.getForeground();
 			int prevLineWidth = e.gc.getLineWidth();
 			
@@ -106,33 +110,35 @@ public class HullBox extends ImageBox implements DraggableBox {
 	
 	@Override
 	public void paintControl(PaintEvent e) {
-		int prevAlpha = e.gc.getAlpha();
-		Color prevBg = e.gc.getBackground();
-		
-		paintBorder(e);
-
-		e.gc.setAlpha(alpha/255 * 32);
-		if (borderColor != null)
-			e.gc.setBackground(borderColor);
-		
-		if (Main.hullSelected)
-			e.gc.fillRectangle(bounds);
-		
-		e.gc.setAlpha(Main.btnCloaked.getSelection() ? alpha/3 : alpha);
-		if (image != null && Main.showHull)
-			e.gc.drawImage(image, 0, 0, image.getBounds().width, image.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
-		if (floorImage != null && Main.showFloor)
-			e.gc.drawImage(floorImage, 0, 0, floorImage.getBounds().width, floorImage.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
-		if (cloakImage != null && (Main.showHull || Main.showFloor) && Main.btnCloaked.getSelection()) {
-			e.gc.setAlpha(alpha);
-			e.gc.drawImage(cloakImage, 0, 0, cloakImage.getBounds().width, cloakImage.getBounds().height, bounds.x - 10, bounds.y - 10, bounds.width + 20, bounds.height + 20);
+		if (!Main.tltmGib.getSelection()) {
+			int prevAlpha = e.gc.getAlpha();
+			Color prevBg = e.gc.getBackground();
+			
+			paintBorder(e);
+	
+			e.gc.setAlpha(alpha/255 * 32);
+			if (borderColor != null)
+				e.gc.setBackground(borderColor);
+			
+			if (Main.hullSelected)
+				e.gc.fillRectangle(bounds);
+			
+			e.gc.setAlpha(Main.btnCloaked.getSelection() ? alpha/3 : alpha);
+			if (image != null && Main.showHull)
+				e.gc.drawImage(image, 0, 0, image.getBounds().width, image.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
+			if (floorImage != null && Main.showFloor)
+				e.gc.drawImage(floorImage, 0, 0, floorImage.getBounds().width, floorImage.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
+			if (cloakImage != null && (Main.showHull || Main.showFloor) && Main.btnCloaked.getSelection()) {
+				e.gc.setAlpha(alpha);
+				e.gc.drawImage(cloakImage, 0, 0, cloakImage.getBounds().width, cloakImage.getBounds().height, bounds.x - 10, bounds.y - 10, bounds.width + 20, bounds.height + 20);
+			}
+			
+			if (Main.hullSelected && isPinned())
+				e.gc.drawImage(pin, bounds.x+5, bounds.y+5);
+	
+			e.gc.setAlpha(prevAlpha);
+			e.gc.setBackground(prevBg);
 		}
-		
-		if (Main.hullSelected && isPinned())
-			e.gc.drawImage(pin, bounds.x+5, bounds.y+5);
-
-		e.gc.setAlpha(prevAlpha);
-		e.gc.setBackground(prevBg);
 	}
 	
 	@Override

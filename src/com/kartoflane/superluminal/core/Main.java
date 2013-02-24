@@ -2,11 +2,15 @@ package com.kartoflane.superluminal.core;
 
 import java.awt.Desktop;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.zip.ZipFile;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.*;
@@ -23,6 +27,7 @@ import org.eclipse.swt.layout.FormAttachment;
 import com.kartoflane.superluminal.elements.Anchor;
 import com.kartoflane.superluminal.elements.CursorBox;
 import com.kartoflane.superluminal.elements.FTLDoor;
+import com.kartoflane.superluminal.elements.FTLGib;
 import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.elements.FTLRoom;
 import com.kartoflane.superluminal.elements.FTLShip;
@@ -38,13 +43,14 @@ import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.LayeredPainter;
 import com.kartoflane.superluminal.ui.ErrorDialog;
 import com.kartoflane.superluminal.ui.ExportDialog;
+import com.kartoflane.superluminal.ui.GibDialog;
+import com.kartoflane.superluminal.ui.GibPropertiesWindow;
 import com.kartoflane.superluminal.ui.NewShipWindow;
 import com.kartoflane.superluminal.ui.PropertiesWindow;
 import com.kartoflane.superluminal.ui.ShipBrowser;
 import com.kartoflane.superluminal.ui.ShipPropertiesWindow;
 
-public class Main
-{
+public class Main {
 		// === CONSTANTS
 	/**
 	 * Frequency of canvas redrawing (if constantRedraw == true)
@@ -69,7 +75,7 @@ public class Main
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "2013.02.18";
+	public final static String VERSION = "2013.02.23";
 	
 		// === Important objects
 	public static Shell shell;
@@ -80,6 +86,8 @@ public class Main
 	public static ExportDialog exDialog;
 	public static MessageBox box;
 	public static ErrorDialog erDialog;
+	public static GibDialog gibDialog;
+	public static GibPropertiesWindow gibWindow;
 	public static Transform currentTransform;
 	public static LayeredPainter layeredPainter;
 	public static CursorBox cursor;
@@ -124,20 +132,12 @@ public class Main
 	
 		// === Internal
 	public static boolean debug = false;
-	/**
-	 * when set to true, all ship data is pre-loaded into hashmaps/sets when the ship browser is opened for the first time.
-	 * no need to do this, only one ship is being used at any given time.
-	 */
-	public static boolean dataPreloading = false;
-	/**
-	 * Used when dataPreloading is enabled, set to true once data loading has been finished.
-	 */
-	public static boolean dataLoaded = false;
 	
 		// === Variables used to store a specific element out of a set (currently selected room, etc)
 	public static FTLRoom selectedRoom = null;
 	public static FTLDoor selectedDoor = null;
 	public static FTLMount selectedMount = null;
+	public static FTLGib selectedGib = null;
 	
 		// === Rectangle variables, used for various purposes.
 	private static Rectangle phantomRect = null;
@@ -179,6 +179,8 @@ public class Main
 
 	// === GUI elements' variables, for use in listeners and functions that reference them
 	public static Menu menuSystem;
+	public static Menu menuGib;
+	public static ArrayList<MenuItem> menuGibItems = new ArrayList<MenuItem>();
 	//private static Label helpIcon;
 	private static Label text;
 	private static Label mGridPosText;
@@ -218,6 +220,7 @@ public class Main
 	public static ToolItem tltmDoor;
 	public static ToolItem tltmMount;
 	public static ToolItem tltmSystem;
+	public static ToolItem tltmGib;
 
 	public static Anchor anchor;
 	public static GridBox gridBox;
@@ -230,7 +233,17 @@ public class Main
 	// =================================================================================================== //
 	
 	/*
+	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON RELEASES!
 	 * === TODO
+	 * 	- gibs editor
+			- animation
+	 * 	- .ftl loading - fix negative offset issue
+	 * 		- detect if ship has negative offset, if yes then move all rooms by that offset as much as possible, and set offset to 0
+	 * 	- when exporting room interior, look for glow files and export them too.
+	 * 		- room interior -> make it part of SysBox, not FTLRoom, also add possibility to link glow and other images, and automatically correctly export them.
+	 * 	- separate data/respath browser from ship browser -> show it when no config is found / data/respath is not found
+	 * 	- variables to store dialogs current directory - separate for each dialog
+	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 
 	 * == LOW PRIO:
 	 * 	- tools
@@ -245,15 +258,21 @@ public class Main
 	 * Pirate version of ships viewable, similar to cloak?
 	 * 
 	 * =========================================================================
-	 * - gibs -> male okienko gdzie ustawiasz kat (ko³o ze wskaznikiem), predkosc liniowa i katowa (slidery)
-	 * - gibs -> ujemne angular velocity obraca w lewa strone
-	 * 		  -> 10 angular velocty = pelen obrot
+	 * CHANGELOG:
+	 * 	- fixed augments list not loading properly
+	 * 	- fixed several crashes
+	 *  - fixed shield graphic getting misplaced when loading more images and loading projects
+	 *  - fixed shield graphic not having its position updated when new rooms were placed / removed / resized / moved
+	 *  - fixed "default resources list missing" bug
+	 * 	- added gibs editor
+	 *  - added possibility to load ships from .ftl packages; known bugs:
+	 *  	- ships which have negative offset values in shipname.txt are not being loaded correctly - you will have some adjusting to make
+	 *  	- custom weapons and drones are not being properly loaded yet;
 	 */
 	
 	// =================================================================================================== //
 	
-	public static void main(String[] args)
-	{
+	public static void main(String[] args) {
 		boolean enableCommandLine = true;
 		if (enableCommandLine) {
 			ArrayList<String> argsList = new ArrayList<String>();
@@ -263,6 +282,14 @@ public class Main
 			
 			debug = argsList.contains("-debug");
 			ShipIO.IOdebug = argsList.contains("-IOdebug");
+			if (argsList.contains("-log")) {
+				try {
+					System.setOut(new PrintStream(new FileOutputStream("debug.log")));
+					System.setErr(new PrintStream(new FileOutputStream("debug.log")));
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 		
 		try {
@@ -273,8 +300,7 @@ public class Main
 		}
 	}
 
-	public void open()
-	{
+	public void open() {
 		final Display display = Display.getDefault();
 		
 		shell = new Shell(SWT.SHELL_TRIM | SWT.BORDER);
@@ -329,19 +355,25 @@ public class Main
 		// used as a default, "null" transformation to fall back to in order to do regular drawing.
 		currentTransform = new Transform(shell.getDisplay());
 		
+		sysDialog = new PropertiesWindow(shell);
+		shipDialog = new ShipPropertiesWindow(shell);
+		erDialog = new ErrorDialog(shell);
+		gibDialog = new GibDialog(shell);
+		gibWindow = new GibPropertiesWindow(shell);
+		
 		createContents();
 		
 		shell.setFont(appFont);
 		
 		if (!ShipIO.isNull(dataPath) && !ShipIO.isNull(resPath))
 			ShipIO.fetchShipNames();
+		if (ShipIO.errors.size() > 0) {
+			erDialog.printErrors(ShipIO.errors);
+			erDialog.open();
+		}
 		
 		shell.setMinimumSize(GRID_W*35, GRID_H*35);
 		shell.open();
-		
-		sysDialog = new PropertiesWindow(shell);
-		shipDialog = new ShipPropertiesWindow(shell);
-		erDialog = new ErrorDialog(shell);
 		
 		shell.addControlListener(new ControlAdapter() {
 			public void controlResized(ControlEvent e) {
@@ -390,8 +422,7 @@ public class Main
 		}
 	}
 
-	protected void createContents()
-	{
+	protected void createContents() {
 		//highlightColor = shell.getDisplay().getSystemColor(SWT.COLOR_GREEN);
 		tempImage = SWTResourceManager.getImage(Main.class, "/org/eclipse/jface/dialogs/images/help.gif");
 		
@@ -407,6 +438,8 @@ public class Main
 		toolsMap.put("mount", tempImage);
 		tempImage = SWTResourceManager.getImage(Main.class, "/img/system.png");
 		toolsMap.put("system", tempImage);
+		tempImage = SWTResourceManager.getImage(Main.class, "/img/gib.png");
+		toolsMap.put("gib", tempImage);
 		
 		pinImage = SWTResourceManager.getImage(Main.class, "/img/pin.png");
 		tickImage = SWTResourceManager.getImage(Main.class, "/img/check.png");
@@ -427,11 +460,15 @@ public class Main
 		// === File -> New ship
 		final MenuItem mntmNewShip = new MenuItem(menu_file, SWT.NONE);
 		mntmNewShip.setText("New Ship \tCtrl + N");
-		
-		// === File -> Load ship
+
 		new MenuItem(menu_file, SWT.SEPARATOR);
+		// === File -> Load ship
 		final MenuItem mntmLoadShip = new MenuItem(menu_file, SWT.NONE);
 		mntmLoadShip.setText("Load Ship...\tCtrl + L");
+		
+		// === File -> Load ship from ftl
+		final MenuItem mntmLoadShipFTL = new MenuItem(menu_file, SWT.NONE);
+		mntmLoadShipFTL.setText("Load Ship From .ftl...");
 		
 		// === File -> Open project
 		final MenuItem mntmLoadShipProject = new MenuItem(menu_file, SWT.NONE);
@@ -578,7 +615,7 @@ public class Main
 		tltmPointer.setWidth(60);
 		tltmPointer.setSelection(true);
 		tltmPointer.setImage(toolsMap.get("pointer"));
-		tltmPointer.setToolTipText("Selection tool"
+		tltmPointer.setToolTipText("Selection Tool [Q]"
 									+ShipIO.lineDelimiter+" -Click to selet an object"
 									+ShipIO.lineDelimiter+" -Click and hold to move the object around"
 									+ShipIO.lineDelimiter+" -For rooms, click on a corner and drag to resize the room" 
@@ -589,7 +626,7 @@ public class Main
 		// === Container -> Tools -> Room creation
 		tltmRoom = new ToolItem(toolBar, SWT.RADIO);
 		tltmRoom.setWidth(60);
-		tltmRoom.setToolTipText("Room creation tool"
+		tltmRoom.setToolTipText("Room Creation Tool [W]"
 								+ShipIO.lineDelimiter+" -Click and drag to create a room"
 								+ShipIO.lineDelimiter+" -Hold down Shift and click to split rooms");
 		tltmRoom.setImage(toolsMap.get("room"));
@@ -597,14 +634,14 @@ public class Main
 		// === Container -> Tools -> Door creation
 		tltmDoor = new ToolItem(toolBar, SWT.RADIO);
 		tltmDoor.setWidth(60);
-		tltmDoor.setToolTipText("Door creation tool"
+		tltmDoor.setToolTipText("Door Creation Tool [E]"
 								+ShipIO.lineDelimiter+" - Hover over an edge of a room and click to place door");
 		tltmDoor.setImage(toolsMap.get("door"));
 		
 		// === Container -> Tools -> Weapon mounting
 		tltmMount = new ToolItem(toolBar, SWT.RADIO);
 		tltmMount.setWidth(60);
-		tltmMount.setToolTipText("Weapon mounting tool"
+		tltmMount.setToolTipText("Weapon Mounting Tool [R]"
 									+ShipIO.lineDelimiter+" -Click to place a weapon mount"
 									+ShipIO.lineDelimiter+" -Right-click to change the mount's rotation"
 									+ShipIO.lineDelimiter+" -Shift-click to mirror the mount along its axis"
@@ -615,17 +652,23 @@ public class Main
 		// === Container -> Tools -> System operating slot
 		tltmSystem = new ToolItem(toolBar, SWT.RADIO);
 		tltmSystem.setWidth(60);
-		tltmSystem.setToolTipText("System operating station tool"
+		tltmSystem.setToolTipText("System Station Tool [T]"
 									+ShipIO.lineDelimiter+" - Click to place an operating station (only mannable systems + medbay)"
 									+ShipIO.lineDelimiter+" - Right-click to reset the station to default"
 									+ShipIO.lineDelimiter+" - Shift-click to change facing of the station");
 		tltmSystem.setImage(toolsMap.get("system"));
+		
+		tltmGib = new ToolItem(toolBar, SWT.RADIO);
+		tltmGib.setWidth(60);
+		tltmGib.setToolTipText("Gib Editing Tool [G]");
+		tltmGib.setImage(toolsMap.get("gib"));
 
 		tltmPointer.setEnabled(false);
 		tltmRoom.setEnabled(false);
 		tltmDoor.setEnabled(false);
 		tltmMount.setEnabled(false);
 		tltmSystem.setEnabled(false);
+		tltmGib.setEnabled(false);
 		
 		// === Container -> buttonComposite
 		Composite composite = new Composite(toolBarHolder, SWT.NONE);
@@ -1063,6 +1106,10 @@ public class Main
 		mntmSysImage.setEnabled(false);
 		mntmSysImage.setText("Set Interior Image...");
 		
+	// === Gib Assignment Context Menu
+
+		menuGib = new Menu(canvas);
+		
 		// === Text Info Fields
 		
 		Composite textHolder = new Composite(shell, SWT.NONE);
@@ -1117,7 +1164,7 @@ public class Main
 	// === BOOKMARK: LISTENERS
 	// =======================
 		
-		Integer[] ignoredLayers = {LayeredPainter.SELECTION, LayeredPainter.GRID, LayeredPainter.ANCHOR, LayeredPainter.SYSTEM_ICON};
+		Integer[] ignoredLayers = {LayeredPainter.SELECTION, LayeredPainter.GRID, LayeredPainter.ANCHOR, LayeredPainter.SYSTEM_ICON, LayeredPainter.GIB};
 		final MouseInputAdapter mouseListener = new MouseInputAdapter(ignoredLayers);
 		canvas.addMouseMoveListener(mouseListener);
 		canvas.addMouseTrackListener(mouseListener);
@@ -1217,6 +1264,7 @@ public class Main
 					Main.ship.miniPath = path;
 				}
 				updateButtonImg();
+				canvas.setFocus();
 			}
 		});
 		
@@ -1235,6 +1283,7 @@ public class Main
 					canvas.redraw();
 				}
 				updateButtonImg();
+				canvas.setFocus();
 			}
 		});
 		
@@ -1251,12 +1300,13 @@ public class Main
 						Main.ship.cloakOverride = path;
 					
 					Main.ship.cloakPath = path;
-					btnCloaked.setEnabled(true);
+					btnCloaked.setEnabled(!tltmGib.getSelection());
 					
 					ShipIO.loadImage(path, "cloak");
 					canvas.redraw();
 				}
 				updateButtonImg();
+				canvas.setFocus();
 			}
 		});
 		
@@ -1290,6 +1340,7 @@ public class Main
 					
 					canvas.redraw();
 				}
+				canvas.setFocus();
 			}
 		});
 		
@@ -1308,6 +1359,7 @@ public class Main
 					canvas.redraw();
 				}
 				updateButtonImg();
+				canvas.setFocus();
 			}
 		});
 		
@@ -1318,6 +1370,7 @@ public class Main
 				
 				shell.setEnabled(true);
 				canvas.redraw();
+				canvas.setFocus();
 			}
 		});
 
@@ -1572,6 +1625,7 @@ public class Main
 						if (selectedRoom != null) selectedRoom.setPinned(!selectedRoom.isPinned());
 						if (selectedDoor != null) selectedDoor.setPinned(!selectedDoor.isPinned());
 						if (selectedMount != null) selectedMount.setPinned(!selectedMount.isPinned());
+						if (selectedGib != null) selectedGib.setPinned(!selectedGib.isPinned());
 						if (hullSelected) hullBox.setPinned(!hullBox.isPinned());
 						if (shieldSelected) shieldBox.setPinned(!shieldBox.isPinned());
 						
@@ -1580,19 +1634,54 @@ public class Main
 						canvas.redraw();
 						
 						// === tool hotkeys
-					} else if (e.stateMask == SWT.NONE && (e.keyCode == 'q' || e.keyCode == 'w' || e.keyCode == 'e' || e.keyCode == 'r' || e.keyCode == 't')) {
+					} else if (e.stateMask == SWT.NONE && (e.keyCode == 'q' || e.keyCode == 'w' || e.keyCode == 'e' || e.keyCode == 'r' || e.keyCode == 't' || e.keyCode == 'g')) {
+						deselectAll();
+						boolean prev = tltmGib.getSelection();
 						tltmPointer.setSelection(e.keyCode == 'q');
 						tltmRoom.setSelection(e.keyCode == 'w');
 						tltmDoor.setSelection(e.keyCode == 'e');
 						tltmMount.setSelection(e.keyCode == 'r');
 						tltmSystem.setSelection(e.keyCode == 't');
+						tltmGib.setSelection(e.keyCode == 'g');
+						
+						gibDialog.setVisible(tltmGib.getSelection());
+						if (prev && !tltmGib.getSelection()) gibWindow.escape();
+
+						btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath) && !tltmGib.getSelection());
+						if (prev || tltmGib.getSelection())
+							canvas.redraw();
 						
 						// === nudge function
 					} else if (e.keyCode == SWT.ARROW_UP || e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_LEFT || e.keyCode == SWT.ARROW_RIGHT) {
 						// sending it to an auxiliary function as to not make a clutter here
-						nudgeSelected(e.keyCode);
+						if (e.stateMask != SWT.CTRL)
+							nudgeSelected(e.keyCode);
 					}
 				}
+			}
+		});
+		
+		SelectionAdapter adapter = new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				if (gibDialog.isVisible()) {
+					gibDialog.setVisible(false);
+					btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath));
+					canvas.redraw();
+				}
+			}
+		};
+		
+		tltmPointer.addSelectionListener(adapter);
+		tltmRoom.addSelectionListener(adapter);
+		tltmDoor.addSelectionListener(adapter);
+		tltmMount.addSelectionListener(adapter);
+		tltmSystem.addSelectionListener(adapter);
+		
+		tltmGib.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				gibDialog.setVisible(true);
+				btnCloaked.setEnabled(false);
+				canvas.redraw();
 			}
 		});
 		
@@ -1743,7 +1832,37 @@ public class Main
 				}
 			}
 		});
-		
+
+	// === GIB CONTEXT MENU
+
+		menuGib.addMenuListener(new MenuAdapter() {
+			@Override
+			public void menuShown(MenuEvent e) {
+				for (MenuItem mntm : menuGibItems) {
+					if (!mntm.isDisposed())
+						mntm.dispose();
+					mntm = null;
+				}
+				menuGibItems.clear();
+				
+				MenuItem none = new MenuItem(menuGib, SWT.RADIO);
+				none.setText("None");
+				none.setSelection(Main.selectedMount != null);
+				addListenerToGibItem(none, null);
+				menuGibItems.add(none);
+				
+				MenuItem temp = null;
+				for (FTLGib g : ship.gibs) {
+					temp = new MenuItem(menuGib, SWT.RADIO);
+					temp.setText("Gib " + g.number);
+					temp.setSelection(Main.selectedMount != null && Main.selectedMount.gib == g.number);
+					if (temp.getSelection()) 
+						none.setSelection(false);
+					addListenerToGibItem(temp, g);
+					menuGibItems.add(temp);
+				}
+			}
+		});
 		
 	// === FILE MENU
 		
@@ -1773,6 +1892,7 @@ public class Main
 					tltmDoor.setEnabled(true);
 					tltmMount.setEnabled(true);
 					tltmSystem.setEnabled(true);
+					tltmGib.setEnabled(true);
 					btnHull.setEnabled(true);
 					if (ship.rooms.size() > 0) {
 						btnShields.setEnabled(ship.isPlayer);
@@ -1826,6 +1946,7 @@ public class Main
 							tltmDoor.setEnabled(true);
 							tltmMount.setEnabled(true);
 							tltmSystem.setEnabled(true);
+							tltmGib.setEnabled(true);
 							btnHull.setEnabled(true);
 							if (ship.rooms.size() > 0) {
 								btnShields.setEnabled(ship.isPlayer);
@@ -1863,7 +1984,7 @@ public class Main
 							}
 							//ShipIO.updateIndexImgMaps();
 							
-							btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath));
+							btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath) && !tltmGib.getSelection());
 							
 							currentPath = null;
 							
@@ -1873,7 +1994,7 @@ public class Main
 							canvas.redraw();
 						}
 						if (ShipIO.errors.size() == 0 && Main.ship != null) {
-							Main.print(((Main.ship.shipName!=null)?(Main.ship.shipClass + " - " + Main.ship.shipName):(Main.ship.shipClass)) + " [" + Main.ship.blueprintName + "] loaded successfully.");
+							Main.print(((Main.ship.shipName!=null)?(Main.ship.shipClass + " \"" + Main.ship.shipName + "\""):(Main.ship.shipClass)) + " [" + Main.ship.blueprintName + "] loaded successfully.");
 						} else if (ShipIO.errors.size() > 0) {
 							Main.print("Errors occured during ship loading; some data may be missing.");
 							Main.erDialog.printErrors(ShipIO.errors);
@@ -1883,6 +2004,143 @@ public class Main
 						}
 					}
 				});
+			}
+		});
+		
+		mntmLoadShipFTL.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+				String[] filterExtensions = new String[] {"*.ftl"};
+				dialog.setFilterExtensions(filterExtensions);
+				
+				if (ShipIO.isNull(interiorPath)) interiorPath = resPath;
+				dialog.setFilterPath(interiorPath);
+				
+				dialog.setText("");
+				String path = dialog.open();
+				
+				if (!ShipIO.isNull(path)) {
+					debug("Load ship from .ftl:", true);
+					mntmClose.notifyListeners(SWT.Selection, null);
+					
+					ZipFile zf = null;
+					try {
+						zf = new ZipFile(path);
+						File temp = new File("sprlmnl_tmp");
+						temp.mkdirs();
+
+						debug("\textracting contents of .ftl package to temporary directory... ", false);
+						ShipIO.unzipFileToDirectory(zf, temp);
+						debug("done", true);
+						
+						File unpacked_blueprints = null;
+						unpacked_blueprints = new File("sprlmnl_tmp" + ShipIO.pathDelimiter + "data" + ShipIO.pathDelimiter + "autoBlueprints.xml.append");
+						ArrayList<String> blueList = new ArrayList<String>();
+						ArrayList<String> tempList = null;
+						
+						debug("\tscanning " + unpacked_blueprints.getName() + " for ship blueprints... ", false);
+						tempList = (ArrayList<String>) ShipIO.preScanFTL(unpacked_blueprints);
+						debug("done" + ((blueList == null || blueList.size()==0) ? ", none found" : ""), true);
+						
+						if (tempList != null) blueList.addAll(tempList);
+						
+						if (blueList == null || blueList.size()==0) {
+							unpacked_blueprints = new File("sprlmnl_tmp" + ShipIO.pathDelimiter + "data" + ShipIO.pathDelimiter + "blueprints.xml.append");
+							debug("\tscanning " + unpacked_blueprints.getName() + " for ship blueprints... ", false);
+							blueList = (ArrayList<String>) ShipIO.preScanFTL(unpacked_blueprints);
+							debug("done" + ((blueList == null || blueList.size()==0) ? ", none found" : ""), true);
+							
+							if (tempList != null) blueList.addAll(tempList);
+						}
+						
+						if (blueList.size()!=0) {
+							if (blueList.size() == 1) {
+								ShipIO.loadShip(blueList.get(0), unpacked_blueprints);
+							} else {
+								// display dialog
+							}
+						} else {
+							Main.erDialog.print("Error: load ship from .ftl - no ship declarations found in the package. No data was loaded.");
+						}
+						
+						debug("\tdeleting temporary directory... ", false);
+						ShipIO.deleteFolderContents(temp);
+						if (temp.exists()) ShipIO.rmdir(temp);
+						debug("done", true);
+					} catch (IOException ex) {
+					} finally {
+						if (zf != null)
+							try {
+								zf.close();
+							} catch (IOException ex) {
+							}
+					}
+				}
+
+				if (ship != null) {
+					anchor.setVisible(true);
+					
+					tltmPointer.setEnabled(true);
+					tltmRoom.setEnabled(true);
+					tltmDoor.setEnabled(true);
+					tltmMount.setEnabled(true);
+					tltmSystem.setEnabled(true);
+					tltmGib.setEnabled(true);
+					btnHull.setEnabled(true);
+					if (ship.rooms.size() > 0) {
+						btnShields.setEnabled(ship.isPlayer);
+						btnShields.setToolTipText(null);
+					}
+					btnCloak.setEnabled(true);
+					btnFloor.setEnabled(ship.isPlayer);
+					btnMiniship.setEnabled(ship.isPlayer);
+					btnShipProperties.setEnabled(true);
+					updateButtonImg();
+					
+					mntmSaveShip.setEnabled(true);
+					mntmSaveShipAs.setEnabled(true);
+					mntmExport.setEnabled(true);
+					mntmClose.setEnabled(true);
+					
+					if (ship.isPlayer) {
+						if (loadShield && shieldImage != null && !shieldImage.isDisposed()) {
+							Rectangle temp = shieldImage.getBounds();
+							shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - temp.width/2 + ship.ellipse.x;
+							shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - temp.height/2 + ship.ellipse.y;
+							shieldEllipse.width = temp.width;
+							shieldEllipse.height = temp.height;
+						} else {
+							shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 - ship.ellipse.width + ship.ellipse.x;
+							shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 - ship.ellipse.height + ship.ellipse.y;
+							shieldEllipse.width = ship.ellipse.width*2;
+							shieldEllipse.height = ship.ellipse.height*2;
+						}
+					} else {
+						shieldEllipse.width = ship.ellipse.width*2;
+						shieldEllipse.height = ship.ellipse.height*2;
+						shieldEllipse.x = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().x/2 + ship.ellipse.x - ship.ellipse.width;
+						shieldEllipse.y = ship.anchor.y + ship.offset.y*35 + ship.computeShipSize().y/2 + ship.ellipse.y - ship.ellipse.height + 110;
+					}
+					//ShipIO.updateIndexImgMaps();
+					
+					btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath) && !tltmGib.getSelection());
+					
+					currentPath = null;
+					
+					mntmConToPlayer.setEnabled(!ship.isPlayer);
+					mntmConToEnemy.setEnabled(ship.isPlayer);
+					
+					canvas.redraw();
+				}
+				if (ShipIO.errors.size() == 0 && Main.ship != null) {
+					Main.print(((Main.ship.shipName!=null)?(Main.ship.shipClass + " - " + Main.ship.shipName):(Main.ship.shipClass)) + " [" + Main.ship.blueprintName + "] loaded successfully.");
+				} else if (ShipIO.errors.size() > 0) {
+					Main.print("Errors occured during ship loading; some data may be missing.");
+					Main.erDialog.printErrors(ShipIO.errors);
+					Main.erDialog.open();
+					
+					ShipIO.errors.clear();
+				}
 			}
 		});
 		
@@ -1935,6 +2193,7 @@ public class Main
 					tltmDoor.setEnabled(true);
 					tltmMount.setEnabled(true);
 					tltmSystem.setEnabled(true);
+					tltmGib.setEnabled(true);
 					btnHull.setEnabled(true);
 					if (ship.rooms.size() > 0) {
 						btnShields.setEnabled(ship.isPlayer);
@@ -1966,7 +2225,7 @@ public class Main
 						shieldEllipse.y = ship.anchor.x + ship.offset.x*35 + ship.computeShipSize().y/2 + ship.ellipse.y - ship.ellipse.height + 110;
 					}
 					
-					btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath));
+					btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath) && !tltmGib.getSelection());
 
 					mntmSaveShip.setEnabled(true);
 					mntmSaveShipAs.setEnabled(true);
@@ -1995,24 +2254,34 @@ public class Main
 		mntmClose.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (ship != null) {
-					for (FTLRoom r : ship.rooms) {
+					for (MenuItem mntm : menuGibItems) {
+						if (!mntm.isDisposed())
+							mntm.dispose();
+						mntm = null;
+					}
+					menuGibItems.clear();
+					
+					for (FTLRoom r : ship.rooms)
 						r.dispose();
-					}
-					for (FTLDoor d : ship.doors) {
+					for (FTLDoor d : ship.doors)
 						d.dispose();
-					}
-					for (FTLMount m : ship.mounts) {
+					for (FTLMount m : ship.mounts)
 						m.dispose();
-					}
+					for (FTLGib g : ship.gibs)
+						g.dispose();
 					
 					ship.rooms.clear();
 					ship.doors.clear();
 					ship.mounts.clear();
+					ship.gibs.clear();
 					
 					hullBox.setHullImage(null);
 					hullBox.setFloorImage(null);
 					hullBox.setCloakImage(null);
 					shieldBox.setImage(null, true);
+					
+					gibDialog.clearList();
+					gibDialog.letters.clear();
 				}
 				
 				btnCloaked.setEnabled(false);
@@ -2037,6 +2306,7 @@ public class Main
 				tltmDoor.setEnabled(false);
 				tltmMount.setEnabled(false);
 				tltmSystem.setEnabled(false);
+				tltmGib.setEnabled(false);
 				btnHull.setEnabled(false);
 				btnShields.setEnabled(false);
 				btnCloak.setEnabled(false);
@@ -2379,7 +2649,7 @@ public class Main
 
 	public void nudgeSelected(int event) {
 		// check so that if none is selected the function won't even bother going in
-		if (hullSelected || shieldSelected || selectedMount != null || selectedRoom != null) {
+		if (hullSelected || shieldSelected || selectedGib != null || selectedMount != null || selectedRoom != null) {
 			switch (event) {
 				case (SWT.ARROW_UP):
 					if (selectedRoom != null) {
@@ -2389,6 +2659,7 @@ public class Main
 							selectedRoom.setLocation(selectedRoom.getLocation().x, selectedRoom.getLocation().y-35);
 					}
 					if (selectedMount != null) selectedMount.setLocation(selectedMount.getLocation().x, selectedMount.getLocation().y - ((modShift) ? 35 : 1));
+					if (selectedGib != null && tltmGib.getSelection()) selectedGib.setLocationAbsolute(selectedGib.getLocation().x, selectedGib.getLocation().y - ((modShift) ? 35 : 1));
 					if (hullSelected) hullBox.setLocation(hullBox.getLocation().x, hullBox.getLocation().y - ((modShift) ? 35 : 1));
 					if (shieldSelected) shieldBox.setLocation(shieldBox.getLocation().x, shieldBox.getLocation().y - ((modShift) ? 35 : 1));
 					break;
@@ -2400,6 +2671,7 @@ public class Main
 							selectedRoom.setLocation(selectedRoom.getLocation().x, selectedRoom.getLocation().y+35);
 					}
 					if (selectedMount != null) selectedMount.setLocation(selectedMount.getLocation().x, selectedMount.getLocation().y + ((modShift) ? 35 : 1));
+					if (selectedGib != null && tltmGib.getSelection()) selectedGib.setLocationAbsolute(selectedGib.getLocation().x, selectedGib.getLocation().y + ((modShift) ? 35 : 1));
 					if (hullSelected) hullBox.setLocation(hullBox.getLocation().x, hullBox.getLocation().y + ((modShift) ? 35 : 1));
 					if (shieldSelected) shieldBox.setLocation(shieldBox.getLocation().x, shieldBox.getLocation().y + ((modShift) ? 35 : 1));
 					break;
@@ -2411,6 +2683,7 @@ public class Main
 							selectedRoom.setLocation(selectedRoom.getLocation().x-35, selectedRoom.getLocation().y);
 					}
 					if (selectedMount != null) selectedMount.setLocation(selectedMount.getLocation().x - ((modShift) ? 35 : 1), selectedMount.getLocation().y);
+					if (selectedGib != null && tltmGib.getSelection()) selectedGib.setLocationAbsolute(selectedGib.getLocation().x - ((modShift) ? 35 : 1), selectedGib.getLocation().y);
 					if (hullSelected) hullBox.setLocation(hullBox.getLocation().x - ((modShift) ? 35 : 1), hullBox.getLocation().y);
 					if (shieldSelected) shieldBox.setLocation(shieldBox.getLocation().x - ((modShift) ? 35 : 1), shieldBox.getLocation().y);
 					break;
@@ -2422,6 +2695,7 @@ public class Main
 							selectedRoom.setLocation(selectedRoom.getLocation().x+35, selectedRoom.getLocation().y);
 					}
 					if (selectedMount != null) selectedMount.setLocation(selectedMount.getLocation().x + ((modShift) ? 35 : 1), selectedMount.getLocation().y);
+					if (selectedGib != null && tltmGib.getSelection()) selectedGib.setLocationAbsolute(selectedGib.getLocation().x + ((modShift) ? 35 : 1), selectedGib.getLocation().y);
 					if (hullSelected) hullBox.setLocation(hullBox.getLocation().x + ((modShift) ? 35 : 1), hullBox.getLocation().y);
 					if (shieldSelected) shieldBox.setLocation(shieldBox.getLocation().x + ((modShift) ? 35 : 1), shieldBox.getLocation().y);
 					break;
@@ -2494,6 +2768,14 @@ public class Main
 	}
 	
 	public static boolean isSystemAssigned(Systems sys) {
+		for (FTLRoom rm : ship.rooms) {
+			if (rm.getSystem() == sys)
+				return true;
+		}
+		return false;
+	}
+	
+	public static boolean isSystemAssigned(Systems sys, FTLShip ship) {
 		for (FTLRoom rm : ship.rooms) {
 			if (rm.getSystem() == sys)
 				return true;
@@ -2671,7 +2953,7 @@ public class Main
 	}
 	
 	public static void updateSelectedPosText() {
-		boolean enable = selectedMount != null || selectedRoom != null || hullSelected || shieldSelected;
+		boolean enable = selectedMount != null || selectedRoom != null || selectedGib != null || hullSelected || shieldSelected;
 		
 		txtX.setEnabled(enable);
 		btnXplus.setEnabled(enable);
@@ -2694,6 +2976,9 @@ public class Main
 		} else if (selectedRoom != null) {
 			txtX.setText(""+(selectedRoom.getBounds().x/35+1));
 			txtY.setText(""+(selectedRoom.getBounds().y/35+1));
+		} else if (selectedGib != null) {
+			txtX.setText(""+(selectedGib.getBounds().x));
+			txtY.setText(""+(selectedGib.getBounds().y));
 		} else if (hullSelected) {
 			txtX.setText(""+(ship.imageRect.x));
 			txtY.setText(""+(ship.imageRect.y));
@@ -2737,6 +3022,13 @@ public class Main
 					selectedRoom.setLocation(x, y);
 					//updateCorners(selectedRoom);
 				}
+			} else if (selectedGib != null && (!selectedGib.isPinned() || arbitraryPosOverride)) {
+				if (x >= GRID_W*35) x = GRID_W*35-15;
+				if (y >= GRID_H*35) y = GRID_H*35-15;
+				if (x <= -selectedGib.getBounds().width) x = 15-selectedGib.getBounds().width;
+				if (y <= -selectedGib.getBounds().height) y = 15-selectedGib.getBounds().height;
+				
+				selectedGib.setLocationAbsolute(x, y);
 			} else if (hullSelected && (!ship.hullPinned || arbitraryPosOverride)) {
 				if (x >= GRID_W*35) x = GRID_W*35-15;
 				if (y >= GRID_H*35) y = GRID_H*35-15;
@@ -2772,9 +3064,14 @@ public class Main
 		text.setText(lastMsg);
 	}
 	
-	public static void debug(String msg) {
-		if (debug)
-			System.out.println(msg);
+	public static void debug(String msg, boolean ln) {
+		if (debug) {
+			if (ln) {
+				System.out.println(msg);
+			} else {
+				System.out.print(msg);
+			}
+		}
 	}
 	
 	public static void updatePainter() {
@@ -2800,8 +3097,22 @@ public class Main
 		for (FTLMount m : ship.mounts)
 			m.setLocation(ship.imageRect.x + m.pos.x, ship.imageRect.y + m.pos.y);
 		
+		for (FTLGib g : ship.gibs)
+			g.setLocationRelative(g.position.x, g.position.y);
+		
 		showRooms();
 		showMounts();
+		
+		Point p = ship.findLowBounds();
+		Point pt = ship.findHighBounds();
+		p.x = p.x + (pt.x - p.x)/2;
+		p.y = p.y + (pt.y - p.y)/2;
+		pt = shieldBox.getLocation();
+		pt.x += shieldBox.getBounds().width/2; pt.y += shieldBox.getBounds().height/2;
+		p.x = p.x - pt.x;
+		p.y = p.y - pt.y;
+		shieldBox.setLocation(shieldBox.getLocation().x + p.x + ship.ellipse.x, shieldBox.getLocation().y + p.y + ship.ellipse.y + ((!ship.isPlayer) ? 110 : 0));
+		
 		shieldBox.setVisible(showShield);
 		hullBox.setVisible(showHull || showFloor);
 	}
@@ -2824,6 +3135,11 @@ public class Main
 			for (FTLMount m : ship.mounts) {
 				layeredPainter.add(m, LayeredPainter.MOUNT);
 			}
+			for (FTLGib g : ship.gibs) {
+				layeredPainter.addAsFirst(g, LayeredPainter.GIB);
+				gibDialog.letters.add(g.ID);
+			}
+			gibDialog.refreshList();
 		}
 	}
 	
@@ -2835,18 +3151,21 @@ public class Main
 				d.stripUnserializable();
 			for (FTLMount m : ship.mounts)
 				m.stripUnserializable();
+			for (FTLGib g : ship.gibs)
+				g.stripUnserializable();
 		}
 	}
 	
 	public static void loadUnserializable() {
 		if (ship != null) {
-			for (FTLRoom r : ship.rooms) {
+			for (FTLRoom r : ship.rooms)
 				r.loadUnserializable();
-			}
 			for (FTLDoor d : ship.doors)
 				d.loadUnserializable();
 			for (FTLMount m : ship.mounts)
 				m.loadUnserializable();
+			for (FTLGib g : ship.gibs)
+				g.loadUnserializable();
 		}
 	}
 	
@@ -2871,6 +3190,28 @@ public class Main
 				m.setVisible(showMounts);
 			}
 		}
+	}
+	
+	public static void deselectAll() {
+		if (selectedDoor != null) selectedDoor.deselect();
+		if (selectedRoom != null) selectedRoom.deselect();
+		if (selectedMount != null) selectedMount.deselect();
+		if (selectedGib != null) selectedGib.deselect();
+		if (hullSelected) hullBox.deselect();
+		if (shieldSelected) shieldBox.deselect();
+	}
+	
+	private static void addListenerToGibItem(MenuItem mntm, FTLGib g) {
+		final int number = (g==null) ? 0 : g.number;
+		SelectionAdapter adapter = new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				if (Main.selectedMount != null) {
+					Main.selectedMount.gib = number;
+				}
+			}
+		};
+		
+		mntm.addSelectionListener(adapter);
 	}
 }
 

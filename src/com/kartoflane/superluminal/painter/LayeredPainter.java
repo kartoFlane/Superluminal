@@ -20,10 +20,11 @@ public class LayeredPainter implements PaintListener {
 	public static final Integer ROOM_INTERIOR = new Integer(5);
 	public static final Integer SYSTEM_ICON = new Integer(6);
 	public static final Integer DOOR = new Integer(7);
-	public static final Integer OVERLAY = new Integer(8);
-	public static final Integer ANCHOR = new Integer(9);
-	public static final Integer SELECTION = new Integer(10);
-	private static Integer[] layerIds = {SHIELD, MOUNT, HULL, GRID, ROOM, ROOM_INTERIOR, SYSTEM_ICON, DOOR, OVERLAY, ANCHOR, SELECTION};
+	public static final Integer GIB = new Integer(8);
+	public static final Integer OVERLAY = new Integer(9);
+	public static final Integer ANCHOR = new Integer(10);
+	public static final Integer SELECTION = new Integer(11);
+	private static Integer[] layerIds = {SHIELD, MOUNT, HULL, GRID, ROOM, ROOM_INTERIOR, SYSTEM_ICON, DOOR, GIB, OVERLAY, ANCHOR, SELECTION};
 	
 	private HashMap<Integer, ArrayList<PaintBox>> layerMap = new HashMap<Integer, ArrayList<PaintBox>>();
 	
@@ -39,6 +40,11 @@ public class LayeredPainter implements PaintListener {
 	public void add(PaintBox box, Integer layer) {
 		ArrayList<PaintBox> boxList = layerMap.get(layer);
 		boxList.add(box);
+	}
+	
+	public void addAsFirst(PaintBox box, Integer layer) {
+		ArrayList<PaintBox> boxList = layerMap.get(layer);
+		boxList.add(0, box);
 	}
 
 	public void remove(PaintBox box) {
@@ -68,6 +74,16 @@ public class LayeredPainter implements PaintListener {
 		return null;
 	}
 
+	public PaintBox getBottomBoxAt(int x, int y, Integer layerId) {
+		PaintBox tempBox = null;
+		for (PaintBox box : layerMap.get(layerId)) {
+			if (box.isVisible() && box.getBounds().contains(x, y)) {
+				tempBox = box;
+			}
+		}
+		return tempBox;
+	}
+
 	public void paintControl(PaintEvent e) {
 		if (!suppress) {
 			Rectangle dirtyRect = new Rectangle(e.x-2, e.y-2, e.width+4, e.height+4);
@@ -79,6 +95,8 @@ public class LayeredPainter implements PaintListener {
 						box.redraw(e);
 					}
 				}
+				if (Main.tltmGib.getSelection() && Main.selectedGib != null)
+					Main.selectedGib.paintOverlay(e);
 			}
 		}
 		e.gc.dispose();

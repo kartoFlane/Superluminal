@@ -2,6 +2,7 @@ package com.kartoflane.superluminal.elements;
 
 import java.io.Serializable;
 
+import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Rectangle;
 
 import com.kartoflane.superluminal.core.Main;
@@ -33,6 +34,11 @@ public class SystemBox extends ImageBox implements Serializable {
 			Main.canvasRedraw(oldBounds,false);
 			Main.canvasRedraw(bounds, false);
 		}
+	}
+	
+	public void paintControl(PaintEvent e) {
+		if (!Main.tltmGib.getSelection())
+			super.paintControl(e);
 	}
 	
 	public void setLevel(int l) {
