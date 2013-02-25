@@ -196,6 +196,10 @@ public class ShipPropertiesWindow extends Dialog
 		btnExplicit.setSelection(!Main.ship.weaponsBySet);
 		
 		listWeapons.removeAll();
+
+		for (String s : ShipIO.weaponSetMap.keySet()) {
+			presets.add(s);
+		}
 		
 		if (Main.ship.weaponsBySet) {
 			presets.setEnabled(true);
@@ -240,6 +244,10 @@ search:		for (String s : presets.getItems()) {
 		btnExplicitDr.setSelection(!Main.ship.dronesBySet);
 		
 		listDrones.removeAll();
+
+		for (String s : ShipIO.droneSetMap.keySet()) {
+			presetsDr.add(s);
+		}
 		
 		if (Main.ship.dronesBySet) {
 			presetsDr.setEnabled(true);
