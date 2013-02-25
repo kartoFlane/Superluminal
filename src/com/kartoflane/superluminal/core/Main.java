@@ -28,6 +28,7 @@ import com.kartoflane.superluminal.elements.Anchor;
 import com.kartoflane.superluminal.elements.CursorBox;
 import com.kartoflane.superluminal.elements.FTLDoor;
 import com.kartoflane.superluminal.elements.FTLGib;
+import com.kartoflane.superluminal.elements.FTLItem;
 import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.elements.FTLRoom;
 import com.kartoflane.superluminal.elements.FTLShip;
@@ -167,11 +168,11 @@ public class Main {
 	private static String lastMsg = "";
 	private static String interiorPath = "";
 	private static String ftlLoadPath = "";
+	private static File temporaryFiles = null;
 	/**
 	 * Path of current project file, for quick saving via Ctrl+S
 	 */
 	public static String currentPath = null;
-
 	/**
 	 * Contains room IDs currently in use.
 	 */
@@ -241,7 +242,7 @@ public class Main {
 	 * === TODO
 	 * 	- gibs editor - animation
 	 * 	- .ftl loading - fix negative offset issues
-			- shield graphic seems to offset one grid towards top when ship w/ negative offset is loaded
+			- shield graphic seems to offset one grid towards top when ship w/ negative offset is loaded - but not always, wth
 	 * 		- !! something's fucked up with loading; it's saying that the blueprint is not found in the file, even though it is there. WTF.
 	 * 		- !! loading weapons, drones, augments from the package
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
@@ -2046,14 +2047,15 @@ public class Main {
 					debug("Load ship from .ftl:", true);
 					mntmClose.notifyListeners(SWT.Selection, null);
 					
+					temporaryFiles = new File("sprlmnl_tmp");
+					temporaryFiles.mkdirs();
+					
 					ZipFile zf = null;
 					try {
 						zf = new ZipFile(path);
-						File temp = new File("sprlmnl_tmp");
-						temp.mkdirs();
 
 						debug("\textracting contents of .ftl package to temporary directory... ", false);
-						ShipIO.unzipFileToDirectory(zf, temp);
+						ShipIO.unzipFileToDirectory(zf, temporaryFiles);
 						debug("done", true);
 						
 						File unpacked_blueprints = null;
@@ -2077,6 +2079,19 @@ public class Main {
 						}
 						
 						if (blueList.size()!=0) {
+							// loading weapons, drones and augments contained within package
+							// store old maps to temporary variables so that they can be restored once the ship is closed.
+							ShipIO.oldWeaponMap = new HashMap<String, FTLItem>(ShipIO.weaponMap);
+							ShipIO.oldDroneMap = new HashMap<String, FTLItem>(ShipIO.droneMap);
+							ShipIO.oldAugMap = new HashMap<String, FTLItem>(ShipIO.augMap);
+							ShipIO.oldWeaponSetMap = new HashMap<String, HashSet<String>>(ShipIO.weaponSetMap);
+							ShipIO.oldDroneSetMap = new HashMap<String, HashSet<String>>(ShipIO.droneSetMap);
+							
+							// load data from .ftl package into maps
+							debug("\tloading declarations from package...", true);
+							ShipIO.loadDeclarationsFromFile(unpacked_blueprints);
+							debug("\t\tdone", true);
+							
 							if (blueList.size() == 1) {
 								ShipIO.loadShip(blueList.get(0), unpacked_blueprints);
 							} else {
@@ -2085,11 +2100,6 @@ public class Main {
 						} else {
 							Main.erDialog.print("Error: load ship from .ftl - no ship declarations found in the package. No data was loaded.");
 						}
-						
-						debug("\tdeleting temporary directory... ", false);
-						ShipIO.deleteFolderContents(temp);
-						if (temp.exists()) ShipIO.rmdir(temp);
-						debug("done", true);
 					} catch (IOException ex) {
 					} finally {
 						if (zf != null)
@@ -2318,6 +2328,23 @@ public class Main {
 					
 					gibDialog.clearList();
 					gibDialog.letters.clear();
+				}
+				
+				if (ShipIO.oldWeaponMap.size() > 0) {
+					ShipIO.clearMaps();
+					ShipIO.weaponMap.putAll(ShipIO.oldWeaponMap);
+					ShipIO.droneMap.putAll(ShipIO.oldDroneMap);
+					ShipIO.augMap.putAll(ShipIO.oldAugMap);
+					ShipIO.weaponSetMap.putAll(ShipIO.oldWeaponSetMap);
+					ShipIO.droneSetMap.putAll(ShipIO.oldDroneSetMap);
+				}
+				
+				if (temporaryFiles != null) {
+					debug("\tdeleting temporary directory... ", false);
+					ShipIO.deleteFolderContents(temporaryFiles);
+					if (temporaryFiles.exists()) ShipIO.rmdir(temporaryFiles);
+					debug("done", true);
+					temporaryFiles = null;
 				}
 				
 				btnCloaked.setEnabled(false);

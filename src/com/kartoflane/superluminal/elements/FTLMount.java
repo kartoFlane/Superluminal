@@ -94,7 +94,6 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 			this.path = path;
 			image = Cache.checkOutImageAbsolute(this, this.path);
 		}
-		
 	}
 	
 	public void setImage(String path) {
@@ -108,7 +107,9 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		this.frameW = frameW;
 		if (image == null) {
 			Main.erDialog.add("Error: tried to load " + path + " as weapon image, but no file was found. Reverting to default image.");
-			setImage(null, true);
+			setImage(null);
+			setSize((rotate ? image.getBounds().height : image.getBounds().width), (!rotate ? image.getBounds().height : image.getBounds().width));
+			return;
 		}
 		setSize((rotate ? image.getBounds().height : frameW), (!rotate ? image.getBounds().height : frameW));
 		//setRotated(rotate);

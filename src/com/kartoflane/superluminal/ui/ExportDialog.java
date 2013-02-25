@@ -57,7 +57,7 @@ public class ExportDialog extends Dialog
 		replaceCombo.setVisible(btnReplace.getSelection());
 
 		if (!ShipIO.isNull(Main.dataPath) && (ShipIO.playerBlueprintNames == null || ShipIO.playerBlueprintNames.size() == 0)) {
-			ShipIO.loadDeclarationsSilent();
+			ShipIO.loadDeclarationsFromFile(null);
 		}
 		
 		SortedSet<String> ts = new TreeSet<String>(); 

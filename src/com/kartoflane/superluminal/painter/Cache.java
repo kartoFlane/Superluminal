@@ -90,7 +90,7 @@ public class Cache {
 						image = new Image(Display.getCurrent(), path);
 						cachedImagesMap.put(path, image);
 					} else {
-						Main.erDialog.add(String.format("%s: Error loading \"%s\": file not found.", customer.getClass().getSimpleName(), f.getName()));
+						//Main.erDialog.add(String.format("%s: Error loading \"%s\": file not found.", customer.getClass().getSimpleName(), f.getName()));
 					}
 				} catch (IllegalArgumentException e) {
 					Main.erDialog.add(String.format("%s: Error loading \"%s\": null argument.", customer.getClass().getSimpleName(), path));

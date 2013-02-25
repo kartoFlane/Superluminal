@@ -40,7 +40,7 @@ public class ErrorDialog
 
 	private void createContents()
 	{
-		shell = new Shell(Main.shell, SWT.BORDER | SWT.TITLE);
+		shell = new Shell(Main.shell, SWT.BORDER | SWT.RESIZE | SWT.TITLE);
 		shell.setSize(500, 230);
 		shell.setText(Main.APPNAME + " - Errors");
 		GridLayout gl_shell = new GridLayout(1, false);
@@ -67,7 +67,7 @@ public class ErrorDialog
 		gl_composite.marginRight = 5;
 		gl_composite.marginLeft = 5;
 		composite.setLayout(gl_composite);
-		GridData gd_composite = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
+		GridData gd_composite = new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1);
 		gd_composite.minimumWidth = 5;
 		composite.setLayoutData(gd_composite);
 		
