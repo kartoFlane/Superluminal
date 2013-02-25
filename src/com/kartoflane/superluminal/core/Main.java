@@ -243,7 +243,6 @@ public class Main {
 	 * 		- detect if ship has negative offset, if yes then move all rooms by that offset as much as possible, and set offset to 0
 	 * 		- something's fucked up with loading; it's saying that the blueprint is not found in the file, even though it is there. WTF.
 	 * 	- weapon i drone presets are not being loaded
-	 * 	- variables to store dialogs current directory - separate for each dialog
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 
 	 * == LOW PRIO:
@@ -257,9 +256,10 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * 	- glow images can now be exported along with the interior image they are associated with, however they HAVE TO BE NAMED ACCORDINGLY
+	 * 	- glow images can now be exported along with the interior image they are associated with, however they HAVE TO BE NAMED ACCORDINGLY -> in the same folder as base interior image and named <name>_glow
 	 * 	- archives are now unpacked automatically by the editor. The only thing you have to do is point it to original, packed, .dat archives inside /resources/ folder in your FTL installation.
-	 * 
+	 *  - images that cannot be overriden are now always exported, default or not
+	 *  - dialogs should now open to correct locations and retain their own paths
 	 */
 	
 	// =================================================================================================== //
@@ -482,7 +482,7 @@ public class Main {
 		new MenuItem(menu_file, SWT.SEPARATOR);
 		
 		// === File -> Change archives
-		MenuItem mntmArchives = new MenuItem(menu_file, SWT.NONE);
+		final MenuItem mntmArchives = new MenuItem(menu_file, SWT.NONE);
 		mntmArchives.setText("Change Archives...");
 		
 		new MenuItem(menu_file, SWT.SEPARATOR);
@@ -1268,7 +1268,8 @@ public class Main {
 				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
+				dialog.setFilterPath(ship.miniPath);
+				dialog.setFileName(ship.miniPath);
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path)) {
@@ -1284,7 +1285,8 @@ public class Main {
 				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
+				dialog.setFilterPath(ship.floorPath);
+				dialog.setFileName(ship.floorPath);
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path)) {
@@ -1303,7 +1305,8 @@ public class Main {
 				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
+				dialog.setFilterPath(ship.cloakPath);
+				dialog.setFileName(ship.cloakPath);
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path)) {
@@ -1326,7 +1329,8 @@ public class Main {
 				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(ship.shieldPath == null ? resPath : ship.shieldPath);
+				dialog.setFilterPath(ship.shieldPath);
+				dialog.setFileName(ship.shieldPath);
 				
 				String path = dialog.open();
 				Main.ship.shieldOverride = null;
@@ -1361,8 +1365,10 @@ public class Main {
 				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
-				dialog.setFilterPath(resPath);
+				dialog.setFilterPath(ship.imagePath);
+				dialog.setFileName(ship.imagePath);
 				String path = dialog.open();
+				
 				
 				if (!ShipIO.isNull(path)) {
 					Main.ship.imagePath = path;
@@ -1832,10 +1838,9 @@ public class Main {
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
 				
-				if (ShipIO.isNull(interiorPath)) interiorPath = resPath;
 				dialog.setFilterPath(interiorPath);
-				
-				dialog.setText("");
+				dialog.setFileName(interiorPath);
+
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path) && selectedRoom != null) {
@@ -1929,6 +1934,7 @@ public class Main {
 					mntmSaveShipAs.setEnabled(true);
 					mntmExport.setEnabled(true);
 					mntmClose.setEnabled(true);
+					mntmArchives.setEnabled(false);
 					
 					currentPath = null;
 					
@@ -1974,6 +1980,7 @@ public class Main {
 							mntmSaveShipAs.setEnabled(true);
 							mntmExport.setEnabled(true);
 							mntmClose.setEnabled(true);
+							mntmArchives.setEnabled(false);
 							
 							if (ship.isPlayer) {
 								if (loadShield && shieldImage != null && !shieldImage.isDisposed()) {
@@ -2113,6 +2120,7 @@ public class Main {
 					mntmSaveShipAs.setEnabled(true);
 					mntmExport.setEnabled(true);
 					mntmClose.setEnabled(true);
+					mntmArchives.setEnabled(false);
 					
 					if (ship.isPlayer) {
 						if (loadShield && shieldImage != null && !shieldImage.isDisposed()) {
@@ -2243,6 +2251,7 @@ public class Main {
 					mntmSaveShipAs.setEnabled(true);
 					mntmExport.setEnabled(true);
 					mntmClose.setEnabled(true);
+					mntmArchives.setEnabled(false);
 					
 					mntmConToPlayer.setEnabled(!ship.isPlayer);
 					mntmConToEnemy.setEnabled(ship.isPlayer);
@@ -2343,6 +2352,7 @@ public class Main {
 				mntmSaveShipAs.setEnabled(false);
 				mntmExport.setEnabled(false);
 				mntmClose.setEnabled(false);
+				mntmArchives.setEnabled(true);
 
 				ship = null;
 				

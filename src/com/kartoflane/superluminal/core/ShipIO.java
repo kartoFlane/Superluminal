@@ -2195,12 +2195,12 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 		String[] filterExtensions = new String[] {"*.shp"};
 		dialog.setFilterExtensions(filterExtensions);
 		dialog.setFilterPath(Main.projectPath);
-		dialog.setText("");
+		dialog.setFileName(Main.projectPath);
 		
 		Main.currentPath = dialog.open();
 		
 		if (Main.currentPath != null) {
-			Main.projectPath = Main.currentPath.substring(Main.currentPath.lastIndexOf(pathDelimiter));
+			Main.projectPath = Main.currentPath;
 			saveShipProject(Main.currentPath);
 		}
 	}
@@ -2212,13 +2212,13 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 		String[] filterExtensions = new String[] {"*.shp"};
 		dialog.setFilterExtensions(filterExtensions);
 		dialog.setFilterPath(Main.projectPath);
-		dialog.setText("");
+		dialog.setFileName(Main.projectPath);
 		
 		Main.currentPath = dialog.open();
 		
 		if (Main.currentPath != null) {
 			String s = Main.currentPath;
-			Main.projectPath = Main.currentPath.substring(Main.currentPath.lastIndexOf(pathDelimiter));
+			Main.projectPath = Main.currentPath;
 			Main.mntmClose.notifyListeners(SWT.Selection, null);
 			Main.currentPath = s;
 			loadShipProject(Main.currentPath);

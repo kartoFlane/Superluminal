@@ -91,8 +91,7 @@ public class ExportDialog extends Dialog
 		}
 	}
 
-	private void createContents()
-	{
+	private void createContents() {
 		shell = new Shell(getParent(), SWT.BORDER | SWT.TITLE);
 		shell.setSize(270, 260);
 		shell.setText(getText());
@@ -265,6 +264,8 @@ public class ExportDialog extends Dialog
 		btnBrowse.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				DirectoryDialog dialog = new DirectoryDialog(shell);
+				dialog.setFilterPath(Main.exportPath);
+				
 				Main.exportPath = dialog.open();
 				
 				if (!ShipIO.isNull(Main.exportPath)) {
