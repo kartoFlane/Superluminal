@@ -166,6 +166,7 @@ public class Main {
 	public static Rectangle[] corners = new Rectangle[4];
 	private static String lastMsg = "";
 	private static String interiorPath = "";
+	private static String ftlLoadPath = "";
 	/**
 	 * Path of current project file, for quick saving via Ctrl+S
 	 */
@@ -239,12 +240,15 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES!
 	 * === TODO
 	 * 	- gibs editor - animation
-	 * 	- .ftl loading - fix negative offset issue
-	 * 		- detect if ship has negative offset, if yes then move all rooms by that offset as much as possible, and set offset to 0
-	 * 		- something's fucked up with loading; it's saying that the blueprint is not found in the file, even though it is there. WTF.
+	 * 	- .ftl loading - fix negative offset issues
+			- shield graphic seems to offset one grid towards top when ship w/ negative offset is loaded
+	 * 		- !! something's fucked up with loading; it's saying that the blueprint is not found in the file, even though it is there. WTF.
+	 * 		- !! loading weapons, drones, augments from the package
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
+	 * 	- !! saving project doesn't reload gibs properly 
 	 * 
 	 * == LOW PRIO:
+	 * 	- ability to toggle weapons between powered-up and powered-down states ---> formula defining the amount of pixels by which the weapons move when powered
 	 * 	- tools
 	 * 		- room splitting
 	 * 		- mounts - indicator for mirror and slide dir
@@ -2032,13 +2036,13 @@ public class Main {
 				String[] filterExtensions = new String[] {"*.ftl"};
 				dialog.setFilterExtensions(filterExtensions);
 				
-				if (ShipIO.isNull(interiorPath)) interiorPath = resPath;
-				dialog.setFilterPath(interiorPath);
+				dialog.setFilterPath(ftlLoadPath);
+				dialog.setFileName(ftlLoadPath);
 				
-				dialog.setText("");
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path)) {
+					ftlLoadPath = new String(path);
 					debug("Load ship from .ftl:", true);
 					mntmClose.notifyListeners(SWT.Selection, null);
 					

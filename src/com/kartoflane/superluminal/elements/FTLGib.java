@@ -56,12 +56,12 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 		position = new Point(0,0);
 		original = new Point(0,0);
 		offset = new Point(0,0);
-		minVel = 0;
-		maxVel = 0;
-		minAng = 0;
-		maxAng = 0;
+		minVel = -0.3;
+		maxVel = 0.3;
+		minAng = -0.3;
+		maxAng = 0.3;
 		minDir = 0;
-		maxDir = 0;
+		maxDir = 360;
 		number = 0;
 		green = Cache.checkOutColor(this, green_rgb);
 	}

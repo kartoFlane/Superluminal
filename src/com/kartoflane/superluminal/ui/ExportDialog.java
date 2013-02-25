@@ -190,23 +190,23 @@ public class ExportDialog extends Dialog
 		final Button btnDontCheck = new Button(composite_2, SWT.CHECK);
 		btnDontCheck.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		btnDontCheck.setFont(Main.appFont);
-		btnDontCheck.setToolTipText("When checked, even the default images will be exported.");
-		btnDontCheck.setText("Don't check if files are already present");
+		btnDontCheck.setToolTipText("When checked, overriden shield and cloak images will be exported." + ShipIO.lineDelimiter
+									+"Overrides are images within the default archives, that ships can" + ShipIO.lineDelimiter
+									+"reuse, so there's no need to export them.");
+		btnDontCheck.setText("Include overriden (default) images");
 		btnDontCheck.setSelection(ShipIO.dontCheck);
 		
 		final Button btnCreateFtl = new Button(composite_2, SWT.CHECK);
 		btnCreateFtl.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnCreateFtl.setFont(Main.appFont);
-		btnCreateFtl.setToolTipText("When checked, the export function also"+ShipIO.lineDelimiter
-								   +"packs the ship to an .ftl archive.");
+		btnCreateFtl.setToolTipText("When checked, the ship is exported to an .ftl archive.");
 		btnCreateFtl.setText("Create .ftl file");
 		btnCreateFtl.setSelection(ShipIO.createFtl);
 		
 		final Button btnDeleteTemp = new Button(composite_2, SWT.CHECK);
 		btnDeleteTemp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnDeleteTemp.setFont(Main.appFont);
-		btnDeleteTemp.setToolTipText("When checked, the export function deletes the"+ShipIO.lineDelimiter
-									 +"temporary files after the .ftl file is created.");
+		btnDeleteTemp.setToolTipText("When checked, temporary unpacked files are deleted after the .ftl file is created.");
 		btnDeleteTemp.setEnabled(false);
 		btnDeleteTemp.setText("Delete temp folder");
 		btnDeleteTemp.setSelection(ShipIO.deleteTemp);

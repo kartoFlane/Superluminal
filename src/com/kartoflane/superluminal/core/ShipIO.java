@@ -82,6 +82,8 @@ public class ShipIO
 	public static boolean dontCheck = false;
 	
 	public static boolean ignoreNextTag = false;
+	private static boolean negativeX = false;
+	private static boolean negativeY = false;
 	
 	/**
 	 * false - loading using Image class
@@ -926,9 +928,23 @@ scan:			while(sc.hasNext()) {
 			Main.updatePainter();
 			
 			Point p = shipBeingLoaded.computeShipSize();
-			//Main.debug(Main.ship.offset+"", true); // --------------------
 			p = new Point(35 * Math.round((Main.GRID_W*35 - p.x)/70 - shipBeingLoaded.offset.x) , 35 * Math.round((Main.GRID_H*35 - p.y)/70 - shipBeingLoaded.offset.y));
 			Main.anchor.setLocation(p.x, p.y);
+			
+			if (negativeX || negativeY) {
+				p = Main.ship.findLowBounds();
+				
+				int dx = p.x - Main.ship.anchor.x;
+				int dy = p.y - Main.ship.anchor.y;
+				for (FTLRoom rm : Main.ship.rooms) {
+					Point pt = rm.getLocation();
+					rm.setLocationAbsolute(pt.x-dx, pt.y-dy);
+				}
+				for (FTLDoor dr : Main.ship.doors) {
+					Point pt = dr.getLocation();
+					dr.setLocationAbsolute(pt.x-dx, pt.y-dy);
+				}
+			}
 			
 			shipBeingLoaded = null;
 			Main.debug("Load ship - " + ((Main.ship.shipName!=null)?(Main.ship.shipClass + " \"" + Main.ship.shipName + "\""):(Main.ship.shipClass)) + " [" + Main.ship.blueprintName + "]" + " loaded successfully.", true);
@@ -984,10 +1000,12 @@ scan:			while(sc.hasNext()) {
 				if (s.equals("X_OFFSET")) {
 					ship.offset.x = scanner.nextInt();
 					debug("\t\tX_OFFSET section found: " + ship.offset.x);
+					negativeX = ship.offset.x < 0;
 					foundSection = true;
 				} else if (s.equals("Y_OFFSET")) {
 					ship.offset.y = scanner.nextInt();
 					debug("\t\tY_OFFSET section found: " + ship.offset.y);
+					negativeY = ship.offset.y < 0;
 					foundSection = true;
 				} else if (s.equals("VERTICAL")) {
 					ship.vertical = Integer.valueOf(scanner.next());
@@ -1046,6 +1064,9 @@ scan:			while(sc.hasNext()) {
 					foundSection = true;
 				}
 			}
+			
+			ship.offset.x = Math.max(ship.offset.x, 0);
+			ship.offset.y = Math.max(ship.offset.y, 0);
 
 			debug("\tdone");
 			scanner.close();
