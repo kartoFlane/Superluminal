@@ -242,7 +242,6 @@ public class Main {
 	 * 	- .ftl loading - fix negative offset issue
 	 * 		- detect if ship has negative offset, if yes then move all rooms by that offset as much as possible, and set offset to 0
 	 * 		- something's fucked up with loading; it's saying that the blueprint is not found in the file, even though it is there. WTF.
-	 * 	- weapon i drone presets are not being loaded
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 
 	 * == LOW PRIO:
@@ -260,6 +259,7 @@ public class Main {
 	 * 	- archives are now unpacked automatically by the editor. The only thing you have to do is point it to original, packed, .dat archives inside /resources/ folder in your FTL installation.
 	 *  - images that cannot be overriden are now always exported, default or not
 	 *  - dialogs should now open to correct locations and retain their own paths
+	 *  - fixed weapon and drone presets not being loaded in Properties window.
 	 */
 	
 	// =================================================================================================== //

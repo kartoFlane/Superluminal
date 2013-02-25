@@ -354,6 +354,8 @@ search:		for (String s : presetsDr.getItems()) {
 		presets.select(-1);
 		presetsDr.select(-1);
 		
+		presets.removeAll();
+		presetsDr.removeAll();
 		augments.removeAll();
 	}
 	
