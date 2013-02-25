@@ -244,7 +244,7 @@ public class Main {
 	 * 	- .ftl loading - fix negative offset issues
 			- shield graphic seems to offset one grid towards top when ship w/ negative offset is loaded - but not always, wth
 	 * 		- !! something's fucked up with loading; it's saying that the blueprint is not found in the file, even though it is there. WTF.
-	 * 		- !! loading weapons, drones, augments from the package
+	 * 		- buttons pokazuja ze floor i shield jest loaded nawet jak nie znalazl pliku -> fix
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 	- !! saving project doesn't reload gibs properly 
 	 * 
@@ -265,6 +265,7 @@ public class Main {
 	 *  - images that cannot be overriden are now always exported, default or not
 	 *  - dialogs should now open to correct locations and retain their own paths
 	 *  - fixed weapon and drone presets not being loaded in Properties window.
+	 *  - ships loaded from .ftl package now have their weapons / drones / augments loaded properly.
 	 */
 	
 	// =================================================================================================== //
@@ -395,6 +396,13 @@ public class Main {
 				
 				if (grid != null)
 					grid.setSize(GRID_W*35, GRID_H*35);
+			}
+		});
+		
+		shell.addListener(SWT.Close, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				mntmClose.notifyListeners(SWT.Selection, null);
 			}
 		});
 		
@@ -2092,6 +2100,8 @@ public class Main {
 							ShipIO.loadDeclarationsFromFile(unpacked_blueprints);
 							debug("\t\tdone", true);
 							
+							
+							
 							if (blueList.size() == 1) {
 								ShipIO.loadShip(blueList.get(0), unpacked_blueprints);
 							} else {
@@ -2339,14 +2349,6 @@ public class Main {
 					ShipIO.droneSetMap.putAll(ShipIO.oldDroneSetMap);
 				}
 				
-				if (temporaryFiles != null) {
-					debug("\tdeleting temporary directory... ", false);
-					ShipIO.deleteFolderContents(temporaryFiles);
-					if (temporaryFiles.exists()) ShipIO.rmdir(temporaryFiles);
-					debug("done", true);
-					temporaryFiles = null;
-				}
-				
 				btnCloaked.setEnabled(false);
 				idList.clear();
 				clearButtonImg();
@@ -2386,6 +2388,14 @@ public class Main {
 				mntmArchives.setEnabled(true);
 
 				ship = null;
+
+				if (temporaryFiles != null) {
+					debug("\tdeleting temporary directory... ", false);
+					ShipIO.deleteFolderContents(temporaryFiles);
+					if (temporaryFiles.exists()) ShipIO.rmdir(temporaryFiles);
+					debug("done", true);
+					temporaryFiles = null;
+				}
 				
 				canvas.redraw();
 			}

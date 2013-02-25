@@ -1443,14 +1443,18 @@ scan:			while(sc.hasNext()) {
 				if (wpn != null && !isNull(wpn.img)) {
 					path = getWeaponArtFileName(wpn);
 					if (path != null) {
-						path = Main.resPath + pathDelimiter + "img" + pathDelimiter + path;
-						
 						FTLMount mt = null;
 						if (index < Main.ship.mounts.size()) mt = Main.ship.mounts.get(index);
-						
-						if (mt != null) {
-							mt.setImage(path, Main.weaponFrameWidthMap.get(blue));
+
+						String temppath = "sprlmnl_tmp" + pathDelimiter + "img" + pathDelimiter + path;
+						if (mt != null && new File(temppath).exists()) {
+							mt.setImage(temppath, Main.weaponFrameWidthMap.get(blue));
+							continue;
 						}
+						
+						path = Main.resPath + pathDelimiter + "img" + pathDelimiter + path;
+						if (mt != null)
+							mt.setImage(path, Main.weaponFrameWidthMap.get(blue));
 					} else {
 						Main.erDialog.add("Warning: load weapon images - tried to load " + blue + ", but returned no weapon art file name. [weapon's art declaration not found in animations.xml]");
 					}
@@ -2388,7 +2392,7 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 	 */
 	public static void loadDeclarationsFromFile(File fileToScan) {
 		FileReader fr;
-		Scanner sc;
+		Scanner sc = null;
 		String s;
 		Pattern pattern;
 		Matcher matcher;
@@ -2489,6 +2493,9 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 			Main.erDialog.add("Error: load declarations - autoBlueprints.xml file not found");
 		} catch (NoSuchElementException e) {
 			Main.erDialog.add("Error: load declarations - autoBlueprints.xml - end of file reached");
+		} finally {
+			if (sc!=null)
+				sc.close();
 		}
 		
 		try {
@@ -2622,6 +2629,9 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 		} catch (NoSuchElementException e) {
 			Main.erDialog.add("Error: laod declarations - blueprints.xml - end of file reached");
 			Main.debug("Error: laod declarations - blueprints.xml - end of file reached", true);
+		} finally {
+			if (sc!=null)
+				sc.close();
 		}
 	}
 	
