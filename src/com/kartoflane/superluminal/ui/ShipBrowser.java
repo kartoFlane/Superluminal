@@ -162,7 +162,7 @@ public class ShipBrowser {
 
 				Main.mntmClose.notifyListeners(SWT.Selection, null);
 				
-				ShipIO.loadShip(selectedShip, null);
+				ShipIO.loadShip(selectedShip, null, -1);
 				
 				ConfigIO.saveConfig();
 				shell.dispose();

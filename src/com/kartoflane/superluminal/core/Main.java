@@ -50,6 +50,7 @@ import com.kartoflane.superluminal.ui.GibPropertiesWindow;
 import com.kartoflane.superluminal.ui.NewShipWindow;
 import com.kartoflane.superluminal.ui.PropertiesWindow;
 import com.kartoflane.superluminal.ui.ShipBrowser;
+import com.kartoflane.superluminal.ui.ShipChoiceDialog;
 import com.kartoflane.superluminal.ui.ShipPropertiesWindow;
 
 public class Main {
@@ -95,6 +96,7 @@ public class Main {
 	public static CursorBox cursor;
 	public static DirectoriesWindow dirWindow;
 	public static ShipBrowser browser;
+	public static ShipChoiceDialog choiceDialog;
 	
 		// === Preferences
 		// ship explorer
@@ -246,7 +248,8 @@ public class Main {
 	 * 		- !! something's fucked up with loading; it's saying that the blueprint is not found in the file, even though it is there. WTF.
 	 * 		- buttons pokazuja ze floor i shield jest loaded nawet jak nie znalazl pliku -> fix
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
-	 * 	- !! saving project doesn't reload gibs properly 
+	 * 	- !! saving project doesn't reload gibs properly
+	 * 	- bomb weapons are loading missile graphic, not launcher graphic
 	 * 
 	 * == LOW PRIO:
 	 * 	- ability to toggle weapons between powered-up and powered-down states ---> formula defining the amount of pixels by which the weapons move when powered
@@ -262,10 +265,11 @@ public class Main {
 	 * CHANGELOG:
 	 * 	- glow images can now be exported along with the interior image they are associated with, however they HAVE TO BE NAMED ACCORDINGLY -> in the same folder as base interior image and named <name>_glow
 	 * 	- archives are now unpacked automatically by the editor. The only thing you have to do is point it to original, packed, .dat archives inside /resources/ folder in your FTL installation.
-	 *  - images that cannot be overriden are now always exported, default or not
+	 *  - images that cannot be overriden (only cloak and shields can) are now always exported, default or not
 	 *  - dialogs should now open to correct locations and retain their own paths
 	 *  - fixed weapon and drone presets not being loaded in Properties window.
 	 *  - ships loaded from .ftl package now have their weapons / drones / augments loaded properly.
+	 *  - when loading a ship from an .ftl package, it is now possible to choose which ship is to be loaded, should the package contain more than one ship.
 	 */
 	
 	// =================================================================================================== //
@@ -360,6 +364,7 @@ public class Main {
 		gibWindow = new GibPropertiesWindow(shell);
 		dirWindow = new DirectoriesWindow(shell);
 		browser = new ShipBrowser(shell);
+		choiceDialog = new ShipChoiceDialog(shell);
 		
 		createContents();
 		
@@ -2100,12 +2105,13 @@ public class Main {
 							ShipIO.loadDeclarationsFromFile(unpacked_blueprints);
 							debug("\t\tdone", true);
 							
-							
-							
 							if (blueList.size() == 1) {
-								ShipIO.loadShip(blueList.get(0), unpacked_blueprints);
+								ShipIO.loadShip(blueList.get(0), unpacked_blueprints, -1);
 							} else {
-								// display dialog
+								choiceDialog.setChoices(blueList, unpacked_blueprints);
+								String blueprint = choiceDialog.open();
+								
+								ShipIO.loadShip(blueprint, unpacked_blueprints, -1);
 							}
 						} else {
 							Main.erDialog.print("Error: load ship from .ftl - no ship declarations found in the package. No data was loaded.");
@@ -2341,6 +2347,7 @@ public class Main {
 				}
 				
 				if (ShipIO.oldWeaponMap.size() > 0) {
+					Main.debug("reverting to old maps", true);
 					ShipIO.clearMaps();
 					ShipIO.weaponMap.putAll(ShipIO.oldWeaponMap);
 					ShipIO.droneMap.putAll(ShipIO.oldDroneMap);

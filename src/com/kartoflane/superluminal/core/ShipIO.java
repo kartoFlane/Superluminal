@@ -55,8 +55,7 @@ import com.kartoflane.superluminal.ui.ShipBrowser;
 
 
 
-public class ShipIO
-{
+public class ShipIO {
 	public static Set<String> errors = new HashSet<String>();
 	public static Set<String> playerBlueprintNames = new TreeSet<String>();
 	public static Set<String> enemyBlueprintNames = new TreeSet<String>();
@@ -76,7 +75,6 @@ public class ShipIO
 	public static Map<String, FTLItem> oldAugMap = new HashMap<String, FTLItem>();
 	public static Map<String, HashSet<String>> oldWeaponSetMap = new HashMap<String, HashSet<String>>();
 	public static Map<String, HashSet<String>> oldDroneSetMap = new HashMap<String, HashSet<String>>();
-	
 	
 	public static Map<FTLMount, String> mountWeaponMap = new HashMap<FTLMount, String>();
 	
@@ -226,10 +224,8 @@ public class ShipIO
 	/**
 	 * Loads the given ship.
 	 * @param blueprintName The blueprint name of the ship that is to be loaded.
-	 * @param asActive When set to false, loads the given ship as not active (i.e. it won't be displayed at the main screen, just loaded to the hashmap for easy access). 
-	 * NOTE when data preloading is disabled (preferred option), this paramter won't matter and the given ship will always be loaded as active.
 	 */
-	public static void loadShip(String blueprintName, File fileToScan) {
+	public static void loadShip(String blueprintName, File fileToScan, int blueprintToLoad) {
 		FileReader fr;
 		Scanner sc;
 		String s;
@@ -245,11 +241,11 @@ public class ShipIO
 		boolean scanDefault = fileToScan == null;
 		if (scanDefault) fileToScan = new File(Main.dataPath + pathDelimiter + "autoBlueprints.xml");
 
-		int declarationCount = 0;
+		int declarationCount = blueprintToLoad;
 		int declarationsOmitted = 0;
 		
 		if (fileToScan.getName().contains("autoBlueprints")) {
-			declarationCount = preScan(blueprintName, fileToScan);
+			if (blueprintToLoad==-1) declarationCount = preScan(blueprintName, fileToScan);
 			debug("Load ship - number of declarations for "+ blueprintName +": " + (declarationCount));
 			// scan autoBlueprints.xml for mention of the blueprintName, if there's one, load it.
 			try {
@@ -580,8 +576,9 @@ ship:			while(sc.hasNext()) {
 		if (shipBeingLoaded == null && fileToScan.getName().contains("blueprints")) {
 			Main.debug("Load ship - no " + blueprintName + " ship tag found in " + old, true);
 			
-			declarationCount = preScan(blueprintName, fileToScan);
+			if (blueprintToLoad==-1) declarationCount = preScan(blueprintName, fileToScan);
 			declarationsOmitted = 0;
+			
 			debug("Load ship - number of declarations for "+ blueprintName +": " + (declarationCount));
 			
 			try {
@@ -2300,6 +2297,61 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 			otherShipNames.put(s, getShipName(s));
 		}
 		namesFetched = true;
+	}
+	
+	public static String getShipName(String blueprintName, File fileToScan, int blueprintCount) {
+		String name = "";
+		FileReader fr;
+		Scanner sc = null;
+		Pattern pattern;
+		Matcher matcher;
+		String s;
+		int count = 0;
+		
+		try {
+			fr = new FileReader(fileToScan);
+			sc = new Scanner(fr);
+			sc.useDelimiter(Pattern.compile(lineDelimiter));
+			
+scan:		while(sc.hasNext()) {
+				s = sc.next();
+				pattern = Pattern.compile(".*?(<shipBlueprint name=\")"+blueprintName+"(\".*?)");
+				matcher = pattern.matcher(s);
+				if (matcher.find() && count < blueprintCount) {
+					count++;
+					if (count == blueprintCount) {
+						boolean nClass = false;
+						boolean nName = false;
+						
+				name:	while(sc.hasNext()) {
+							s = sc.next();
+							pattern = Pattern.compile(".*?<class>(.*?)</class>");
+							matcher = pattern.matcher(s);
+							if (matcher.find()) {
+								name += matcher.group(1);
+								nClass = true;
+							}
+							
+							pattern = Pattern.compile(".*?<name>(.*?)</name>");
+							matcher = pattern.matcher(s);
+							if (matcher.find()) {
+								name += " \"" + matcher.group(1) + "\"";
+								nName = true;
+							}
+							if (nClass && nName) break name;
+						}
+					}
+				} else if (count > blueprintCount) {
+					break scan;
+				}
+			}
+		} catch (IOException e) {
+		} finally {
+			if (sc!=null)
+				sc.close();
+		}
+		
+		return name;
 	}
 	
 	public static String getShipName (String blueprintName) {
