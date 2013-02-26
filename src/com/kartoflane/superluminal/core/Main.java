@@ -102,6 +102,7 @@ public class Main {
 		// ship explorer
 	public static String dataPath = "";
 	public static String resPath = "";
+	public static String installPath = "";
 		// edit menu
 	public static boolean removeDoor = true;
 	public static boolean snapMounts = true;
@@ -242,15 +243,14 @@ public class Main {
 	/*
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES!
 	 * === TODO
-	 * 	- gibs editor - animation
-	 * 	- .ftl loading
-	 *		- shield graphic seems to offset one grid towards top when ship w/ negative offset is loaded - but not always, wth
+	 * == IMMEDIATE PRIO:
+	 * 
+	 * == MEDIUM PRIO:
+	 * 	- importing room layout from shipname.txt
 	 *	- implement ship choice to regular ship loading
-	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
-	 * 	- !! saving project doesn't reload gibs properly
-	 * 	- bomb weapons are loading missile graphic, not launcher graphic
+	 * 	- gibs editor - animation
 	 * 	- load weapons' mount point from animations.xml
-	 *  - store FTL installation directory in config
+	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 
 	 * == LOW PRIO:
 	 * 	- ability to toggle weapons between powered-up and powered-down states ---> formula defining the amount of pixels by which the weapons move when powered
@@ -271,6 +271,8 @@ public class Main {
 	 *  - fixed weapon and drone presets not being loaded in Properties window.
 	 *  - ships loaded from .ftl package now have their weapons / drones / augments loaded properly.
 	 *  - when loading a ship from an .ftl package, it is now possible to choose which ship is to be loaded, should the package contain more than one ship.
+	 *  - fixed gibs images not being properly reloaded after saving a project, thus crashing the editor.
+	 *  - fixed bomb weapons loading the bomb's graphic, and not the launcher's
 	 */
 	
 	// =================================================================================================== //
@@ -327,6 +329,7 @@ public class Main {
 		// browse
 		exportPath = ConfigIO.scourFor("exportPath");
 		projectPath = ConfigIO.scourFor("projectPath");
+		installPath = ConfigIO.scourFor("installPath");
 		// files
 		dataPath = ConfigIO.scourFor("dataPath");
 		resPath = ConfigIO.scourFor("resPath");

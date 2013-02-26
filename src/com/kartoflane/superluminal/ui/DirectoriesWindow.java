@@ -33,8 +33,6 @@ public class DirectoriesWindow {
 	private datLib resLib;
 	public Label label;
 	public Button btnClose;
-	
-	private String dialog_path = null;
 
 	public DirectoriesWindow(Shell parent) {
 		shell = new Shell(parent, SWT.BORDER | SWT.TITLE);
@@ -111,16 +109,21 @@ public class DirectoriesWindow {
 		dialog = new FileDialog(Main.shell, SWT.OPEN);
 		String[] filterExtensions = new String[] {"*.dat"};
 		dialog.setFilterExtensions(filterExtensions);
-		dialog.setFilterPath(dialog_path);
+		dialog.setFilterPath(Main.installPath);
+		dialog.setFileName(Main.installPath);
 		
 		btnData.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				dialog.setFilterPath(dialog_path);
+				dialog.setFilterPath(Main.installPath);
+				dialog.setFileName(Main.installPath);
+				Main.debug(Main.installPath, true);
+				
 				String s = dialog.open();
+				
 				if (!ShipIO.isNull(s)) {
 					data = s;
-					dialog_path = new String(s);
+					Main.installPath = new String(Main.getParent(s));
 					textData.setText(data);
 					
 					if (!data.contains("data.dat")) {
@@ -160,11 +163,14 @@ public class DirectoriesWindow {
 		btnResources.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				dialog.setFilterPath(dialog_path);
+				dialog.setFilterPath(Main.installPath);
+				dialog.setFileName(Main.installPath);
+				
 				String s = dialog.open();
+				
 				if (!ShipIO.isNull(s)) {
 					resources = s;
-					dialog_path = new String(s);
+					Main.installPath = new String(Main.getParent(s));
 					textResources.setText(resources);
 
 					if (!resources.contains("resource.dat")) {

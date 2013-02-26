@@ -29,7 +29,7 @@ public class FTLShip implements Serializable
 	/**
 	 * The most recent designation
 	 */
-	final public static int VERSION = 7;
+	final public static int VERSION = 8;
 	/**
 	 * Ship's own designation
 	 */

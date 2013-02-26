@@ -27,6 +27,7 @@ public class ImageBox extends PaintBox implements Serializable {
 	public void loadUnserializable() {
 		super.loadUnserializable();
 		image = Cache.checkOutImage(this, path);
+		image = Cache.checkOutImageAbsolute(this, path);
 	}
 	
 	public ImageBox() {

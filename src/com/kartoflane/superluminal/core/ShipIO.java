@@ -1406,7 +1406,7 @@ scan:			while(sc.hasNext()) {
 				sc = new Scanner(filer);
 				sc.useDelimiter(Pattern.compile(lineDelimiter));
 				
-				while (sc.hasNext()) {
+				while (sc.hasNext() && result == null) {
 					s = sc.next();
 					pattern = Pattern.compile("(<animSheet name=\")(.*?)(\" w=\")(.*?)(\".*?fw=\")(.*?)(\".*?>)(.*?)(</animSheet>)");
 					matcher = pattern.matcher(s);
@@ -1422,7 +1422,7 @@ scan:			while(sc.hasNext()) {
 				sc = new Scanner(filer);
 				sc.useDelimiter(Pattern.compile(lineDelimiter));
 	
-				while (sc.hasNext()) {
+				while (sc.hasNext() && result == null) {
 					s = sc.next();
 					pattern = Pattern.compile("(<animSheet name=\")(.*?)(\" w=\")(.*?)(\".*?fw=\")(.*?)(\".*?>)(.*?)(</animSheet>)");
 					matcher = pattern.matcher(s);
@@ -1437,6 +1437,7 @@ scan:			while(sc.hasNext()) {
 		} finally {
 			sc.close();
 		}
+		Main.debug(result, true);
 		
 		return result;
 	}
@@ -2233,22 +2234,37 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 	
 	public static void saveShipProject(String path) {
 		try {
+			debug("Save ship project:");
+			debug("\tcreating stream...");
 			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path));
-			
+			debug("\t\tdone");
+
+			debug("\tstripping unserializable data...");
 			Main.layeredPainter.setSuppressed(true);
 			Main.stripUnserializable();
+			debug("\t\tdone...");
 			
 			Main.ship.version = FTLShip.VERSION;
-			
+
+			debug("\tdumping ship...");
 			oos.writeObject(Main.ship);
-			
+			debug("\t\tdone...");
+
 			oos.close();
 
+			debug("\tloading unserializable data...");
 			Main.loadUnserializable();
-			
+			debug("\t\tdone...");
+
+			debug("\tloading weapon images...");
 			loadWeaponImages(Main.ship);
-			if (Main.ship.isPlayer)
+			debug("\t\tdone...");
+
+			if (Main.ship.isPlayer) {
+				debug("\tloading system images...");
 				loadSystemImages(null);
+				debug("\t\tdone...");
+			}
 			
 			Main.layeredPainter.setSuppressed(false);
 		} catch (IOException e) {

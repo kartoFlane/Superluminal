@@ -48,6 +48,7 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	
 	public void loadUnserializable() {
 		super.loadUnserializable();
+		image = Cache.checkOutImageAbsolute(this, path);
 		green = Cache.checkOutColor(this, green_rgb);
 	}
 	

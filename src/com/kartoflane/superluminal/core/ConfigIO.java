@@ -26,6 +26,7 @@ public class ConfigIO {
 		// === exporter
 			out.write("exportPath = " + Main.exportPath + ShipIO.lineDelimiter);
 			out.write("projectPath = " + Main.projectPath + ShipIO.lineDelimiter);
+			out.write("installPath = " + Main.installPath + ShipIO.lineDelimiter);
 		// === browser
 			out.write("dataPath = " + Main.dataPath + ShipIO.lineDelimiter);
 			out.write("resPath = " + Main.resPath + ShipIO.lineDelimiter);
