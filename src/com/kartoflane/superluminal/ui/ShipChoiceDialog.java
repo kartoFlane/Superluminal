@@ -1,6 +1,7 @@
 package com.kartoflane.superluminal.ui;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,8 +31,10 @@ public class ShipChoiceDialog {
 	List list;
 	private Button btnCancel;
 	private Button btnLoad;
-	public String result;
 	private Display display;
+	
+	public String result;
+	public int declaration;
 	private boolean exit = false;
 	
 	public ShipChoiceDialog(Shell parent) {
@@ -113,6 +116,15 @@ public class ShipChoiceDialog {
 				Matcher matcher = pattern.matcher(list.getSelection()[0]);
 				if (matcher.find()) {
 					result = matcher.group(1);
+					declaration = 0;
+					
+					for (String s : list.getItems()) {
+						matcher = pattern.matcher(s);
+						if (matcher.find() && matcher.group(1).equals(result)) {
+							declaration++;
+							if (s.equals(list.getSelection()[0])) break;
+						}
+					}
 				} else {
 					Main.erDialog.add("Error: no match found in ShipChoiceDialog list. This should never EVER happen.");
 				}
@@ -146,9 +158,12 @@ public class ShipChoiceDialog {
 	
 	public void setChoices(Collection<String> list, File fileToScan) {
 		this.list.removeAll();
-		int i = 0;
+		Collection<String> previous = new ArrayList<String>();
 		for (String s : list) {
-			this.list.add(ShipIO.getShipName(s, fileToScan, 1)+" ["+s+"]");
+			this.list.add(ShipIO.getShipName(s, fileToScan, (previous.contains(s) ? previous.size()+1 : 1))+" ["+s+"]");
+			previous.add(s);
 		}
+		previous.clear();
+		previous = null;
 	}
 }

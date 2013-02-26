@@ -137,7 +137,7 @@ public class DirectoriesWindow {
 						dataLib = new datLib(data);
 						dataLib.Extract("", "archives");
 						resLib = new datLib(resources);
-						resLib.Extract("", "archives" + ShipIO.pathDelimiter + "resources");
+						resLib.Extract("img", "archives" + ShipIO.pathDelimiter + "resources");
 
 						Main.dataPath = f.getAbsolutePath() + ShipIO.pathDelimiter + "data";
 						Main.resPath = f.getAbsolutePath() + ShipIO.pathDelimiter + "resources";
@@ -181,7 +181,7 @@ public class DirectoriesWindow {
 						dataLib = new datLib(data);
 						dataLib.Extract("", "archives");
 						resLib = new datLib(resources);
-						resLib.Extract("", "archives" + ShipIO.pathDelimiter + "resources");
+						resLib.Extract("img", "archives" + ShipIO.pathDelimiter + "resources");
 
 						Main.dataPath = f.getAbsolutePath() + ShipIO.pathDelimiter + "data";
 						Main.resPath = f.getAbsolutePath() + ShipIO.pathDelimiter + "resources";

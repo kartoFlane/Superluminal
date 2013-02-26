@@ -728,62 +728,68 @@ scan:			while(sc.hasNext()) {
 															debug("\t\t\tnot found");
 														}
 														
-														r.assignSystem(Systems.valueOf(matcher.group(3).toUpperCase()));
-		
-														shipBeingLoaded.levelMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
-														shipBeingLoaded.powerMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
-														shipBeingLoaded.startMap.put(r.getSystem(), Boolean.valueOf(matcher.group(9)));
-														Main.systemsMap.get(r.getSystem()).setAvailable(shipBeingLoaded.startMap.get(r.getSystem()));
+														try {
+															r.assignSystem(Systems.valueOf(matcher.group(3).toUpperCase()));
+			
+															shipBeingLoaded.levelMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
+															shipBeingLoaded.powerMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
+															shipBeingLoaded.startMap.put(r.getSystem(), Boolean.valueOf(matcher.group(9)));
+															Main.systemsMap.get(r.getSystem()).setAvailable(shipBeingLoaded.startMap.get(r.getSystem()));
 														
-														str = matcher.group(12);
-														s = matcher.group(11);
-														pattern = Pattern.compile("(\\s*?img\\s*?=\\s*?\")(.*?)(\")");
-														matcher = pattern.matcher(s);
-														if (matcher.find()) {
-															r.img = matcher.group(2);
-															
-															if (fileToScan != null) {
-																r.img = fileToScan.getParentFile().getParentFile().getAbsolutePath() + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
-															} else {
-																r.img = "skip.loading";
-															}
-															f = new File(r.img);
-															if (!f.exists()) {
+															str = matcher.group(12);
+															s = matcher.group(11);
+															pattern = Pattern.compile("(\\s*?img\\s*?=\\s*?\")(.*?)(\")");
+															matcher = pattern.matcher(s);
+															if (matcher.find()) {
 																r.img = matcher.group(2);
-																r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
+																
+																if (fileToScan != null) {
+																	r.img = fileToScan.getParentFile().getParentFile().getAbsolutePath() + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
+																} else {
+																	r.img = "skip.loading";
+																}
+																f = new File(r.img);
+																if (!f.exists()) {
+																	r.img = matcher.group(2);
+																	r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
+																}
+																
+																if (Main.loadSystem) {
+																	r.setInterior(r.img);
+																	//Main.erDialog.add("Error: load interior images - interior image not found.");
+																}
+															} else if (!r.getSystem().equals(Systems.TELEPORTER) && !r.getSystem().equals(Systems.EMPTY)) {
+																// load default sysImg for the room (teleporter doesn't have default graphic)
+																if (Main.loadSystem) {
+																	r.img = "room_"+r.getSystem().toString().toLowerCase();
+																	r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
+																	r.setInterior(r.img);
+																}
 															}
 															
-															if (Main.loadSystem) {
-																r.setInterior(r.img);
-																//Main.erDialog.add("Error: load interior images - interior image not found.");
+															if (str.equals(">")) {
+																s = sc.next(); // <slot>
+																s = sc.next(); // <direction>
+																pattern = Pattern.compile("(.*?)(<direction>)(.*?)(</direction>)");
+																matcher = pattern.matcher(s);
+																if (matcher.find()) {
+																	shipBeingLoaded.slotDirMap.put(r.getSystem(), Slide.valueOf(matcher.group(3).toUpperCase()));
+																	s = sc.next(); // <number>
+																}
+																pattern = Pattern.compile("(.*?)(<number>)(.*?)(</number>)");
+																matcher = pattern.matcher(s);
+																if (matcher.find()) {
+																	shipBeingLoaded.slotMap.put(r.getSystem(), Integer.valueOf(matcher.group(3)));
+																}
+															} else if (r.getSystem().equals(Systems.WEAPONS) || r.getSystem().equals(Systems.SHIELDS) || r.getSystem().equals(Systems.ENGINES) || r.getSystem().equals(Systems.PILOT) || r.getSystem().equals(Systems.MEDBAY)) {
+																// get defaults
+																shipBeingLoaded.slotDirMap.put(r.getSystem(), FTLRoom.getDefaultDir(r.getSystem()));
+																shipBeingLoaded.slotMap.put(r.getSystem(), FTLRoom.getDefaultSlot(r.getSystem()));
 															}
-														} else if (!r.getSystem().equals(Systems.TELEPORTER) && !r.getSystem().equals(Systems.EMPTY)) {
-															// load default sysImg for the room (teleporter doesn't have default graphic)
-															if (Main.loadSystem) {
-																r.img = "room_"+r.getSystem().toString().toLowerCase();
-																r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
-																r.setInterior(r.img);
-															}
-														}
-														
-														if (str.equals(">")) {
-															s = sc.next(); // <slot>
-															s = sc.next(); // <direction>
-															pattern = Pattern.compile("(.*?)(<direction>)(.*?)(</direction>)");
-															matcher = pattern.matcher(s);
-															if (matcher.find()) {
-																shipBeingLoaded.slotDirMap.put(r.getSystem(), Slide.valueOf(matcher.group(3).toUpperCase()));
-																s = sc.next(); // <number>
-															}
-															pattern = Pattern.compile("(.*?)(<number>)(.*?)(</number>)");
-															matcher = pattern.matcher(s);
-															if (matcher.find()) {
-																shipBeingLoaded.slotMap.put(r.getSystem(), Integer.valueOf(matcher.group(3)));
-															}
-														} else if (r.getSystem().equals(Systems.WEAPONS) || r.getSystem().equals(Systems.SHIELDS) || r.getSystem().equals(Systems.ENGINES) || r.getSystem().equals(Systems.PILOT) || r.getSystem().equals(Systems.MEDBAY)) {
-															// get defaults
-															shipBeingLoaded.slotDirMap.put(r.getSystem(), FTLRoom.getDefaultDir(r.getSystem()));
-															shipBeingLoaded.slotMap.put(r.getSystem(), FTLRoom.getDefaultSlot(r.getSystem()));
+														} catch (IllegalArgumentException e) {
+															Main.erDialog.add("Error: tried to load \"" + matcher.group(3) + "\" as system.");
+														} catch (NullPointerException e) {
+															Main.erDialog.add("Error: tried to assign system " + matcher.group(3) + " to room ID: " + Integer.valueOf(matcher.group(7)) + ", but no such room was found.");
 														}
 													}
 												} else if (!ignoreNextTag) {
@@ -1100,7 +1106,7 @@ scan:			while(sc.hasNext()) {
 				s = scanner.next();
 				// regex groups: 2, 4, 6, 8
 				if (ship.imageRect.width == 0 && ship.imageRect.height == 0) {
-					pattern = Pattern.compile("(<img x=\")(.*?)(\" y=\")(.*?)(\" w=\")(.*?)(\" h=\")(.*?)(\"/>)");
+					pattern = Pattern.compile("(<img x=\")(.*?)(\" y=\")(.*?)(\" w=\")(.*?)(\" h=\")(.*?)(\"\\s*?/\\s*?>)");
 					matcher = pattern.matcher(s);
 					if (matcher.find()) {
 						ship.imageRect = new Rectangle(0,0,0,0);
@@ -1117,7 +1123,7 @@ scan:			while(sc.hasNext()) {
 					debug("\t\tloading weapon mounts:");
 					while (scanner.hasNext() && !s.contains("</weaponMounts>") && !s.contains("mounts testing")) {
 						s = scanner.next();
-						pattern = Pattern.compile("(<mount x=\")(.*?)(\" y=\")(.*?)(\" rotate=\")(.*?)(\" mirror=\")(.*?)(\" gib=\")(.*?)(\" slide=\")(.*?)(\"/>)");
+						pattern = Pattern.compile("(<mount x=\")(.*?)(\" y=\")(.*?)(\" rotate=\")(.*?)(\" mirror=\")(.*?)(\" gib=\")(.*?)(\" slide=\")(.*?)(\"\\s*?/\\s*?>)");
 						matcher = pattern.matcher(s);
 						if (matcher.find()) {
 							m = new FTLMount();
@@ -1216,6 +1222,7 @@ scan:			while(sc.hasNext()) {
 					Main.hullBox.setHullImage(ship.imagePath);
 				} else if (!isNull(ship.imagePath)) {
 					Main.erDialog.add("Warning: load ship images - hull image not found. (" + ship.imagePath + ")");
+					ship.imagePath = null;
 				}
 				// load floor
 				File f;
@@ -1225,6 +1232,7 @@ scan:			while(sc.hasNext()) {
 						Main.hullBox.setFloorImage(ship.floorPath);
 					} else if (ship.isPlayer && !f.exists()) {
 						Main.erDialog.add("Warning: load ship images - floor image not found. (" + ship.floorPath + ")");
+						ship.floorPath = null;
 					}
 				}
 				// load shield
@@ -1235,6 +1243,7 @@ scan:			while(sc.hasNext()) {
 							Main.shieldBox.setImage(ship.shieldPath, true);
 						} else {
 							Main.erDialog.add("Warning: load ship images - shield image not found. (" + ship.shieldPath + ")");
+							ship.shieldPath = null;
 						}
 					} else if (!isNull(ship.shieldPath)) {
 						f = new File(ship.shieldOverride);
@@ -1242,6 +1251,7 @@ scan:			while(sc.hasNext()) {
 							Main.shieldBox.setImage(ship.shieldOverride, true);
 						} else {
 							Main.erDialog.add("Warning: load ship images - shield override image not found. (" + ship.shieldOverride + ")");
+							ship.shieldOverride = null;
 						}
 					}
 				}
@@ -1252,6 +1262,7 @@ scan:			while(sc.hasNext()) {
 						Main.hullBox.setCloakImage(ship.cloakPath);
 					} else {
 						Main.erDialog.add("Warning: load ship images - cloak image not found. (" + ship.cloakPath + ")");
+						ship.cloakPath = null;
 					}
 				} else if (!isNull(ship.cloakPath)) {
 					f = new File(ship.cloakOverride);
@@ -1259,6 +1270,7 @@ scan:			while(sc.hasNext()) {
 						Main.hullBox.setCloakImage(ship.cloakOverride);
 					} else {
 						Main.erDialog.add("Warning: load ship images - cloak override image not found. (" + ship.cloakOverride + ")");
+						ship.cloakOverride = null;
 					}
 				}
 				// load gibs
@@ -1286,6 +1298,7 @@ scan:			while(sc.hasNext()) {
 									g.setImage(path, false);
 								} else {
 									Main.erDialog.add("Warning: load ship images - image for gib number " +g.number + " could not be found. (" + path + ")");
+									g.dispose();
 								}
 							}
 						}
@@ -2436,6 +2449,17 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 		enemyShipNames.clear();
 		otherShipNames.clear();
 		*/
+	}
+	
+	/**
+	 * Only to be called after entries have been put into current maps.
+	 */
+	public static void clearOldMaps() {
+		oldWeaponMap.clear();
+		oldDroneMap.clear();
+		oldAugMap.clear();
+		oldWeaponSetMap.clear();
+		oldDroneSetMap.clear();
 	}
 	
 	/**

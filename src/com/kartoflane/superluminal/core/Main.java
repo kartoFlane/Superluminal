@@ -243,13 +243,14 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES!
 	 * === TODO
 	 * 	- gibs editor - animation
-	 * 	- .ftl loading - fix negative offset issues
-			- shield graphic seems to offset one grid towards top when ship w/ negative offset is loaded - but not always, wth
-	 * 		- !! something's fucked up with loading; it's saying that the blueprint is not found in the file, even though it is there. WTF.
-	 * 		- buttons pokazuja ze floor i shield jest loaded nawet jak nie znalazl pliku -> fix
+	 * 	- .ftl loading
+	 *		- shield graphic seems to offset one grid towards top when ship w/ negative offset is loaded - but not always, wth
+	 *	- implement ship choice to regular ship loading
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 	- !! saving project doesn't reload gibs properly
 	 * 	- bomb weapons are loading missile graphic, not launcher graphic
+	 * 	- load weapons' mount point from animations.xml
+	 *  - store FTL installation directory in config
 	 * 
 	 * == LOW PRIO:
 	 * 	- ability to toggle weapons between powered-up and powered-down states ---> formula defining the amount of pixels by which the weapons move when powered
@@ -377,7 +378,7 @@ public class Main {
 			resPath = null;
 			shell.setEnabled(false);
 			dirWindow.btnClose.setEnabled(false);
-			dirWindow.label.setText("Please, browse to your FTL installation directory and select data.dat and resource.dat archives.");
+			dirWindow.label.setText("Please, browse to your FTL installation directory and select data.dat and resource.dat archives located in /resources/ folder.");
 			dirWindow.open();
 		}
 		
@@ -2111,7 +2112,7 @@ public class Main {
 								choiceDialog.setChoices(blueList, unpacked_blueprints);
 								String blueprint = choiceDialog.open();
 								
-								ShipIO.loadShip(blueprint, unpacked_blueprints, -1);
+								ShipIO.loadShip(blueprint, unpacked_blueprints, choiceDialog.declaration);
 							}
 						} else {
 							Main.erDialog.print("Error: load ship from .ftl - no ship declarations found in the package. No data was loaded.");
@@ -2347,13 +2348,14 @@ public class Main {
 				}
 				
 				if (ShipIO.oldWeaponMap.size() > 0) {
-					Main.debug("reverting to old maps", true);
 					ShipIO.clearMaps();
 					ShipIO.weaponMap.putAll(ShipIO.oldWeaponMap);
 					ShipIO.droneMap.putAll(ShipIO.oldDroneMap);
 					ShipIO.augMap.putAll(ShipIO.oldAugMap);
 					ShipIO.weaponSetMap.putAll(ShipIO.oldWeaponSetMap);
 					ShipIO.droneSetMap.putAll(ShipIO.oldDroneSetMap);
+					
+					ShipIO.clearOldMaps();
 				}
 				
 				btnCloaked.setEnabled(false);
