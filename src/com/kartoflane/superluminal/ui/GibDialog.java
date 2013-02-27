@@ -215,7 +215,7 @@ public class GibDialog {
 
 		shell.getDisplay().addFilter(SWT.KeyDown, new Listener() {
 			public void handleEvent(Event e) {
-				if (e.keyCode == SWT.ARROW_UP || e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_LEFT || e.keyCode == SWT.ARROW_RIGHT) {
+				if (Main.tltmGib.getSelection() && (e.keyCode == SWT.ARROW_UP || e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_LEFT || e.keyCode == SWT.ARROW_RIGHT)) {
 					e.doit = e.stateMask == SWT.CTRL;
 				}
 			}

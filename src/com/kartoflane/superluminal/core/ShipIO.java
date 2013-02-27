@@ -2510,7 +2510,7 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 									"PLAYER_SHIP_JELLY", "PLAYER_SHIP_JELLY_2",
 									"PLAYER_SHIP_ROCK", "PLAYER_SHIP_ROCK_2",
 									"PLAYER_SHIP_ENERGY", "PLAYER_SHIP_ENERGY_2",
-									"PLAYER_SHIP_CRYSTAL", "PLAYER_SHIP_CRYSTAL"};
+									"PLAYER_SHIP_CRYSTAL", "PLAYER_SHIP_CRYSTAL_2"};
 		
 		playerList.clear();
 		for (String blue : playerBlueprints)

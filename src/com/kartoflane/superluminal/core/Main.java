@@ -78,7 +78,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "2013.02.23";
+	public final static String VERSION = "2013.02.26";
 	
 		// === Important objects
 	public static Shell shell;
@@ -264,15 +264,7 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * 	- glow images can now be exported along with the interior image they are associated with, however they HAVE TO BE NAMED ACCORDINGLY -> in the same folder as base interior image and named <name>_glow
-	 * 	- archives are now unpacked automatically by the editor. The only thing you have to do is point it to original, packed, .dat archives inside /resources/ folder in your FTL installation.
-	 *  - images that cannot be overriden (only cloak and shields can) are now always exported, default or not
-	 *  - dialogs should now open to correct locations and retain their own paths
-	 *  - fixed weapon and drone presets not being loaded in Properties window.
-	 *  - ships loaded from .ftl package now have their weapons / drones / augments loaded properly.
-	 *  - when loading a ship from an .ftl package, it is now possible to choose which ship is to be loaded, should the package contain more than one ship.
-	 *  - fixed gibs images not being properly reloaded after saving a project, thus crashing the editor.
-	 *  - fixed bomb weapons loading the bomb's graphic, and not the launcher's
+	 * 	- fixed crystal cruiser 2 being classified as "other" instead of "player".
 	 */
 	
 	// =================================================================================================== //

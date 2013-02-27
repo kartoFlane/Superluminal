@@ -31,9 +31,7 @@ import com.kartoflane.superluminal.elements.FTLItem;
 import com.kartoflane.superluminal.elements.Systems;
 
 
-public class ShipPropertiesWindow extends Dialog
-{
-
+public class ShipPropertiesWindow extends Dialog {
 	protected Shell shell;
 	private TabItem tbtmShipInfo;
 	private Text textName;
@@ -92,15 +90,13 @@ public class ShipPropertiesWindow extends Dialog
 	private Spinner spMaxSec;
 	private Combo augments;
 
-	public ShipPropertiesWindow(Shell parent)
-	{
+	public ShipPropertiesWindow(Shell parent) {
 		super(parent, SWT.DIALOG_TRIM);
 		setText(Main.APPNAME + " - Ship Properties");
 		createContents();
 	}
 
-	public void open()
-	{
+	public void open() {
 		shell.setLocation(Main.shell.getLocation().x+100, Main.shell.getLocation().y+50);
 		shell.open();
 		shell.layout();
@@ -118,6 +114,7 @@ public class ShipPropertiesWindow extends Dialog
 			textClass.setText(Main.ship.shipClass);
 		if (!ShipIO.isNull(Main.ship.imageName))
 			textImage.setText(Main.ship.imageName);
+		
 		textDesc.setEnabled(Main.ship.isPlayer);
 		if (!ShipIO.isNull(Main.ship.descr))
 			textDesc.setText(Main.ship.descr);
@@ -360,8 +357,7 @@ search:		for (String s : presetsDr.getItems()) {
 	}
 	
 	
-	private void createContents()
-	{
+	private void createContents() {
 		shell = new Shell(getParent(), SWT.BORDER | SWT.TITLE);
 		shell.setSize(465, 305);
 		shell.setText(getText());

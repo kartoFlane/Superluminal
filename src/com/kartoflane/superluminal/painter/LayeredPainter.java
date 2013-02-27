@@ -10,6 +10,7 @@ import com.kartoflane.superluminal.core.Main;
 
 /**
  * @author Vhati
+ * @author kartoFlane - minor modifications
  */
 public class LayeredPainter implements PaintListener {
 	public static final Integer SHIELD = new Integer(0);
@@ -74,6 +75,9 @@ public class LayeredPainter implements PaintListener {
 		return null;
 	}
 
+	/**
+	 * Returns the bottommost visible PaintBox in a layer at a point, or null.
+	 */
 	public PaintBox getBottomBoxAt(int x, int y, Integer layerId) {
 		PaintBox tempBox = null;
 		for (PaintBox box : layerMap.get(layerId)) {
