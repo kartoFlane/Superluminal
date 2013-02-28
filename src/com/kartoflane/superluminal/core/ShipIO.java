@@ -1019,6 +1019,113 @@ scan:			while(sc.hasNext()) {
 		return ignoreNextTag;
 	}
 	
+	public static void loadLayout(File fileToLoad) {
+		FileReader fr = null;
+		Scanner sc = null;
+		String s;
+		FTLRoom room;
+		FTLDoor door;
+		
+		int x, y, ox = 0, oy = 0;
+		boolean foundSection = false;
+		FTLShip ship = Main.ship;
+		
+		for (FTLRoom r : ship.rooms)
+			r.dispose();
+		for (FTLDoor d : ship.doors)
+			d.dispose();
+		
+		ship.rooms.clear();
+		ship.doors.clear();
+		Main.idList.clear();
+		
+		debug("Importing layout from " + fileToLoad.getName() + "...");
+		
+		try {
+			fr = new FileReader(fileToLoad);
+			sc = new Scanner(fr);
+			
+			sc.useDelimiter(Pattern.compile(lineDelimiter));
+			
+			while(sc.hasNext()) {
+				s = sc.next();
+				if (s.equals("X_OFFSET")) {
+					ox = sc.nextInt();
+					negativeX = ox < 0;
+					foundSection = true;
+				} else if (s.equals("Y_OFFSET")) {
+					oy = sc.nextInt();
+					negativeY = oy < 0;
+					foundSection = true;
+				} else if (s.equals("ROOM")) {
+					room = new FTLRoom(0,0,0,0);
+					room.id = sc.nextInt();
+						
+					x = sc.nextInt()*35;
+					y = sc.nextInt()*35;
+					room.setLocationAbsolute(x, y);
+					
+					x = sc.nextInt()*35;
+					y = sc.nextInt()*35;
+					room.setSize(x, y);
+					
+					room.add(ship);
+
+					foundSection = true;
+				} else if (s.equals("DOOR")) {
+					door = new FTLDoor();
+					
+					x = sc.nextInt()*35 + ship.offset.x*35;
+					y = sc.nextInt()*35 + ship.offset.y*35;
+					door.setLocationAbsolute(x, y);
+					
+					sc.nextInt(); sc.nextInt();
+					
+					x = sc.nextInt();
+					door.horizontal = (x == 0) ? true : false;
+
+					Point p = door.getLocation();
+					if (door.horizontal) {
+						door.setLocationAbsolute(p.x+2, p.y-3);
+					} else {
+						door.setLocationAbsolute(p.x-3, p.y+2);
+					}
+					door.fixRectOrientation();
+
+					door.add(ship);
+					
+					foundSection = true;
+				}
+			}
+		} catch (FileNotFoundException e) {
+			Main.erDialog.add("Error: load ship layout - txt - file not found.");
+		} catch (InputMismatchException e) {
+			Main.erDialog.add("Error: load ship layout - txt - data structure differs from expected. File is wrongly formatted.");
+		} finally {
+			if (sc != null)
+				sc.close();
+		}
+		
+		ship.offset.x = ox;
+		ship.offset.y = oy;
+		
+		if (foundSection && ship != null) {
+			Main.print("Successfully imported room layout from " + fileToLoad.getAbsolutePath());
+			Point p;
+			for (FTLRoom r : ship.rooms) {
+				p = r.getLocation();
+				r.setLocationAbsolute(ship.anchor.x + p.x + ship.offset.x*35, ship.anchor.y + p.y + ship.offset.y*35);
+			}
+			for (FTLDoor d : ship.doors) {
+				p = d.getLocation();
+				d.setLocationAbsolute(ship.anchor.x + p.x + ship.offset.x*35, ship.anchor.y + p.y + ship.offset.y*35);
+			}
+			Main.updatePainter();
+		} else {
+			Main.erDialog.add("Error: load ship layout - no matching section headers found, no data was loaded.");
+		}
+	}
+	
 	/**
 	 * Loads the layout declared for the ship that is currently being loaded.
 	 */

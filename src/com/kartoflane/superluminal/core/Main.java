@@ -42,6 +42,7 @@ import com.kartoflane.superluminal.elements.Systems;
 import com.kartoflane.superluminal.elements.Tooltip;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.LayeredPainter;
+import com.kartoflane.superluminal.ui.AboutWindow;
 import com.kartoflane.superluminal.ui.DirectoriesWindow;
 import com.kartoflane.superluminal.ui.ErrorDialog;
 import com.kartoflane.superluminal.ui.ExportDialog;
@@ -78,7 +79,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "2013.02.26";
+	public final static String VERSION = "26-2-13";
 	
 		// === Important objects
 	public static Shell shell;
@@ -171,6 +172,7 @@ public class Main {
 	private static String lastMsg = "";
 	private static String interiorPath = "";
 	private static String ftlLoadPath = "";
+	private static String importPath = "";
 	private static File temporaryFiles = null;
 	/**
 	 * Path of current project file, for quick saving via Ctrl+S
@@ -241,10 +243,9 @@ public class Main {
 	// =================================================================================================== //
 	
 	/*
-	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES!
+	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO:
-	 * 	- importing room layout from shipname.txt
 	 * 	- load weapons' mount point from animations.xml
 	 * 	- gibs editor - animation
 	 * 
@@ -269,6 +270,8 @@ public class Main {
 	 * 	- fixed the editor not detecting the unpacked archives when moved the directory was moved somewhere else.
 	 * 	- fixed precision of gibs' linear and angular velocities to two decimal places
 	 * 	- added ship choice dialog for regular ship loading
+	 * 	- added possibility to import room layout from shipname.txt
+	 *  - added "About" window
 	 */
 	
 	// =================================================================================================== //
@@ -493,6 +496,11 @@ public class Main {
 		final MenuItem mntmLoadShipFTL = new MenuItem(menu_file, SWT.NONE);
 		mntmLoadShipFTL.setText("Load Ship From .ftl...");
 		
+		// === File -> Import room layout
+		final MenuItem mntmImport = new MenuItem(menu_file, SWT.NONE);
+		mntmImport.setText("Import Room Layout...");
+		mntmImport.setEnabled(false);
+		
 		// === File -> Open project
 		final MenuItem mntmLoadShipProject = new MenuItem(menu_file, SWT.NONE);
 		mntmLoadShipProject.setText("Open Project...\tCtrl + O");
@@ -621,6 +629,18 @@ public class Main {
 		mntmLoadSystem.setText("Load System Graphics");
 		mntmLoadSystem.setSelection(loadSystem);
 		
+	// === About menu
+		
+		MenuItem mntmAbout = new MenuItem(menu, SWT.NONE);
+		mntmAbout.setText("About");
+		
+		mntmAbout.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				AboutWindow about = new AboutWindow(shell);
+				about.shell.open();
+				about = null;
+			}
+		});
 	// === Tool bar
 		
 		// === Container - holds all the items on the left side of the screen
@@ -1952,6 +1972,7 @@ public class Main {
 					mntmSaveShipAs.setEnabled(true);
 					mntmExport.setEnabled(true);
 					mntmClose.setEnabled(true);
+					mntmImport.setEnabled(true);
 					mntmArchives.setEnabled(false);
 					
 					currentPath = null;
@@ -1998,6 +2019,7 @@ public class Main {
 							mntmSaveShipAs.setEnabled(true);
 							mntmExport.setEnabled(true);
 							mntmClose.setEnabled(true);
+							mntmImport.setEnabled(true);
 							mntmArchives.setEnabled(false);
 							
 							if (ship.isPlayer) {
@@ -2170,6 +2192,7 @@ public class Main {
 					mntmSaveShipAs.setEnabled(true);
 					mntmExport.setEnabled(true);
 					mntmClose.setEnabled(true);
+					mntmImport.setEnabled(true);
 					mntmArchives.setEnabled(false);
 					
 					if (ship.isPlayer) {
@@ -2301,6 +2324,7 @@ public class Main {
 					mntmSaveShipAs.setEnabled(true);
 					mntmExport.setEnabled(true);
 					mntmClose.setEnabled(true);
+					mntmImport.setEnabled(true);
 					mntmArchives.setEnabled(false);
 					
 					mntmConToPlayer.setEnabled(!ship.isPlayer);
@@ -2318,6 +2342,22 @@ public class Main {
 					Main.erDialog.printErrors(ShipIO.errors);
 					Main.erDialog.open();
 					ShipIO.errors.clear();
+				}
+			}
+		});
+		
+		mntmImport.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+				String[] filterExtensions = new String[] {"*.txt"};
+				dialog.setFilterExtensions(filterExtensions);
+				dialog.setFilterPath(importPath);
+				dialog.setFileName(importPath);
+				String path = dialog.open();
+				
+				if (!ShipIO.isNull(path)) {
+					ShipIO.loadLayout(new File(path));
 				}
 			}
 		});
@@ -2402,6 +2442,7 @@ public class Main {
 				mntmSaveShipAs.setEnabled(false);
 				mntmExport.setEnabled(false);
 				mntmClose.setEnabled(false);
+				mntmImport.setEnabled(false);
 				mntmArchives.setEnabled(true);
 
 				ship = null;
