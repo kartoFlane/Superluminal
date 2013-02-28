@@ -35,8 +35,7 @@ public class PropertiesWindow
 	private Button btnAvailable;
 	private Composite composite;
 
-	public PropertiesWindow(Shell parent)
-	{
+	public PropertiesWindow(Shell parent) {
 		shell = new Shell(parent, SWT.BORDER | SWT.TITLE);
 		shell.setFont(Main.appFont);
 		shell.setSize(186, 235);
@@ -163,8 +162,7 @@ public class PropertiesWindow
 		});
 	}
 
-	public void open()
-	{
+	public void open() {
 		scalePower.setEnabled(false);
 		scaleLevel.setEnabled(false);
 		textPower.setEnabled(false);

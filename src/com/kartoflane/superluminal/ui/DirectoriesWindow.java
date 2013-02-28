@@ -142,8 +142,8 @@ public class DirectoriesWindow {
 						resLib = new datLib(resources);
 						resLib.Extract("img", "archives" + ShipIO.pathDelimiter + "resources");
 
-						Main.dataPath = f.getAbsolutePath() + ShipIO.pathDelimiter + "data";
-						Main.resPath = f.getAbsolutePath() + ShipIO.pathDelimiter + "resources";
+						Main.dataPath = "archives" + ShipIO.pathDelimiter + "data";
+						Main.resPath = "archives" + ShipIO.pathDelimiter + "resources";
 						
 						ShipBrowser.clearTrees();
 						ShipIO.reloadBlueprints();
@@ -189,8 +189,8 @@ public class DirectoriesWindow {
 						resLib = new datLib(resources);
 						resLib.Extract("img", "archives" + ShipIO.pathDelimiter + "resources");
 
-						Main.dataPath = f.getAbsolutePath() + ShipIO.pathDelimiter + "data";
-						Main.resPath = f.getAbsolutePath() + ShipIO.pathDelimiter + "resources";
+						Main.dataPath = "archives" + ShipIO.pathDelimiter + "data";
+						Main.resPath = "archives" + ShipIO.pathDelimiter + "resources";
 						
 						ShipBrowser.clearTrees();
 						ShipIO.reloadBlueprints();

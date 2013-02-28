@@ -24,6 +24,8 @@ import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.TraverseEvent;
+import org.eclipse.swt.events.TraverseListener;
 
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
@@ -1219,6 +1221,14 @@ search:		for (String s : presetsDr.getItems()) {
 				
 				shell.setVisible(false);
 			}
+		});
+		
+		textDesc.addTraverseListener(new TraverseListener() {
+		    public void keyTraversed(TraverseEvent e) {
+		        if (e.detail == SWT.TRAVERSE_TAB_NEXT || e.detail == SWT.TRAVERSE_TAB_PREVIOUS) {
+		            e.doit = true;
+		        }
+		    }
 		});
 		
 		btnExplicit.addSelectionListener(new SelectionAdapter() {

@@ -244,12 +244,11 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES!
 	 * === TODO
 	 * == IMMEDIATE PRIO:
+	 * 	- importing room layout from shipname.txt
+	 * 	- load weapons' mount point from animations.xml
+	 * 	- gibs editor - animation
 	 * 
 	 * == MEDIUM PRIO:
-	 * 	- importing room layout from shipname.txt
-	 *	- implement ship choice to regular ship loading
-	 * 	- gibs editor - animation
-	 * 	- load weapons' mount point from animations.xml
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 
 	 * == LOW PRIO:
@@ -265,6 +264,11 @@ public class Main {
 	 * =========================================================================
 	 * CHANGELOG:
 	 * 	- fixed crystal cruiser 2 being classified as "other" instead of "player".
+	 * 	- fixed arrow keys not working with text fields
+	 * 	- fixed tab inserting tabs in description field, instead of jumping to the next field.
+	 * 	- fixed the editor not detecting the unpacked archives when moved the directory was moved somewhere else.
+	 * 	- fixed precision of gibs' linear and angular velocities to two decimal places
+	 * 	- added ship choice dialog for regular ship loading
 	 */
 	
 	// =================================================================================================== //
@@ -2054,7 +2058,6 @@ public class Main {
 				if (!ShipIO.isNull(path)) {
 					ftlLoadPath = new String(path);
 					debug("Load ship from .ftl:", true);
-					mntmClose.notifyListeners(SWT.Selection, null);
 					
 					temporaryFiles = new File("sprlmnl_tmp");
 					temporaryFiles.mkdirs();
@@ -2102,11 +2105,13 @@ public class Main {
 							debug("\t\tdone", true);
 							
 							if (blueList.size() == 1) {
+								mntmClose.notifyListeners(SWT.Selection, null);
 								ShipIO.loadShip(blueList.get(0), unpacked_blueprints, -1);
 							} else {
 								choiceDialog.setChoices(blueList, unpacked_blueprints);
 								String blueprint = choiceDialog.open();
-								
+
+								mntmClose.notifyListeners(SWT.Selection, null);
 								ShipIO.loadShip(blueprint, unpacked_blueprints, choiceDialog.declaration);
 							}
 						} else {
@@ -2119,6 +2124,25 @@ public class Main {
 								zf.close();
 							} catch (IOException ex) {
 							}
+						
+						if (ShipIO.oldWeaponMap.size() > 0) {
+							ShipIO.clearMaps();
+							ShipIO.weaponMap.putAll(ShipIO.oldWeaponMap);
+							ShipIO.droneMap.putAll(ShipIO.oldDroneMap);
+							ShipIO.augMap.putAll(ShipIO.oldAugMap);
+							ShipIO.weaponSetMap.putAll(ShipIO.oldWeaponSetMap);
+							ShipIO.droneSetMap.putAll(ShipIO.oldDroneSetMap);
+							
+							ShipIO.clearOldMaps();
+						}
+
+						if (temporaryFiles != null) {
+							debug("\tdeleting temporary directory... ", false);
+							ShipIO.deleteFolderContents(temporaryFiles);
+							if (temporaryFiles.exists()) ShipIO.rmdir(temporaryFiles);
+							debug("done", true);
+							temporaryFiles = null;
+						}
 					}
 				}
 
@@ -2342,17 +2366,6 @@ public class Main {
 					gibDialog.letters.clear();
 				}
 				
-				if (ShipIO.oldWeaponMap.size() > 0) {
-					ShipIO.clearMaps();
-					ShipIO.weaponMap.putAll(ShipIO.oldWeaponMap);
-					ShipIO.droneMap.putAll(ShipIO.oldDroneMap);
-					ShipIO.augMap.putAll(ShipIO.oldAugMap);
-					ShipIO.weaponSetMap.putAll(ShipIO.oldWeaponSetMap);
-					ShipIO.droneSetMap.putAll(ShipIO.oldDroneSetMap);
-					
-					ShipIO.clearOldMaps();
-				}
-				
 				btnCloaked.setEnabled(false);
 				idList.clear();
 				clearButtonImg();
@@ -2392,14 +2405,6 @@ public class Main {
 				mntmArchives.setEnabled(true);
 
 				ship = null;
-
-				if (temporaryFiles != null) {
-					debug("\tdeleting temporary directory... ", false);
-					ShipIO.deleteFolderContents(temporaryFiles);
-					if (temporaryFiles.exists()) ShipIO.rmdir(temporaryFiles);
-					debug("done", true);
-					temporaryFiles = null;
-				}
 				
 				canvas.redraw();
 			}
@@ -3142,15 +3147,21 @@ public class Main {
 		text.setText(lastMsg);
 	}
 	
-	public static void debug(String msg, boolean ln) {
+	public static void debug(Object msg, boolean ln) {
 		if (debug) {
 			if (ln) {
-				System.out.println(msg);
+				System.out.println("" + msg);
 			} else {
-				System.out.print(msg);
+				System.out.print("" + msg);
 			}
 		}
 	}
+	
+	public static void debug(Object msg) {
+		if (debug)
+			System.out.println("" + msg);
+	}
+	
 	
 	public static void updatePainter() {
 		anchor.setLocation(ship.anchor.x, ship.anchor.y,true);

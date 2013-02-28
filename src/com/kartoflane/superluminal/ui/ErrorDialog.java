@@ -17,8 +17,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 
-public class ErrorDialog
-{
+public class ErrorDialog {
 
 	protected Shell shell;
 	private Text errors;
@@ -27,19 +26,16 @@ public class ErrorDialog
 	private Button btnClear;
 	private Button btnDebug;
 
-	public ErrorDialog(Shell parent)
-	{
+	public ErrorDialog(Shell parent) {
 		createContents();
 	}
 	
-	public void open()
-	{
+	public void open() {
 		shell.open();
 		btnDebug.setSelection(Main.debug);
 	}
 
-	private void createContents()
-	{
+	private void createContents() {
 		shell = new Shell(Main.shell, SWT.BORDER | SWT.RESIZE | SWT.TITLE);
 		shell.setSize(500, 230);
 		shell.setText(Main.APPNAME + " - Errors");
@@ -122,6 +118,7 @@ public class ErrorDialog
 	}
 	
 	public void print(String s) {
+		Main.debug(s, true);
 		errors.setText(errors.getText() + (!errors.getText().equals("") ? ShipIO.lineDelimiter : "") + s);
 		shell.setVisible(true);
 	}

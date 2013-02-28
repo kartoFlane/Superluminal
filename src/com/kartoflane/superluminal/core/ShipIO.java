@@ -16,6 +16,8 @@ import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -23,6 +25,7 @@ import java.util.HashSet;
 import java.util.InputMismatchException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -189,6 +192,36 @@ public class ShipIO {
 		}
 		
 		return blueprintCount;
+	}
+	
+	public static List<String> preScan(File fileToScan, String blueprint) {
+		String s;
+		Scanner sc = null;
+		FileReader fr;
+		Pattern pattern;
+		Matcher matcher;
+		List<String> blueList = new ArrayList<String>();
+		
+		try {
+			fr = new FileReader(fileToScan);
+			sc = new Scanner(fr);
+			sc.useDelimiter(Pattern.compile(lineDelimiter));
+			//<shipBlueprint name="PLAYER_SHIP_HARD_2"
+			pattern = Pattern.compile("<shipBlueprint\\s*name\\s*=\\s*\"(" + blueprint + ")\".*?");
+			
+			while (sc.hasNext()) {
+				s = sc.next();
+				matcher = pattern.matcher(s);
+				if (matcher.find()) {
+					blueList.add(matcher.group(1));
+				}
+			}
+		} catch (FileNotFoundException e) {
+		} finally {
+			if (sc != null)
+				sc.close();
+		}
+		return blueList;
 	}
 	
 	public static List<String> preScanFTL(File fileToScan) {
@@ -560,7 +593,7 @@ ship:			while(sc.hasNext()) {
 				}
 			sc.close();
 			} catch (FileNotFoundException e) {
-				Main.erDialog.add("Error: load ship - autoBlueprints.xml file not found.");
+				Main.erDialog.add("Error: load ship - "+ fileToScan.getName() +" file not found [" + fileToScan.getAbsolutePath() + "]");
 			} catch (NoSuchElementException e) {
 				Main.erDialog.add("Error: load ship - end of file reached - probably does not contain valid ship blueprints.");
 			}
@@ -923,7 +956,7 @@ scan:			while(sc.hasNext()) {
 				}
 				sc.close();
 			} catch (FileNotFoundException e) {
-				Main.erDialog.add("Error: load ship - blueprints.xml file not found.");
+				Main.erDialog.add("Error: load ship - "+ fileToScan.getName() +" file not found [" + fileToScan.getAbsolutePath() + "]");
 			}
 			
 			if (!IOdebug)
@@ -1418,6 +1451,9 @@ scan:			while(sc.hasNext()) {
 			}
 			
 			if (result == null) {
+				if (sc != null) 
+					sc.close();
+				
 				filer = new FileReader(Main.dataPath + pathDelimiter + "animations.xml");
 				sc = new Scanner(filer);
 				sc.useDelimiter(Pattern.compile(lineDelimiter));
@@ -1865,12 +1901,13 @@ search: for (File f : dir.listFiles()) {
 			fw.write(lineDelimiter);
 
 			// gibs
+			DecimalFormat threeDec = new DecimalFormat("0.00", new DecimalFormatSymbols(Locale.US));
 			fw.write("<explosion>" + lineDelimiter);
 				for (FTLGib g : Main.ship.gibs) {
 					fw.write("\t" + "<gib" + g.number + ">" + lineDelimiter);
-					fw.write("\t\t" + "<velocity min=\"" + g.minVel + "\" max=\"" + g.maxVel + "\"/>" + lineDelimiter);
+					fw.write("\t\t" + "<velocity min=\"" + threeDec.format(g.minVel) + "\" max=\"" + threeDec.format(g.maxVel) + "\"/>" + lineDelimiter);
 					fw.write("\t\t" + "<direction min=\"" + g.minDir + "\" max=\"" + g.maxDir + "\"/>" + lineDelimiter);
-					fw.write("\t\t" + "<angular min=\"" + g.minAng + "\" max=\"" + g.maxAng + "\"/>" + lineDelimiter);
+					fw.write("\t\t" + "<angular min=\"" + threeDec.format(g.minAng) + "\" max=\"" + threeDec.format(g.maxAng) + "\"/>" + lineDelimiter);
 					fw.write("\t\t" + "<x>" + g.position.x + "</x>" + lineDelimiter);
 					fw.write("\t\t" + "<y>" + g.position.y + "</y>" + lineDelimiter);
 					fw.write("\t" + "</gib" + g.number + ">" + lineDelimiter);

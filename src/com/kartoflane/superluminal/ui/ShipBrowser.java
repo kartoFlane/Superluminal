@@ -1,5 +1,8 @@
 package com.kartoflane.superluminal.ui;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import org.eclipse.swt.SWT;
@@ -18,6 +21,7 @@ import org.eclipse.swt.layout.GridData;
 import com.kartoflane.superluminal.core.ConfigIO;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
+import com.kartoflane.superluminal.elements.FTLItem;
 import com.kartoflane.superluminal.elements.FTLShip;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
@@ -160,9 +164,37 @@ public class ShipBrowser {
 			public void widgetSelected(SelectionEvent e) {
 				Main.shell.setEnabled(true);
 
-				Main.mntmClose.notifyListeners(SWT.Selection, null);
+				File unpacked_blueprints = null;
+				unpacked_blueprints = new File("archives" + ShipIO.pathDelimiter + "data" + ShipIO.pathDelimiter + "autoBlueprints.xml");
+				ArrayList<String> blueList = new ArrayList<String>();
+				ArrayList<String> tempList = null;
 				
-				ShipIO.loadShip(selectedShip, null, -1);
+				tempList = (ArrayList<String>) ShipIO.preScan(unpacked_blueprints, selectedShip);
+				
+				if (tempList != null) blueList.addAll(tempList);
+				
+				if (blueList == null || blueList.size()==0) {
+					unpacked_blueprints = new File("archives" + ShipIO.pathDelimiter + "data" + ShipIO.pathDelimiter + "blueprints.xml");
+					blueList = (ArrayList<String>) ShipIO.preScan(unpacked_blueprints, selectedShip);
+					
+					if (tempList != null) blueList.addAll(tempList);
+				}
+				
+				if (blueList.size()!=0) {
+					if (blueList.size() == 1) {
+						Main.mntmClose.notifyListeners(SWT.Selection, null);
+						ShipIO.loadShip(blueList.get(0), unpacked_blueprints, -1);
+					} else {
+						Main.choiceDialog.setChoices(blueList, unpacked_blueprints);
+						String blueprint = Main.choiceDialog.open();
+
+						Main.mntmClose.notifyListeners(SWT.Selection, null);
+						ShipIO.loadShip(blueprint, unpacked_blueprints, Main.choiceDialog.declaration);
+					}
+				} else {
+					Main.erDialog.print("Error: load ship - no ship declarations found. No data was loaded. This shouldn't ever happen.");
+				}
+				//ShipIO.loadShip(selectedShip, null, -1);
 				
 				ConfigIO.saveConfig();
 				shell.dispose();
