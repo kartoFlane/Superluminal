@@ -14,6 +14,8 @@ import java.util.Enumeration;
 import java.util.Formatter;
 import java.util.Hashtable;
 
+import com.kartoflane.superluminal.core.Main;
+
 
 /**
  * datLib : FTL .dat lib
@@ -165,6 +167,9 @@ public class datLib {
 					} 
 				} catch (Exception ex) { }
 			}
+			
+			if (Main.dirWindow.exp != null)
+				Main.dirWindow.exp.increment(Main.dirWindow.exportProgressIncrement);
 		}
 	}
 	
@@ -211,7 +216,7 @@ public class datLib {
 	 * IndexSize: Reads first 4 bytes (this is size of indexheader in .dat)
 	 * @return IndexSize (int)
 	 */
-	private int IndexSize() {
+	public int IndexSize() {
 		ByteBuffer datHeaderSize = this.Read(0, 4);
 		int Size = datHeaderSize.getInt();
 		return Size;

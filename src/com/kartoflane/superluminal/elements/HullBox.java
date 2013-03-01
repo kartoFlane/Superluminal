@@ -120,12 +120,8 @@ public class HullBox extends ImageBox implements DraggableBox {
 			
 			paintBorder(e);
 	
-			e.gc.setAlpha(alpha/255 * 32);
 			if (borderColor != null)
 				e.gc.setBackground(borderColor);
-			
-			if (Main.hullSelected)
-				e.gc.fillRectangle(bounds);
 			
 			e.gc.setAlpha(Main.btnCloaked.getSelection() ? alpha/3 : alpha);
 			if (image != null && Main.showHull)
@@ -139,6 +135,10 @@ public class HullBox extends ImageBox implements DraggableBox {
 			
 			if (Main.hullSelected && isPinned())
 				e.gc.drawImage(pin, bounds.x+5, bounds.y+5);
+			
+			e.gc.setAlpha(alpha/255 * 32);
+			if (Main.hullSelected)
+				e.gc.fillRectangle(bounds);
 	
 			e.gc.setAlpha(prevAlpha);
 			e.gc.setBackground(prevBg);

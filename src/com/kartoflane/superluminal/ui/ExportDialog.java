@@ -28,8 +28,7 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
 
 
-public class ExportDialog extends Dialog
-{
+public class ExportDialog extends Dialog {
 	public Shell shell;
 	private Text newName;
 	
@@ -39,15 +38,13 @@ public class ExportDialog extends Dialog
 	private Button btnReplace;
 	private Combo replaceCombo;
 
-	public ExportDialog(Shell parent)
-	{
+	public ExportDialog(Shell parent) {
 		super(parent, SWT.DIALOG_TRIM);
 		setText(Main.APPNAME + " - Export");
 		createContents();
 	}
 
-	public void open()
-	{
+	public void open() {
 		Main.shell.setEnabled(false);
 		
 		shell.open();

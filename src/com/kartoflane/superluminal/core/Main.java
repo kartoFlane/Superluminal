@@ -79,7 +79,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "26-2-13";
+	public final static String VERSION = "1-3-13";
 	
 		// === Important objects
 	public static Shell shell;
@@ -267,11 +267,13 @@ public class Main {
 	 * 	- fixed crystal cruiser 2 being classified as "other" instead of "player".
 	 * 	- fixed arrow keys not working with text fields
 	 * 	- fixed tab inserting tabs in description field, instead of jumping to the next field.
-	 * 	- fixed the editor not detecting the unpacked archives when moved the directory was moved somewhere else.
+	 * 	- fixed the editor not detecting the unpacked archives after the directory was moved somewhere else (changed paths to be relative)
 	 * 	- fixed precision of gibs' linear and angular velocities to two decimal places
 	 * 	- added ship choice dialog for regular ship loading
 	 * 	- added possibility to import room layout from shipname.txt
-	 *  - added "About" window
+	 * 	- added "About" window
+	 * 	- added a progress bar for archive unpacking
+	 * 	- added: archive window will now try to locate FTL installation by checking default paths - if found, the dialogs will be opening to this location
 	 */
 	
 	// =================================================================================================== //
@@ -381,6 +383,7 @@ public class Main {
 			shell.setEnabled(false);
 			dirWindow.btnClose.setEnabled(false);
 			dirWindow.label.setText("Please, browse to your FTL installation directory and select data.dat and resource.dat archives located in /resources/ folder.");
+			Main.installPath = dirWindow.findInstallation().getAbsolutePath();
 			dirWindow.open();
 		}
 		

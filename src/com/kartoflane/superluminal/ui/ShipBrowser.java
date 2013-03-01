@@ -2,7 +2,6 @@ package com.kartoflane.superluminal.ui;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 
 import org.eclipse.swt.SWT;
@@ -21,7 +20,6 @@ import org.eclipse.swt.layout.GridData;
 import com.kartoflane.superluminal.core.ConfigIO;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
-import com.kartoflane.superluminal.elements.FTLItem;
 import com.kartoflane.superluminal.elements.FTLShip;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;

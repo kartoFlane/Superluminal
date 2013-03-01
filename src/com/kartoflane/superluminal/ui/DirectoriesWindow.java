@@ -10,6 +10,7 @@ import org.eclipse.swt.widgets.Text;
 import com.kartoflane.superluminal.core.ConfigIO;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
+import com.kartoflane.superluminal.elements.ExportProgress;
 
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -33,6 +34,10 @@ public class DirectoriesWindow {
 	private datLib resLib;
 	public Label label;
 	public Button btnClose;
+	
+	public double exportProgressIncrement;
+	
+	public ExportProgress exp = null;
 
 	public DirectoriesWindow(Shell parent) {
 		shell = new Shell(parent, SWT.BORDER | SWT.TITLE);
@@ -129,32 +134,7 @@ public class DirectoriesWindow {
 					if (!data.contains("data.dat")) {
 						label.setText("Selected file is not valid data archive; please select the correct data.dat file.");
 					} else if (!ShipIO.isNull(resources)) {
-						File f = new File("archives");
-						if (f.exists()) {
-							ShipIO.deleteFolderContents(f);
-							ShipIO.rmdir(f);
-						}
-
-						label.setText("Unpacking... This might take a moment. Please wait.");
-						
-						dataLib = new datLib(data);
-						dataLib.Extract("", "archives");
-						resLib = new datLib(resources);
-						resLib.Extract("img", "archives" + ShipIO.pathDelimiter + "resources");
-
-						Main.dataPath = "archives" + ShipIO.pathDelimiter + "data";
-						Main.resPath = "archives" + ShipIO.pathDelimiter + "resources";
-						
-						ShipBrowser.clearTrees();
-						ShipIO.reloadBlueprints();
-						ShipBrowser.tree.setEnabled(true);
-						ConfigIO.saveConfig();
-						
-						label.setText("Loaded.");
-						
-						shell.setVisible(false);
-						Main.shell.setEnabled(true);
-						Main.shell.setActive();
+						load();
 					}
 				}
 			}
@@ -176,32 +156,7 @@ public class DirectoriesWindow {
 					if (!resources.contains("resource.dat")) {
 						label.setText("Selected file is not valid resource archive; please select the correct resource.dat file.");
 					} else if (!ShipIO.isNull(data)) {
-						File f = new File("archives");
-						if (f.exists()) {
-							ShipIO.deleteFolderContents(f);
-							ShipIO.rmdir(f);
-						}
-						
-						label.setText("Unpacking... This might take a moment. Please wait.");
-						
-						dataLib = new datLib(data);
-						dataLib.Extract("", "archives");
-						resLib = new datLib(resources);
-						resLib.Extract("img", "archives" + ShipIO.pathDelimiter + "resources");
-
-						Main.dataPath = "archives" + ShipIO.pathDelimiter + "data";
-						Main.resPath = "archives" + ShipIO.pathDelimiter + "resources";
-						
-						ShipBrowser.clearTrees();
-						ShipIO.reloadBlueprints();
-						ShipBrowser.tree.setEnabled(true);
-						ConfigIO.saveConfig();
-						
-						label.setText("Loaded.");
-						
-						shell.setVisible(false);
-						Main.shell.setEnabled(true);
-						Main.shell.setActive();
+						load();
 					}
 				}
 			}
@@ -215,5 +170,83 @@ public class DirectoriesWindow {
 				Main.shell.setActive();
 			}
 		});
+	}
+	
+	private void load() {
+		exp = new ExportProgress();
+		exp.open(shell);
+		exp.setText("Unpacking...");
+		
+		File f = new File("archives");
+		if (f.exists()) {
+			ShipIO.deleteFolderContents(f);
+			ShipIO.rmdir(f);
+		}
+
+		label.setText("Unpacking... This might take a moment. Please wait.");
+		
+		dataLib = new datLib(data);
+		resLib = new datLib(resources);
+		
+		exportProgressIncrement = 100 / Double.valueOf(dataLib.IndexSize() + resLib.IndexSize());
+		
+		dataLib.Extract("", "archives");
+		resLib.Extract("img", "archives" + ShipIO.pathDelimiter + "resources");
+		
+
+		Main.dataPath = "archives" + ShipIO.pathDelimiter + "data";
+		Main.resPath = "archives" + ShipIO.pathDelimiter + "resources";
+		
+		ShipBrowser.clearTrees();
+		ShipIO.reloadBlueprints();
+		ShipBrowser.tree.setEnabled(true);
+		ConfigIO.saveConfig();
+		
+		label.setText("Loaded.");
+		
+		exp.dispose();
+		exp = null;
+		
+		shell.setVisible(false);
+		Main.shell.setEnabled(true);
+		Main.shell.setActive();
+	}
+	
+	/**
+	 * @author Vhati
+	 */
+	public File findInstallation() {
+		String steamPath = "Steam/steamapps/common/FTL Faster Than Light/resources";
+		String gogPath = "GOG.com/Faster Than Light/resources";
+		
+		String xdgDataHome = System.getenv("XDG_DATA_HOME");
+		if (xdgDataHome == null)
+			xdgDataHome = System.getProperty("user.home") +"/.local/share";
+
+		File[] paths = new File[] {
+			// Windows - Steam
+			new File(new File(""+System.getenv("ProgramFiles(x86)")), steamPath),
+			new File(new File(""+System.getenv("ProgramFiles")), steamPath),
+			// Windows - GOG
+			new File(new File(""+System.getenv("ProgramFiles(x86)")), gogPath),
+			new File(new File(""+System.getenv("ProgramFiles")), gogPath),
+			// Linux - Steam
+			new File(xdgDataHome + "/Steam/SteamApps/common/FTL Faster Than Light/data/resources"),
+			// OSX - Steam
+			new File(System.getProperty("user.home") + "/Library/Application Support/Steam/SteamApps/common/FTL Faster Than Light/FTL.app/Contents/Resources"),
+			// OSX
+			new File("/Applications/FTL.app/Contents/Resources")
+		};
+
+		File ftlPath = null;
+
+		for (File path : paths) {
+			if (path.exists()) {
+				ftlPath = path;
+				break;
+			}
+		}
+
+		return ftlPath;
 	}
 }

@@ -260,7 +260,7 @@ public class ShipIO {
 	 */
 	public static void loadShip(String blueprintName, File fileToScan, int blueprintToLoad) {
 		FileReader fr;
-		Scanner sc;
+		Scanner sc = null;
 		String s;
 		Pattern pattern;
 		Matcher matcher;
@@ -319,6 +319,15 @@ ship:			while(sc.hasNext()) {
 									sc.close();
 									return;
 								}
+								
+								if (!new File(fileToScan.getParent() + pathDelimiter + shipBeingLoaded.layout + ".txt").exists() 
+										|| !new File(fileToScan.getParent() + pathDelimiter + shipBeingLoaded.layout + ".xml").exists()) {
+									Main.erDialog.add("Error: load ship - shipname.txt or shipname.xml was not found. Loading aborted.");
+									shipBeingLoaded = null;
+									sc.close();
+									return;
+								}
+								
 								loadShipLayout(fileToScan.getParent());
 								
 							// === LOAD SHIP IMAGE		
@@ -591,11 +600,13 @@ ship:			while(sc.hasNext()) {
 						}
 					}
 				}
-			sc.close();
 			} catch (FileNotFoundException e) {
 				Main.erDialog.add("Error: load ship - "+ fileToScan.getName() +" file not found [" + fileToScan.getAbsolutePath() + "]");
 			} catch (NoSuchElementException e) {
 				Main.erDialog.add("Error: load ship - end of file reached - probably does not contain valid ship blueprints.");
+			} finally {
+				if (sc != null)
+					sc.close();
 			}
 			
 		if (!IOdebug)
@@ -652,6 +663,15 @@ scan:			while(sc.hasNext()) {
 									sc.close();
 									return;
 								}
+
+								if (!new File(fileToScan.getParent() + pathDelimiter + shipBeingLoaded.layout + ".txt").exists()
+										|| !new File(fileToScan.getParent() + pathDelimiter + shipBeingLoaded.layout + ".xml").exists()) {
+									Main.erDialog.add("Error: load ship - shipname.txt or shipname.xml was not found. Loading aborted.");
+									shipBeingLoaded = null;
+									sc.close();
+									return;
+								}
+								
 								loadShipLayout(fileToScan.getParent());
 								
 							// === LOAD SHIP IMAGES
@@ -757,72 +777,72 @@ scan:			while(sc.hasNext()) {
 														
 														if (r!=null) {
 															debug("\t\t\tfound");
+															
+															try {
+																r.assignSystem(Systems.valueOf(matcher.group(3).toUpperCase()));
+				
+																shipBeingLoaded.levelMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
+																shipBeingLoaded.powerMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
+																shipBeingLoaded.startMap.put(r.getSystem(), Boolean.valueOf(matcher.group(9)));
+																Main.systemsMap.get(r.getSystem()).setAvailable(shipBeingLoaded.startMap.get(r.getSystem()));
+															
+																str = matcher.group(12);
+																s = matcher.group(11);
+																pattern = Pattern.compile("(\\s*?img\\s*?=\\s*?\")(.*?)(\")");
+																matcher = pattern.matcher(s);
+																if (matcher.find()) {
+																	r.img = matcher.group(2);
+																	
+																	if (fileToScan != null) {
+																		r.img = fileToScan.getParentFile().getParentFile().getAbsolutePath() + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
+																	} else {
+																		r.img = "skip.loading";
+																	}
+																	f = new File(r.img);
+																	if (!f.exists()) {
+																		r.img = matcher.group(2);
+																		r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
+																	}
+																	
+																	if (Main.loadSystem) {
+																		r.setInterior(r.img);
+																		//Main.erDialog.add("Error: load interior images - interior image not found.");
+																	}
+																} else if (!r.getSystem().equals(Systems.TELEPORTER) && !r.getSystem().equals(Systems.EMPTY)) {
+																	// load default sysImg for the room (teleporter doesn't have default graphic)
+																	if (Main.loadSystem) {
+																		r.img = "room_"+r.getSystem().toString().toLowerCase();
+																		r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
+																		r.setInterior(r.img);
+																	}
+																}
+																
+																if (str.equals(">")) {
+																	s = sc.next(); // <slot>
+																	s = sc.next(); // <direction>
+																	pattern = Pattern.compile("(.*?)(<direction>)(.*?)(</direction>)");
+																	matcher = pattern.matcher(s);
+																	if (matcher.find()) {
+																		shipBeingLoaded.slotDirMap.put(r.getSystem(), Slide.valueOf(matcher.group(3).toUpperCase()));
+																		s = sc.next(); // <number>
+																	}
+																	pattern = Pattern.compile("(.*?)(<number>)(.*?)(</number>)");
+																	matcher = pattern.matcher(s);
+																	if (matcher.find()) {
+																		shipBeingLoaded.slotMap.put(r.getSystem(), Integer.valueOf(matcher.group(3)));
+																	}
+																} else if (r.getSystem().equals(Systems.WEAPONS) || r.getSystem().equals(Systems.SHIELDS) || r.getSystem().equals(Systems.ENGINES) || r.getSystem().equals(Systems.PILOT) || r.getSystem().equals(Systems.MEDBAY)) {
+																	// get defaults
+																	shipBeingLoaded.slotDirMap.put(r.getSystem(), FTLRoom.getDefaultDir(r.getSystem()));
+																	shipBeingLoaded.slotMap.put(r.getSystem(), FTLRoom.getDefaultSlot(r.getSystem()));
+																}
+															} catch (IllegalArgumentException e) {
+																Main.erDialog.add("Error: tried to load \"" + matcher.group(3) + "\" as system.");
+															} catch (NullPointerException e) {
+																Main.erDialog.add("Error: tried to assign system " + matcher.group(3) + " to room ID: " + Integer.valueOf(matcher.group(7)) + ", but no such room was found.");
+															}
 														} else {
 															debug("\t\t\tnot found");
-														}
-														
-														try {
-															r.assignSystem(Systems.valueOf(matcher.group(3).toUpperCase()));
-			
-															shipBeingLoaded.levelMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
-															shipBeingLoaded.powerMap.put(r.getSystem(), Integer.valueOf(matcher.group(5)));
-															shipBeingLoaded.startMap.put(r.getSystem(), Boolean.valueOf(matcher.group(9)));
-															Main.systemsMap.get(r.getSystem()).setAvailable(shipBeingLoaded.startMap.get(r.getSystem()));
-														
-															str = matcher.group(12);
-															s = matcher.group(11);
-															pattern = Pattern.compile("(\\s*?img\\s*?=\\s*?\")(.*?)(\")");
-															matcher = pattern.matcher(s);
-															if (matcher.find()) {
-																r.img = matcher.group(2);
-																
-																if (fileToScan != null) {
-																	r.img = fileToScan.getParentFile().getParentFile().getAbsolutePath() + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
-																} else {
-																	r.img = "skip.loading";
-																}
-																f = new File(r.img);
-																if (!f.exists()) {
-																	r.img = matcher.group(2);
-																	r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
-																}
-																
-																if (Main.loadSystem) {
-																	r.setInterior(r.img);
-																	//Main.erDialog.add("Error: load interior images - interior image not found.");
-																}
-															} else if (!r.getSystem().equals(Systems.TELEPORTER) && !r.getSystem().equals(Systems.EMPTY)) {
-																// load default sysImg for the room (teleporter doesn't have default graphic)
-																if (Main.loadSystem) {
-																	r.img = "room_"+r.getSystem().toString().toLowerCase();
-																	r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
-																	r.setInterior(r.img);
-																}
-															}
-															
-															if (str.equals(">")) {
-																s = sc.next(); // <slot>
-																s = sc.next(); // <direction>
-																pattern = Pattern.compile("(.*?)(<direction>)(.*?)(</direction>)");
-																matcher = pattern.matcher(s);
-																if (matcher.find()) {
-																	shipBeingLoaded.slotDirMap.put(r.getSystem(), Slide.valueOf(matcher.group(3).toUpperCase()));
-																	s = sc.next(); // <number>
-																}
-																pattern = Pattern.compile("(.*?)(<number>)(.*?)(</number>)");
-																matcher = pattern.matcher(s);
-																if (matcher.find()) {
-																	shipBeingLoaded.slotMap.put(r.getSystem(), Integer.valueOf(matcher.group(3)));
-																}
-															} else if (r.getSystem().equals(Systems.WEAPONS) || r.getSystem().equals(Systems.SHIELDS) || r.getSystem().equals(Systems.ENGINES) || r.getSystem().equals(Systems.PILOT) || r.getSystem().equals(Systems.MEDBAY)) {
-																// get defaults
-																shipBeingLoaded.slotDirMap.put(r.getSystem(), FTLRoom.getDefaultDir(r.getSystem()));
-																shipBeingLoaded.slotMap.put(r.getSystem(), FTLRoom.getDefaultSlot(r.getSystem()));
-															}
-														} catch (IllegalArgumentException e) {
-															Main.erDialog.add("Error: tried to load \"" + matcher.group(3) + "\" as system.");
-														} catch (NullPointerException e) {
-															Main.erDialog.add("Error: tried to assign system " + matcher.group(3) + " to room ID: " + Integer.valueOf(matcher.group(7)) + ", but no such room was found.");
 														}
 													}
 												} else if (!ignoreNextTag) {
@@ -954,9 +974,13 @@ scan:			while(sc.hasNext()) {
 						}
 					}
 				}
-				sc.close();
 			} catch (FileNotFoundException e) {
 				Main.erDialog.add("Error: load ship - "+ fileToScan.getName() +" file not found [" + fileToScan.getAbsolutePath() + "]");
+			} catch (NoSuchElementException e) {
+				Main.erDialog.add("Error: load ship - end of file reached - probably does not contain valid ship blueprints.");
+			} finally {
+				if (sc!=null)
+					sc.close();
 			}
 			
 			if (!IOdebug)
@@ -1131,7 +1155,7 @@ scan:			while(sc.hasNext()) {
 	 */
 	public static void loadShipLayout(String parentPath) {
 		FileReader filer;
-		Scanner scanner;
+		Scanner scanner = null;
 		String s;
 		int x = 0, y = 0;
 		FTLRoom room;
@@ -1226,11 +1250,13 @@ scan:			while(sc.hasNext()) {
 			ship.offset.y = Math.max(ship.offset.y, 0);
 
 			debug("\tdone");
-			scanner.close();
 		} catch (FileNotFoundException e) {
 			Main.erDialog.add("Error: load ship layout - txt - file not found.");
 		} catch (InputMismatchException e) {
 			Main.erDialog.add("Error: load ship layout - txt - data structure differs from expected. File is wrongly formatted.");
+		} finally {
+			if (scanner!=null)
+				scanner.close();
 		}
 		
 	// === LOAD XML FILE
@@ -1327,19 +1353,20 @@ scan:			while(sc.hasNext()) {
 								}
 							}
 
-							g.add(shipBeingLoaded);
+							g.add(ship);
 						}
 					}
 					debug("\t\tdone");
 				}
 			}
 			debug("\tdone");
-			
-			scanner.close();
 		} catch (FileNotFoundException e) {
 			Main.erDialog.add("Error: load ship layout - xml - file not found.");
 		} catch (InputMismatchException e) {
 			Main.erDialog.add("Error: load ship layout - xml - data structure differs from expected. File is wrongly formatted.");
+		} finally {
+			if (scanner!=null)
+				scanner.close();
 		}
 		
 		if (foundSection && ship != null) {
@@ -1706,7 +1733,7 @@ search: for (File f : dir.listFiles()) {
 		String pathDir = path + pathDelimiter + Main.ship.blueprintName;
 		
 		ExportProgress exp = new ExportProgress();
-		exp.shell.open();
+		exp.open(Main.exDialog.shell);
 
 		FileWriter fw = null;
 		File destination = new File(pathDir);
@@ -2932,11 +2959,12 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 		Enumeration<? extends ZipEntry> files = zipFile.entries();
 		File f = null;
 		FileOutputStream fos = null;
+		InputStream eis = null;
 		
 		while (files.hasMoreElements()) {
 			try {
 				ZipEntry entry = (ZipEntry) files.nextElement();
-				InputStream eis = zipFile.getInputStream(entry);
+				eis = zipFile.getInputStream(entry);
 				byte[] buffer = new byte[1024];
 				int bytesRead = 0;
 	  
@@ -2959,11 +2987,12 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 				e.printStackTrace();
 				continue;
 			} finally {
-				if (fos != null) {
-					try {
+				try {
+					if (fos != null)
 						fos.close();
-					} catch (IOException e) {
-					}
+					if (eis != null)
+						eis.close();
+				} catch (IOException e) {
 				}
 			}
 		}
