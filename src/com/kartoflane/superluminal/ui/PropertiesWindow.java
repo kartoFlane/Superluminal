@@ -163,6 +163,9 @@ public class PropertiesWindow
 	}
 
 	public void open() {
+		if (Main.selectedRoom == null)
+			return;
+		
 		scalePower.setEnabled(false);
 		scaleLevel.setEnabled(false);
 		textPower.setEnabled(false);

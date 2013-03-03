@@ -36,6 +36,8 @@ public class GibDialog {
 	public boolean animating = false;
 	private String dialog_path = Main.resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship";
 	
+	public boolean mainMoved = true;
+	
 	public GibDialog(Shell shl) {
 		shell = new Shell(shl, SWT.BORDER | SWT.TITLE);
 		
@@ -59,6 +61,11 @@ public class GibDialog {
 			Main.shell.setActive();
 		}
 		shell.setVisible(vis);
+		
+		if (mainMoved) {
+			shell.setLocation(Main.canvas.toDisplay(Main.canvas.getSize().x-shell.getSize().x,7));
+			mainMoved = false;
+		}
 	}
 	
 	public boolean isVisible() {
@@ -174,9 +181,10 @@ public class GibDialog {
 				dialog.setFilterExtensions(filterExtensions);
 				dialog.setFilterPath(dialog_path);
 				String path = dialog.open();
-				dialog_path = new String(path);
 				
 				if (!ShipIO.isNull(path)) {
+					dialog_path = new String(path);
+					
 					FTLGib g = new FTLGib();
 					g.number = Main.ship.gibs.size() + 1;
 					g.setImage(path, false);

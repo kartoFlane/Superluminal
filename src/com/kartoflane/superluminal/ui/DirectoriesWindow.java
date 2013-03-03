@@ -60,6 +60,7 @@ public class DirectoriesWindow {
 		textData.setText(data);
 		textResources.setText(resources);
 		shell.open();
+		shell.setLocation(Main.shell.getLocation().x + 100, Main.shell.getLocation().y + 50);
 	}
 	
 	public void createContents() {

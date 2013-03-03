@@ -13,16 +13,48 @@ import java.util.Map;
 import java.util.zip.ZipFile;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.*;
-import org.eclipse.swt.widgets.*;
-import org.eclipse.wb.swt.SWTResourceManager;
-import org.eclipse.swt.graphics.*;
-
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.layout.FormData;
+import org.eclipse.swt.events.ControlAdapter;
+import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.MenuAdapter;
+import org.eclipse.swt.events.MenuEvent;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.TraverseEvent;
+import org.eclipse.swt.events.TraverseListener;
+import org.eclipse.swt.events.VerifyEvent;
+import org.eclipse.swt.events.VerifyListener;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.layout.FormAttachment;
+import org.eclipse.swt.layout.FormData;
+import org.eclipse.swt.layout.FormLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Canvas;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
 
 import com.kartoflane.superluminal.elements.Anchor;
 import com.kartoflane.superluminal.elements.CursorBox;
@@ -110,6 +142,7 @@ public class Main {
 	public static boolean snapMountsToHull = true;
 	public static boolean arbitraryPosOverride = true;
 		// view menu
+	public static boolean showGrid = true;
 	public static boolean showAnchor = true;
 	public static boolean showMounts = true;
 	public static boolean showRooms = true;
@@ -268,12 +301,13 @@ public class Main {
 	 * 	- fixed arrow keys not working with text fields
 	 * 	- fixed tab inserting tabs in description field, instead of jumping to the next field.
 	 * 	- fixed the editor not detecting the unpacked archives after the directory was moved somewhere else (changed paths to be relative)
-	 * 	- fixed precision of gibs' linear and angular velocities to two decimal places
+	 * 	- fixed precision of gibs' linear and angular velocities to two decimal places in shipname.xml
 	 * 	- added ship choice dialog for regular ship loading
 	 * 	- added possibility to import room layout from shipname.txt
 	 * 	- added "About" window
 	 * 	- added a progress bar for archive unpacking
-	 * 	- added: archive window will now try to locate FTL installation by checking default paths - if found, the dialogs will be opening to this location
+	 * 	- added: archive window will now try to locate FTL installation by checking default paths - if found, the dialogs will open to this location
+	 * 	- added option to show/hide grid, located in View menu
 	 */
 	
 	// =================================================================================================== //
@@ -313,6 +347,8 @@ public class Main {
 		shell.setLayout(new GridLayout(2, false));
 		shell.setText(APPNAME + " - Ship Editor");
 		shell.setLocation(100,50);
+
+		shell.setImage(Cache.checkOutImage(shell, "/img/Superluminal-2_64.png"));
 		
 		// resize the window as to not exceed screen dimensions, with maximum size being defined by GRID_W_MAX and GRID_H_MAX
 		GRID_W = ((int) ((display.getBounds().width-35))/35);
@@ -321,9 +357,8 @@ public class Main {
 		GRID_H = (GRID_H > GRID_H_MAX) ? GRID_H_MAX : GRID_H;
 		
 		// create config file if it doesn't exist already
-		if (!ConfigIO.configExists()) {
+		if (!ConfigIO.configExists())
 			ConfigIO.saveConfig();
-		}
 		
 		// load values from config
 		
@@ -337,15 +372,8 @@ public class Main {
 		// edit
 		removeDoor = ConfigIO.getBoolean("removeDoor");
 		arbitraryPosOverride = ConfigIO.getBoolean("arbitraryPosOverride");
-		//snapMounts = ConfigIO.getBoolean("snapMounts");
-		//snapMountsToHull = ConfigIO.getBoolean("snapMountsToHull");
 		// view
-		//showAnchor = ConfigIO.getBoolean("showAnchor");
-		//showMounts = ConfigIO.getBoolean("showMounts");
-		//showRooms = ConfigIO.getBoolean("showRooms");
-		//showHull = ConfigIO.getBoolean("showHull");
-		//showFloor = ConfigIO.getBoolean("showFloor");
-		//showShield = ConfigIO.getBoolean("showShield");
+		showGrid = ConfigIO.getBoolean("showGrid");
 		loadFloor = ConfigIO.getBoolean("loadFloor");
 		loadShield = ConfigIO.getBoolean("loadShield");
 		loadSystem = ConfigIO.getBoolean("loadSystem");
@@ -398,6 +426,9 @@ public class Main {
 		shell.open();
 		
 		shell.addControlListener(new ControlAdapter() {
+			public void controlMoved(ControlEvent e) {
+			}
+			
 			public void controlResized(ControlEvent e) {
 				GRID_W = ((int) ((canvasBg.getBounds().width))/35);
 				GRID_H = ((int) ((canvasBg.getBounds().height))/35);
@@ -453,26 +484,26 @@ public class Main {
 
 	protected void createContents() {
 		//highlightColor = shell.getDisplay().getSystemColor(SWT.COLOR_GREEN);
-		tempImage = SWTResourceManager.getImage(Main.class, "/org/eclipse/jface/dialogs/images/help.gif");
+		//tempImage = Cache.checkOutImage(shell, "/org/eclipse/jface/dialogs/images/help.gif");
 		
 	// === Load images to a map for easy access
 		
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/room.png");
+		tempImage = Cache.checkOutImage(shell, "/img/room.png");
 		toolsMap.put("room", tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/door.png");
+		tempImage = Cache.checkOutImage(shell, "/img/door.png");
 		toolsMap.put("door", tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/pointer.png");
+		tempImage = Cache.checkOutImage(shell, "/img/pointer.png");
 		toolsMap.put("pointer", tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/mount.png");
+		tempImage = Cache.checkOutImage(shell, "/img/mount.png");
 		toolsMap.put("mount", tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/system.png");
+		tempImage = Cache.checkOutImage(shell, "/img/system.png");
 		toolsMap.put("system", tempImage);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/gib.png");
+		tempImage = Cache.checkOutImage(shell, "/img/gib.png");
 		toolsMap.put("gib", tempImage);
 		
-		pinImage = SWTResourceManager.getImage(Main.class, "/img/pin.png");
-		tickImage = SWTResourceManager.getImage(Main.class, "/img/check.png");
-		crossImage = SWTResourceManager.getImage(Main.class, "/img/cross.png");
+		pinImage = Cache.checkOutImage(shell, "/img/pin.png");
+		tickImage = Cache.checkOutImage(shell, "/img/check.png");
+		crossImage = Cache.checkOutImage(shell, "/img/cross.png");
 
 	// === Menu bar
 		
@@ -575,6 +606,13 @@ public class Main {
 		// === View -> Errors console
 		MenuItem mntmOpenErrorsConsole = new MenuItem(menu_view, SWT.NONE);
 		mntmOpenErrorsConsole.setText("Open Errors Console");
+		
+		new MenuItem(menu_view, SWT.SEPARATOR);
+		
+		// === View -> Show grid
+		MenuItem mntmGrid = new MenuItem(menu_view, SWT.CHECK);
+		mntmGrid.setSelection(true);
+		mntmGrid.setText("Show Grid");
 		
 		new MenuItem(menu_view, SWT.SEPARATOR);
 		
@@ -925,7 +963,7 @@ public class Main {
 		btnCloaked = new Button(stateBtnsCo, SWT.TOGGLE | SWT.CENTER);
 		btnCloaked.setEnabled(false);
 		btnCloaked.setFont(appFont);
-		btnCloaked.setImage(SWTResourceManager.getImage(Main.class, "/img/smallsys/smallcloak.png"));
+		btnCloaked.setImage(Cache.checkOutImage(shell, "/img/smallsys/smallcloak.png"));
 		btnCloaked.setToolTipText("View the cloaked version of the ship.");
 		btnCloaked.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 
@@ -935,7 +973,7 @@ public class Main {
 		btnPirate.setFont(appFont);
 		btnPirate.setToolTipText("View the pirate version of the ship.");
 		btnPirate.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
-		btnPirate.setImage(SWTResourceManager.getImage(Main.class, "/img/pirate.png"));
+		btnPirate.setImage(Cache.checkOutImage(shell, "/img/pirate.png"));
 		new Label(composite, SWT.NONE);
 		
 	// === Canvas
@@ -1069,31 +1107,31 @@ public class Main {
 
 		// === Systems -> Systems -> Oxygen
 		final MenuItem mntmOxygen = new MenuItem(menu_systems, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smalloxygen.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smalloxygen.png");
 		mntmOxygen.setImage(tempImage);
 		mntmOxygen.setText("Oxygen");
 
 		// === Systems -> Systems -> Medbay
 		final MenuItem mntmMedbay = new MenuItem(menu_systems, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallmedbay.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smallmedbay.png");
 		mntmMedbay.setImage(tempImage);
 		mntmMedbay.setText("Medbay");
 
 		// === Systems -> Systems -> Shields
 		final MenuItem mntmShields = new MenuItem(menu_systems, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallshields.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smallshields.png");
 		mntmShields.setImage(tempImage);
 		mntmShields.setText("Shields");
 
 		// === Systems -> Systems -> Weapons
 		final MenuItem mntmWeapons = new MenuItem(menu_systems, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallweapons.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smallweapons.png");
 		mntmWeapons.setImage(tempImage);
 		mntmWeapons.setText("Weapons");
 
 		// === Systems -> Systems -> Engines
 		final MenuItem mntmEngines = new MenuItem(menu_systems, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallengines.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smallengines.png");
 		mntmEngines.setImage(tempImage);
 		mntmEngines.setText("Engines");
 
@@ -1105,19 +1143,19 @@ public class Main {
 
 		// === Systems -> Subsystems -> Pilot
 		final MenuItem mntmPilot = new MenuItem(menu_subsystems, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallpilot.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smallpilot.png");
 		mntmPilot.setImage(tempImage);
 		mntmPilot.setText("Pilot");
 
 		// === Systems -> Subsystems -> Doors
 		final MenuItem mntmDoors = new MenuItem(menu_subsystems, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smalldoor.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smalldoor.png");
 		mntmDoors.setImage(tempImage);
 		mntmDoors.setText("Doors");
 
 		// === Systems -> Subsystems -> Sensors
 		final MenuItem mntmSensors = new MenuItem(menu_subsystems, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallsensors.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smallsensors.png");
 		mntmSensors.setImage(tempImage);
 		mntmSensors.setText("Sensors");
 
@@ -1129,25 +1167,25 @@ public class Main {
 
 		// === Systems -> Special -> Drones
 		final MenuItem mntmDrones = new MenuItem(menu_special, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smalldrones.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smalldrones.png");
 		mntmDrones.setImage(tempImage);
 		mntmDrones.setText("Drones");
 
 		// === Systems -> Special -> Teleporter
 		final MenuItem mntmTeleporter = new MenuItem(menu_special, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallteleporter.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smallteleporter.png");
 		mntmTeleporter.setImage(tempImage);
 		mntmTeleporter.setText("Teleporter");
 
 		// === Systems -> Special -> Cloaking
 		final MenuItem mntmCloaking = new MenuItem(menu_special, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallcloak.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smallcloak.png");
 		mntmCloaking.setImage(tempImage);
 		mntmCloaking.setText("Cloaking");
 
 		// === Systems -> Special -> Artillery
 		final MenuItem mntmArtillery = new MenuItem(menu_special, SWT.RADIO);
-		tempImage = SWTResourceManager.getImage(Main.class, "/img/smallsys/smallartillery.png");
+		tempImage = Cache.checkOutImage(shell, "/img/smallsys/smallartillery.png");
 		mntmArtillery.setImage(tempImage);
 		mntmArtillery.setText("Artillery");
 		
@@ -2490,6 +2528,15 @@ public class Main {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				erDialog.open();
+			}
+		});
+		
+		mntmGrid.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				showGrid = ((MenuItem) e.widget).getSelection();
+				grid.setVisible(showGrid);
+				ConfigIO.saveConfig();
+				canvas.redraw();
 			}
 		});
 

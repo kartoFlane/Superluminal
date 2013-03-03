@@ -33,11 +33,11 @@ public class ErrorDialog {
 	public void open() {
 		shell.open();
 		btnDebug.setSelection(Main.debug);
+		shell.setLocation(Main.shell.getLocation().x + 100, Main.shell.getLocation().y + 50);
 	}
 
 	private void createContents() {
 		shell = new Shell(Main.shell, SWT.BORDER | SWT.RESIZE | SWT.TITLE);
-		shell.setSize(500, 230);
 		shell.setText(Main.APPNAME + " - Errors");
 		GridLayout gl_shell = new GridLayout(1, false);
 		gl_shell.verticalSpacing = 0;
@@ -48,10 +48,7 @@ public class ErrorDialog {
 		
 		Composite consoleC = new Composite(shell, SWT.BORDER);
 		consoleC.setLayout(new FillLayout(SWT.HORIZONTAL));
-		GridData gd_consoleC = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
-		gd_consoleC.minimumHeight = 130;
-		gd_consoleC.minimumWidth = 550;
-		consoleC.setLayoutData(gd_consoleC);
+		consoleC.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		
 		errors = new Text(consoleC, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
 		errors.setFont(Main.appFont);
@@ -68,7 +65,7 @@ public class ErrorDialog {
 		composite.setLayoutData(gd_composite);
 		
 		btnDebug = new Button(composite, SWT.CHECK);
-		btnDebug.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
+		btnDebug.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1));
 		btnDebug.setText("Debug");
 		btnDebug.setSelection(Main.debug);
 		
@@ -88,6 +85,8 @@ public class ErrorDialog {
 		btnClose.setText("Close");
 		
 		shell.pack();
+		shell.setSize(550, 200);
+		shell.setMinimumSize(260, 150);
 
 		btnDebug.addSelectionListener(new SelectionAdapter() {
 			@Override

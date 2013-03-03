@@ -1134,7 +1134,7 @@ scan:			while(sc.hasNext()) {
 		ship.offset.y = oy;
 		
 		if (foundSection && ship != null) {
-			Main.print("Successfully imported room layout from " + fileToLoad.getAbsolutePath());
+			Main.print("Successfully imported room layout from " + fileToLoad.getName());
 			Point p;
 			for (FTLRoom r : ship.rooms) {
 				p = r.getLocation();
@@ -1558,13 +1558,14 @@ scan:			while(sc.hasNext()) {
 	 * @param weaponName
 	 * @return
 	 */
-	private static String getWeaponArtFileName(FTLItem weapon) {
+	private static String getWeaponArtFileName(FTLMount m, FTLItem weapon) {
 		String result = null;
 		FileReader filer;
 		Scanner sc = null;
 		String s;
 		Pattern pattern;
 		Matcher matcher;
+		boolean found = false;
 		
 		try {
 			File f = new File("sprlmnl_tmp" + pathDelimiter + "data" + pathDelimiter + "animations.xml.append");
@@ -1573,7 +1574,7 @@ scan:			while(sc.hasNext()) {
 				sc = new Scanner(filer);
 				sc.useDelimiter(Pattern.compile(lineDelimiter));
 				
-				while (sc.hasNext() && result == null) {
+				while (sc.hasNext() && (result == null || !found)) {
 					s = sc.next();
 					pattern = Pattern.compile("(<animSheet name=\")(.*?)(\" w=\")(.*?)(\".*?fw=\")(.*?)(\".*?>)(.*?)(</animSheet>)");
 					matcher = pattern.matcher(s);
@@ -1581,24 +1582,57 @@ scan:			while(sc.hasNext()) {
 						Main.weaponFrameWidthMap.put(weapon.blueprint, Integer.valueOf(matcher.group(6)));
 						result = matcher.group(8);
 					}
+
+					pattern = Pattern.compile("<weaponAnim name=\"(.*?)\">");
+					matcher = pattern.matcher(s);
+					if (matcher.find() && matcher.group(1).toLowerCase().equals(weapon.img.toLowerCase())) {
+						while(sc.hasNext() && !s.contains("</weaponAnim>")) {
+							s = sc.next();
+
+							pattern = Pattern.compile("<mountPoint x=\"(\\d*?)\" y=\"(\\d*?)\"");
+							matcher = pattern.matcher(s);
+							if (matcher.find()) {
+								m.mountPoint.x = Integer.parseInt(matcher.group(1));
+								m.mountPoint.y = Integer.parseInt(matcher.group(2));
+								found = true;
+							}
+						}
+					}
 				}
 			}
 			
 			if (result == null) {
-				if (sc != null) 
+				found = false;
+				if (sc != null)
 					sc.close();
 				
 				filer = new FileReader(Main.dataPath + pathDelimiter + "animations.xml");
 				sc = new Scanner(filer);
 				sc.useDelimiter(Pattern.compile(lineDelimiter));
 	
-				while (sc.hasNext() && result == null) {
+				while (sc.hasNext() && (result == null || !found)) {
 					s = sc.next();
 					pattern = Pattern.compile("(<animSheet name=\")(.*?)(\" w=\")(.*?)(\".*?fw=\")(.*?)(\".*?>)(.*?)(</animSheet>)");
 					matcher = pattern.matcher(s);
 					if (matcher.find() && matcher.group(2).toLowerCase().equals(weapon.img.toLowerCase())) {
 						Main.weaponFrameWidthMap.put(weapon.blueprint, Integer.valueOf(matcher.group(6)));
 						result = matcher.group(8);
+					}
+
+					pattern = Pattern.compile("<weaponAnim name=\"(.*?)\">");
+					matcher = pattern.matcher(s);
+					if (matcher.find() && matcher.group(1).toLowerCase().equals(weapon.img.toLowerCase())) {
+						while(sc.hasNext() && !s.contains("</weaponAnim>")) {
+							s = sc.next();
+
+							pattern = Pattern.compile("<mountPoint x=\"(\\d*?)\" y=\"(\\d*?)\"");
+							matcher = pattern.matcher(s);
+							if (matcher.find()) {
+								m.mountPoint.x = Integer.parseInt(matcher.group(1));
+								m.mountPoint.y = Integer.parseInt(matcher.group(2));
+								found = true;
+							}
+						}
 					}
 				}
 			}
@@ -1607,7 +1641,6 @@ scan:			while(sc.hasNext()) {
 		} finally {
 			sc.close();
 		}
-		Main.debug(result, true);
 		
 		return result;
 	}
@@ -1622,20 +1655,23 @@ scan:			while(sc.hasNext()) {
 				index++;
 				wpn = getItem(blue);
 				if (wpn != null && !isNull(wpn.img)) {
-					path = getWeaponArtFileName(wpn);
-					if (path != null) {
-						FTLMount mt = null;
-						if (index < Main.ship.mounts.size()) mt = Main.ship.mounts.get(index);
-
-						String temppath = "sprlmnl_tmp" + pathDelimiter + "img" + pathDelimiter + path;
-						if (mt != null && new File(temppath).exists()) {
-							mt.setImage(temppath, Main.weaponFrameWidthMap.get(blue));
-							continue;
-						}
-						
-						path = Main.resPath + pathDelimiter + "img" + pathDelimiter + path;
-						if (mt != null)
+					FTLMount mt = null;
+					if (index < Main.ship.mounts.size()) mt = Main.ship.mounts.get(index);
+					
+					if (mt!=null) {
+						path = getWeaponArtFileName(mt, wpn);
+					
+						if (path != null) {
+							String temppath = "sprlmnl_tmp" + pathDelimiter + "img" + pathDelimiter + path;
+							if (new File(temppath).exists()) {
+								mt.setImage(temppath, Main.weaponFrameWidthMap.get(blue));
+								continue;
+							}
+							
+							path = Main.resPath + pathDelimiter + "img" + pathDelimiter + path;
+							
 							mt.setImage(path, Main.weaponFrameWidthMap.get(blue));
+						}
 					} else {
 						Main.erDialog.add("Warning: load weapon images - tried to load " + blue + ", but returned no weapon art file name. [weapon's art declaration not found in animations.xml]");
 					}

@@ -33,6 +33,14 @@ public class Grid
 		setHeightCell(h);
 	}
 	
+	public void setVisible(boolean vis) {
+		for (int x=1; x <= horizontalCells; x++) {
+			for (int y=1; y <= verticalCells; y++) {
+				getCellAt(x,y).setVisible(vis);
+			}
+		}
+	}
+	
 	public void setWidthCell(int w) {
 		if (horizontalCells < w) {
 			for (int x=horizontalCells; x <= w; x++)

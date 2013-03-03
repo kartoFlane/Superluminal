@@ -23,6 +23,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	private static final long serialVersionUID = 6519211644795332479L;
 	
 	public Point pos;
+	public Point mountPoint;
 	private Point orig;
 	private boolean move;
 	private Color dirColor = null;
@@ -79,6 +80,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		offset = new Point(0,0);
 		slide = Slide.NO;
 		orig = new Point(0,0);
+		mountPoint = new Point(0,0);
 	}
 
 	public void setImage(String path, boolean shrinkWrap) {
@@ -322,13 +324,13 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 
 		if (rotate) {
 			e.gc.drawImage(image, 0, 0, (frameW==0) ? image.getBounds().width : frameW, image.getBounds().height,
-					bounds.x + (bounds.width-bounds.height)/2 + (bounds.height/2), // rotated 90 degrees -> add height instead of width, scale 1 or -1 -> takes care of positive/negative values on its own
+					bounds.x + (bounds.width-bounds.height)/2 + bounds.height/2, // rotated 90 degrees -> add height instead of width, scale 1 or -1 -> takes care of positive/negative values on its own
 					bounds.y - (bounds.width-bounds.height)/2,
 					bounds.height, bounds.width);
 		} else {
 			e.gc.drawImage(image, 0, 0, (frameW==0) ? image.getBounds().width : frameW, image.getBounds().height,
-					bounds.x + (bounds.width/2), 
-					bounds.y,
+					bounds.x + bounds.width/2,// - mountPoint.x,
+					bounds.y,// - mountPoint.y,
 					bounds.width, bounds.height);
 		}
 

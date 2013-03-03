@@ -10,8 +10,12 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Link;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.program.Program;
 
 public class AboutWindow {
 	public Shell shell;
@@ -26,6 +30,10 @@ public class AboutWindow {
 		label.setText("Superluminal - a ship editor for FTL: Faster Than Light" + ShipIO.lineDelimiter
 					+ "Version: " + Main.VERSION + ShipIO.lineDelimiter + ShipIO.lineDelimiter
 					+ "Created by kartoFlane");
+		
+		Link link = new Link(shell, SWT.NONE);
+		link.setText("<a>Thread at FTL Forums</a>");
+		link.setLayoutData(new GridData(SWT.CENTER, SWT.BOTTOM, true, false, 1, 1));
 		
 		Button btnOK = new Button(shell, SWT.NONE);
 		GridData gd_btnOK = new GridData(SWT.CENTER, SWT.BOTTOM, true, false, 1, 1);
@@ -44,6 +52,12 @@ public class AboutWindow {
 			}
 		});
 		
+		link.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event event) {
+				Program.launch("http://www.ftlgame.com/forum/viewtopic.php?f=12&t=11251/");
+			}
+		});
+
 		shell.pack();
 		
 		shell.setLocation(parent.getLocation().x + parent.getSize().x/2 - shell.getSize().x/2, parent.getLocation().y + parent.getSize().y/4 - shell.getSize().y/2);
