@@ -29,7 +29,7 @@ public class FTLShip implements Serializable
 	/**
 	 * The most recent designation
 	 */
-	final public static int VERSION = 8;
+	final public static int VERSION = 9;
 	/**
 	 * Ship's own designation
 	 */
@@ -158,7 +158,7 @@ public class FTLShip implements Serializable
 		crewMap.put("random", 0);
 		
 		for (Systems key : Systems.values()) {
-			levelMap.put(key, 0);
+			levelMap.put(key, 1);
 			powerMap.put(key, 0);
 			startMap.put(key, true);
 			

@@ -234,6 +234,7 @@ public class ExportDialog extends Dialog {
 				btnExport.setEnabled(!ShipIO.isNull(newName.getText()) && !ShipIO.isNull(Main.exportPath));
 			}
 		});
+		
 		newName.addListener(SWT.Verify, new Listener() {
 			public void handleEvent(Event e) {
 				String string = e.text;
@@ -255,6 +256,12 @@ public class ExportDialog extends Dialog {
 
 				blueprintName = s[0];
 				btnExport.setEnabled(replaceCombo.getSelectionIndex() != -1 && !ShipIO.isNull(Main.exportPath));
+			}
+		});
+		
+		exportDir.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				Main.exportPath = exportDir.getText();
 			}
 		});
 		

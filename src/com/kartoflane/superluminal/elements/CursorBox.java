@@ -165,7 +165,8 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					
 					m.add(Main.ship);
 					
-					mount_canBePlaced = Main.ship.mounts.size() < (Main.ship.weaponSlots + (Main.isSystemAssigned(Systems.ARTILLERY) ? 1 : 0));
+					//mount_canBePlaced = Main.ship.mounts.size() < (Main.ship.weaponSlots + (Main.isSystemAssigned(Systems.ARTILLERY) ? 1 : 0));
+					mount_canBePlaced = Main.ship.mounts.size() < 8;
 				}
 				
 			} else if (Main.tltmSystem.getSelection()) {
@@ -319,7 +320,8 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				bounds.x = e.x - bounds.width/2;
 				bounds.y = e.y - bounds.height/2;
 				
-				mount_canBePlaced = Main.ship.mounts.size() < (Main.ship.weaponSlots + (Main.isSystemAssigned(Systems.ARTILLERY) ? 1 : 0));
+				//mount_canBePlaced = Main.ship.mounts.size() < (Main.ship.weaponSlots + (Main.isSystemAssigned(Systems.ARTILLERY) ? 1 : 0));
+				mount_canBePlaced = Main.ship.mounts.size() < 8;
 				
 				Main.canvas.redraw(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+6, false);
 				Main.canvas.redraw(oldBounds.x-3, oldBounds.y-3, oldBounds.width+6, oldBounds.height+6, false);

@@ -74,6 +74,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		super();
 		pos = new Point(0,0);
 		redrawBounds = new Rectangle(0,0,0,0);
+		mountPoint = new Point(2,36);
 		this.shrinkWrap = true;
 		setImage(null);
 		setBorderThickness(2);
@@ -81,7 +82,6 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		offset = new Point(0,0);
 		slide = Slide.NO;
 		orig = new Point(0,0);
-		mountPoint = new Point(2,36);
 	}
 
 	public void setImage(String path, boolean shrinkWrap) {
@@ -140,18 +140,24 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		redrawBounds.height = bounds.height;
 		if (image != null) {
 			if (rotate) {
-				redrawBounds.height *= 3/2;
-				//redrawBounds.x = Main.hullBox.getLocation().x + pos.x - bounds.width/2;
-				//redrawBounds.y = Main.hullBox.getLocation().y + pos.y - ((mirror) ? bounds.height : 0);
-				redrawBounds.x = imageLoc.x;
-				redrawBounds.y = imageLoc.y;
+				//redrawBounds.height *= 3/2;
+				redrawBounds.x = bounds.x + bounds.width/2 - mountPoint.x;
+				redrawBounds.y = bounds.y + bounds.height/2 + (mountPoint.y+bounds.height/2) * (mirror ? -1 : 1);
 			} else {
-				redrawBounds.width *= 3/2;
-				//redrawBounds.x = Main.hullBox.getLocation().x + pos.x - ((mirror) ? bounds.width : 0);
-				//redrawBounds.y = Main.hullBox.getLocation().y + pos.y - bounds.height/2;
-				redrawBounds.x = imageLoc.x;
-				redrawBounds.y = imageLoc.y;
+				//redrawBounds.width *= 3/2;
+				redrawBounds.x = Main.hullBox.getLocation().x + pos.x + (bounds.width + mountPoint.x) * (mirror ? -1 : 1);
+				redrawBounds.y = Main.hullBox.getLocation().y + pos.y - bounds.height/2 + (bounds.width-bounds.height)/2 - mountPoint.y;
 			}
+		}
+		if (!powered) {
+			if (slide == Slide.LEFT || slide == Slide.RIGHT)
+				redrawBounds.x += (slide == Slide.LEFT ? 1 : -1)*((rotate ? bounds.width : bounds.height));
+			if (slide == Slide.UP || slide == Slide.DOWN)
+				redrawBounds.y += (slide == Slide.UP ? 1 : -1)*((rotate ? bounds.height : bounds.width));
+			
+			if (rotate && !mirror && slide == Slide.DOWN) redrawBounds.y -= bounds.height*2;
+			if (rotate && mirror && slide == Slide.UP) redrawBounds.y += bounds.height*2;
+			if (!rotate && slide == Slide.UP) redrawBounds.y += bounds.height*2;
 		}
 		
 		redrawBounds.add(bounds);
@@ -170,7 +176,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 			pos.x = x - Main.ship.imageRect.x;
 			pos.y = y - Main.ship.imageRect.y;
 		}
-		
+
 		updateRedrawBounds(); 
 		
 		redrawLoc(oldLoc.x, oldLoc.y);
@@ -185,7 +191,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		bounds.y = y;
 		pos.x = x - Main.ship.imageRect.x + bounds.width/2;
 		pos.y = y - Main.ship.imageRect.y + bounds.height/2;
-		
+
 		updateRedrawBounds();
 		
 		redrawLoc(oldLoc.x, oldLoc.y);
@@ -271,7 +277,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	
 	public void setPowered(boolean power) {
 		powered = power;
-		updateRedrawBounds(); 
+		updateRedrawBounds();
 		redrawLoc(bounds.x, bounds.y);
 	}
 	
@@ -347,43 +353,43 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		if (rotate) {
 			// rotated 90 degrees -> add height instead of width, scale 1 or -1 -> takes care of positive/negative values on its own
 			setImageLoc(bounds.x + (bounds.width-bounds.height)/2 + bounds.height/2 - mountPoint.x
-					+ ((slide == Slide.DOWN || slide == Slide.UP)
-							? ((powered)
-								? 0
-								: (slide == Slide.DOWN
-									? -bounds.height/2 * (mirror ? -1 : 1) 
-									: bounds.height/2 * (mirror ? -1 : 1)))
-							: 0),
+							+ ((slide == Slide.DOWN || slide == Slide.UP)
+								? ((powered)
+									? 0
+									: (slide == Slide.DOWN
+										? -bounds.height/2 * (mirror ? -1 : 1) 
+										: bounds.height/2 * (mirror ? -1 : 1)))
+								: 0),
 						bounds.y - (bounds.width-bounds.height)/2 + bounds.width/2 - mountPoint.y
 							+ ((slide == Slide.LEFT || slide == Slide.RIGHT)
-									? ((powered)
-										? 0
-										: (slide == Slide.RIGHT
-											? bounds.width/2 
-											: -bounds.width/2))
-									: 0));
+								? ((powered)
+									? 0
+									: (slide == Slide.RIGHT
+										? bounds.width/2
+										: -bounds.width/2))
+								: 0));
 			
 			e.gc.drawImage(image, 0, 0, (frameW==0) ? image.getBounds().width : frameW, image.getBounds().height,
 					imageLoc.x, imageLoc.y,
 					bounds.height, bounds.width);
 		} else {
-			setImageLoc(bounds.x + (bounds.width-bounds.height)/2 + bounds.width/2 - mountPoint.x
+			setImageLoc(bounds.x + bounds.width/2 - mountPoint.x
 							+ ((slide == Slide.LEFT || slide == Slide.RIGHT)
-									? ((powered)
-										? 0
-										: (slide == Slide.RIGHT
-											? -bounds.width/2 * (mirror ? -1 : 1)
+								? ((powered)
+									? 0
+									: (slide == Slide.RIGHT
+										? -bounds.width/2 * (mirror ? -1 : 1)
 											: bounds.width/2 * (mirror ? -1 : 1)))
-									: 0),
-						bounds.y - (bounds.width-bounds.height)/2 + bounds.height/2 - mountPoint.y
+								: 0),
+						bounds.y + bounds.height/2 - mountPoint.y
 							+ ((slide == Slide.DOWN || slide == Slide.UP)
-									? ((powered)
-										? 0
-										: (slide == Slide.DOWN
-											? -bounds.width/2
-											: bounds.width/2))
-									: 0));
-			
+								? ((powered)
+									? 0
+									: (slide == Slide.DOWN
+										? -bounds.height/2
+										: bounds.height/2))
+								: 0));
+
 			e.gc.drawImage(image, 0, 0, (frameW==0) ? image.getBounds().width : frameW, image.getBounds().height,
 					imageLoc.x, imageLoc.y,
 					bounds.width, bounds.height);

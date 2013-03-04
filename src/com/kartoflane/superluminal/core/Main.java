@@ -279,17 +279,12 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO:
-	 * 	- load weapons' mount point from animations.xml
 	 * 	- gibs editor - animation
-	 * 	- fix when assigning new systems, they have level/power 0
-	 * 	- in export window, says error occured even though no error was found;
-	 * 	- in export window, you cant edit path in the text box, you have to use button; fix it
 	 * 
 	 * == MEDIUM PRIO:
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 
 	 * == LOW PRIO:
-	 * 	- ability to toggle weapons between powered-up and powered-down states ---> formula defining the amount of pixels by which the weapons move when powered
 	 * 	- tools
 	 * 		- room splitting
 	 * 		- mounts - indicator for mirror and slide dir
@@ -316,6 +311,10 @@ public class Main {
 	 * 	- fixed double-clicking on the list in ship choice dialog without any selection causing a crash
 	 * 	- fixed weapon mounts positioning - should be 100% accurate now
 	 * 	- added possibility to view powered/unpowered states of weapons - alt-left-click on mount to toggle it.
+	 * 	- in export window, it is now possible to write path into the text field - an alternative to the browse button
+	 * 	- weapon mounts now can be placed without having to set weapon slots, up to a maximum of 8. To compensate,
+	 * 		the editor will export only the first 4 (or less, equal to number of weapon slots) mounts that have slide other than NO.
+	 * 		if the ship has artillery, the first mount with a NO slide will be exported as artillery mount.
 	 */
 	
 	// =================================================================================================== //
@@ -619,7 +618,7 @@ public class Main {
 		
 		// === View -> Show grid
 		MenuItem mntmGrid = new MenuItem(menu_view, SWT.CHECK);
-		mntmGrid.setSelection(true);
+		mntmGrid.setSelection(showGrid);
 		mntmGrid.setText("Show Grid");
 		
 		new MenuItem(menu_view, SWT.SEPARATOR);
@@ -1006,6 +1005,7 @@ public class Main {
 		canvas.addPaintListener(layeredPainter);
 		
 		grid = new Grid(GRID_W, GRID_H);
+		grid.setVisible(showGrid);
 		
 		anchor = new Anchor();
 		anchor.setLocation(0,0,false);

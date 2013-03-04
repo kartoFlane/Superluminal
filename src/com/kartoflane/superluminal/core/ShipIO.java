@@ -2036,18 +2036,22 @@ search: for (File f : dir.listFiles()) {
 			// weapon mounts
 			fw.write("<weaponMounts>" + lineDelimiter);
 			FTLMount mt = null;
+			int count = 0;
 			for (FTLMount m : Main.ship.mounts) {
 				if (!m.slide.equals(Slide.NO)) {
-					fw.write("\t");
-					//int c = m.isRotated() ? m.getSize().y : m.getSize().x;
-					fw.write("<mount x=\"" + (m.pos.x /* + (m.isRotated() ? -c : 0)*/) + "\" ");
-					fw.write("y=\"" + (m.pos.y /* + (!m.isRotated() ? -c : 0)*/) + "\" ");
-					fw.write("rotate=\"" + m.isRotated() + "\" ");
-					fw.write("mirror=\"" + m.mirror + "\" ");
-					fw.write("gib=\"" + m.gib + "\" ");
-					fw.write("slide=\"" + m.slide.toString().toLowerCase() + "\"/>");
-					fw.write(lineDelimiter);
-				} else {
+					if (count < Main.ship.weaponSlots) {
+						fw.write("\t");
+						//int c = m.isRotated() ? m.getSize().y : m.getSize().x;
+						fw.write("<mount x=\"" + (m.pos.x /* + (m.isRotated() ? -c : 0)*/) + "\" ");
+						fw.write("y=\"" + (m.pos.y /* + (!m.isRotated() ? -c : 0)*/) + "\" ");
+						fw.write("rotate=\"" + m.isRotated() + "\" ");
+						fw.write("mirror=\"" + m.mirror + "\" ");
+						fw.write("gib=\"" + m.gib + "\" ");
+						fw.write("slide=\"" + m.slide.toString().toLowerCase() + "\"/>");
+						fw.write(lineDelimiter);
+						count++;
+					}
+				} else if (mt != null && Main.isSystemAssigned(Systems.ARTILLERY)) {
 					mt = m;
 				}
 			}
