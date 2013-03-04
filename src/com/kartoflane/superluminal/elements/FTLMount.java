@@ -31,6 +31,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	private Point offset = null;
 	private int frameW = 0;
 	private Rectangle redrawBounds;
+	private boolean powered = true;
 	
 	/**
 	 * True means the weapons are oriented horizontally, while false means they're oriented vertically
@@ -80,7 +81,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		offset = new Point(0,0);
 		slide = Slide.NO;
 		orig = new Point(0,0);
-		mountPoint = new Point(0,0);
+		mountPoint = new Point(2,36);
 	}
 
 	public void setImage(String path, boolean shrinkWrap) {
@@ -133,16 +134,24 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	
 	public void updateRedrawBounds() {
 		Rectangle old = Main.cloneRect(redrawBounds);
+		redrawBounds.x = bounds.x;
+		redrawBounds.y = bounds.y;
 		redrawBounds.width = bounds.width;
 		redrawBounds.height = bounds.height;
-		if (rotate) {
-			redrawBounds.height *= 3/2;
-			redrawBounds.x = Main.hullBox.getLocation().x + pos.x - bounds.width/2;
-			redrawBounds.y = Main.hullBox.getLocation().y + pos.y - ((mirror) ? bounds.height : 0);
-		} else {
-			redrawBounds.width *= 3/2;
-			redrawBounds.x = Main.hullBox.getLocation().x + pos.x - ((mirror) ? bounds.width : 0);
-			redrawBounds.y = Main.hullBox.getLocation().y + pos.y - bounds.height/2;
+		if (image != null) {
+			if (rotate) {
+				redrawBounds.height *= 3/2;
+				//redrawBounds.x = Main.hullBox.getLocation().x + pos.x - bounds.width/2;
+				//redrawBounds.y = Main.hullBox.getLocation().y + pos.y - ((mirror) ? bounds.height : 0);
+				redrawBounds.x = imageLoc.x;
+				redrawBounds.y = imageLoc.y;
+			} else {
+				redrawBounds.width *= 3/2;
+				//redrawBounds.x = Main.hullBox.getLocation().x + pos.x - ((mirror) ? bounds.width : 0);
+				//redrawBounds.y = Main.hullBox.getLocation().y + pos.y - bounds.height/2;
+				redrawBounds.x = imageLoc.x;
+				redrawBounds.y = imageLoc.y;
+			}
 		}
 		
 		redrawBounds.add(bounds);
@@ -243,6 +252,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		}
 		if (Main.ship != null)
 			setLocation(p.x, p.y);
+		updateRedrawBounds(); 
 	}
 	
 	public boolean isRotated() {
@@ -251,12 +261,24 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	
 	public void setMirrored(boolean mirrored) {
 		mirror = mirrored;
+		updateRedrawBounds(); 
 		redrawLoc(bounds.x, bounds.y);
 	}
 	
 	public boolean isMirrored() {
 		return mirror;
 	}
+	
+	public void setPowered(boolean power) {
+		powered = power;
+		updateRedrawBounds(); 
+		redrawLoc(bounds.x, bounds.y);
+	}
+	
+	public boolean isPowered() {
+		return powered;
+	}
+	
 	
 	public static void drawDirection(PaintEvent e, Slide s, Rectangle rect) {
 		final int LENGTH = 40;
@@ -323,14 +345,47 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		e.gc.setTransform(transform);
 
 		if (rotate) {
+			// rotated 90 degrees -> add height instead of width, scale 1 or -1 -> takes care of positive/negative values on its own
+			setImageLoc(bounds.x + (bounds.width-bounds.height)/2 + bounds.height/2 - mountPoint.x
+					+ ((slide == Slide.DOWN || slide == Slide.UP)
+							? ((powered)
+								? 0
+								: (slide == Slide.DOWN
+									? -bounds.height/2 * (mirror ? -1 : 1) 
+									: bounds.height/2 * (mirror ? -1 : 1)))
+							: 0),
+						bounds.y - (bounds.width-bounds.height)/2 + bounds.width/2 - mountPoint.y
+							+ ((slide == Slide.LEFT || slide == Slide.RIGHT)
+									? ((powered)
+										? 0
+										: (slide == Slide.RIGHT
+											? bounds.width/2 
+											: -bounds.width/2))
+									: 0));
+			
 			e.gc.drawImage(image, 0, 0, (frameW==0) ? image.getBounds().width : frameW, image.getBounds().height,
-					bounds.x + (bounds.width-bounds.height)/2 + bounds.height/2, // rotated 90 degrees -> add height instead of width, scale 1 or -1 -> takes care of positive/negative values on its own
-					bounds.y - (bounds.width-bounds.height)/2,
+					imageLoc.x, imageLoc.y,
 					bounds.height, bounds.width);
 		} else {
+			setImageLoc(bounds.x + (bounds.width-bounds.height)/2 + bounds.width/2 - mountPoint.x
+							+ ((slide == Slide.LEFT || slide == Slide.RIGHT)
+									? ((powered)
+										? 0
+										: (slide == Slide.RIGHT
+											? -bounds.width/2 * (mirror ? -1 : 1)
+											: bounds.width/2 * (mirror ? -1 : 1)))
+									: 0),
+						bounds.y - (bounds.width-bounds.height)/2 + bounds.height/2 - mountPoint.y
+							+ ((slide == Slide.DOWN || slide == Slide.UP)
+									? ((powered)
+										? 0
+										: (slide == Slide.DOWN
+											? -bounds.width/2
+											: bounds.width/2))
+									: 0));
+			
 			e.gc.drawImage(image, 0, 0, (frameW==0) ? image.getBounds().width : frameW, image.getBounds().height,
-					bounds.x + bounds.width/2,// - mountPoint.x,
-					bounds.y,// - mountPoint.y,
+					imageLoc.x, imageLoc.y,
 					bounds.width, bounds.height);
 		}
 
@@ -393,6 +448,8 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 			if (e.button == 1) {
 				if (Main.modShift)
 					setMirrored(!mirror);
+				if (Main.modAlt)
+					setPowered(!powered);
 			} else if (e.button == 3) {
 				if (Main.modShift) {
 					Slide slideOld = slide;
@@ -448,6 +505,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 			Main.tooltip.setText("Mount number: "+(Main.getMountIndex(this)+1)
 					+ ShipIO.lineDelimiter + "Attached gib: " +gib
 					+ ShipIO.lineDelimiter + "Direction: " + slide.toString().toLowerCase()
+					+ ShipIO.lineDelimiter + (isPowered() ? "Powered" : "Unpowered")
 					+ ((isPinned()) ? (ShipIO.lineDelimiter + "Pinned") : "")
 					+ ((isMirrored()) ? (ShipIO.lineDelimiter + "Mirrored") : ""));
 			Main.tooltip.setLocation(e.x+1, e.y+1);

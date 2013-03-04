@@ -321,7 +321,7 @@ public class ExportDialog extends Dialog {
 				ShipIO.export(Main.exportPath, Main.ship.layout);
 				
 				if (ShipIO.errors.size() == 0) {
-					Main.print("Successfully exported " + Main.ship.shipClass + " as " + blueprintName + ".");
+					Main.print("Successfully exported " + Main.ship.shipClass + " as " + Main.ship.blueprintName + ".");
 				} else {
 					Main.print("Errors occured during ship exporting.");
 					if (Main.debug) {

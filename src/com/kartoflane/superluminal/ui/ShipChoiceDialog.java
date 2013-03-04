@@ -144,7 +144,8 @@ public class ShipChoiceDialog {
 		list.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseDoubleClick(MouseEvent e) {
-				btnLoad.notifyListeners(SWT.Selection, null);
+				if (list.getSelectionCount()>0)
+					btnLoad.notifyListeners(SWT.Selection, null);
 			}
 		});
 		

@@ -1602,7 +1602,6 @@ scan:			while(sc.hasNext()) {
 			}
 			
 			if (result == null) {
-				found = false;
 				if (sc != null)
 					sc.close();
 				
@@ -1621,7 +1620,7 @@ scan:			while(sc.hasNext()) {
 
 					pattern = Pattern.compile("<weaponAnim name=\"(.*?)\">");
 					matcher = pattern.matcher(s);
-					if (matcher.find() && matcher.group(1).toLowerCase().equals(weapon.img.toLowerCase())) {
+					if (!found && matcher.find() && matcher.group(1).toLowerCase().equals(weapon.img.toLowerCase())) {
 						while(sc.hasNext() && !s.contains("</weaponAnim>")) {
 							s = sc.next();
 
@@ -2234,19 +2233,19 @@ search: for (File f : dir.listFiles()) {
 						fw.write("\t" + "<weaponList count=\"" + Main.ship.weaponCount + "\" missiles=\"" + Main.ship.missiles + "\">" + lineDelimiter);
 						for (String blue : Main.ship.weaponSet)
 							fw.write("\t\t" + "<weapon name=\"" + blue + "\"/>" + lineDelimiter);
-						fw.write("\t" + "</weaponList>");
+						fw.write("\t" + "</weaponList>" + lineDelimiter);
 					}
 				}
 				
 			// drones
 				if (Main.ship.droneSet.size() > 0) {
 					if (Main.ship.dronesBySet) {
-						fw.write("\t" + "<droneList missiles=\""+Main.ship.drones+"\" load=\""+Main.ship.droneSet.toArray()[0]+"\"/>" + lineDelimiter);
+						fw.write("\t" + "<droneList drones=\""+Main.ship.drones+"\" load=\""+Main.ship.droneSet.toArray()[0]+"\"/>" + lineDelimiter);
 					} else {
 						fw.write("\t" + "<droneList count=\"" + Main.ship.droneCount + "\" drones=\"" + Main.ship.drones + "\">" + lineDelimiter);
 						for (String blue : Main.ship.droneSet)
 							fw.write("\t\t" + "<drone name=\"" + blue + "\"/>" + lineDelimiter);
-						fw.write("\t" + "</droneList>");
+						fw.write("\t" + "</droneList>" + lineDelimiter);
 					}
 				}
 				
@@ -2274,7 +2273,7 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 				}
 				
 				if (Main.isSystemAssigned(Systems.TELEPORTER))
-					fw.write("\t" + "<boardingAI>sabotage</boardingAI>"); // TODO ?
+					fw.write("\t" + "<boardingAI>sabotage</boardingAI>" + lineDelimiter); // TODO ?
 
 			// augments
 				for (String aug : Main.ship.augmentSet) {
@@ -2559,7 +2558,7 @@ scan:		while(sc.hasNext()) {
 						boolean nClass = false;
 						boolean nName = false;
 						
-				name:	while(sc.hasNext()) {
+				name:	while(sc.hasNext() && !s.contains("</shipBlueprint>")) {
 							s = sc.next();
 							pattern = Pattern.compile(".*?<class>(.*?)</class>");
 							matcher = pattern.matcher(s);

@@ -111,7 +111,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "1-3-13";
+	public final static String VERSION = "3-3-13";
 	
 		// === Important objects
 	public static Shell shell;
@@ -281,6 +281,9 @@ public class Main {
 	 * == IMMEDIATE PRIO:
 	 * 	- load weapons' mount point from animations.xml
 	 * 	- gibs editor - animation
+	 * 	- fix when assigning new systems, they have level/power 0
+	 * 	- in export window, says error occured even though no error was found;
+	 * 	- in export window, you cant edit path in the text box, you have to use button; fix it
 	 * 
 	 * == MEDIUM PRIO:
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
@@ -308,6 +311,11 @@ public class Main {
 	 * 	- added a progress bar for archive unpacking
 	 * 	- added: archive window will now try to locate FTL installation by checking default paths - if found, the dialogs will open to this location
 	 * 	- added option to show/hide grid, located in View menu
+	 * 	- fixed an error in exported enemy ship blueprints ("droneList missiles=")
+	 * 	- fixed a bug causing the editor to crash when a new ship was loaded while hull was still selected
+	 * 	- fixed double-clicking on the list in ship choice dialog without any selection causing a crash
+	 * 	- fixed weapon mounts positioning - should be 100% accurate now
+	 * 	- added possibility to view powered/unpowered states of weapons - alt-left-click on mount to toggle it.
 	 */
 	
 	// =================================================================================================== //
@@ -352,7 +360,7 @@ public class Main {
 		
 		// resize the window as to not exceed screen dimensions, with maximum size being defined by GRID_W_MAX and GRID_H_MAX
 		GRID_W = ((int) ((display.getBounds().width-35))/35);
-		GRID_H = ((int) ((display.getBounds().height-150))/35);
+		GRID_H = ((int) ((display.getBounds().height-shell.getLocation().y-140))/35);
 		GRID_W = (GRID_W > GRID_W_MAX) ? GRID_W_MAX : GRID_W;
 		GRID_H = (GRID_H > GRID_H_MAX) ? GRID_H_MAX : GRID_H;
 		
@@ -2446,6 +2454,13 @@ public class Main {
 					gibDialog.clearList();
 					gibDialog.letters.clear();
 				}
+				
+				shieldBox.deselect();
+				hullBox.deselect();
+				selectedRoom = null;
+				selectedDoor = null;
+				selectedMount = null;
+				selectedGib = null;
 				
 				btnCloaked.setEnabled(false);
 				idList.clear();

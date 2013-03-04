@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Transform;
 
@@ -17,6 +18,7 @@ public class ImageBox extends PaintBox implements Serializable {
 	protected int rotation = 0;
 	protected Rectangle redrawBounds;
 	protected boolean shrinkWrap = false;
+	protected Point imageLoc = new Point(0,0);
 	
 	public void stripUnserializable() {
 		super.stripUnserializable();
@@ -103,6 +105,18 @@ public class ImageBox extends PaintBox implements Serializable {
 		redrawBounds.height = Math.round((float) (bounds.height + Math.abs(bounds.height*Math.sin(Math.toRadians(rotation*2)))));
 		
 		return redrawBounds;
+	}
+	
+	/**
+	 * Used more to store the image's location, not actually set it.
+	 */
+	public void setImageLoc(int x, int y) {
+		imageLoc.x = x;
+		imageLoc.y = y;
+	}
+	
+	public Point getImageLoc() {
+		return imageLoc;
 	}
 	
 	@Override
