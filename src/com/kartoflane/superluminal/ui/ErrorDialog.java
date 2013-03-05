@@ -18,7 +18,6 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 
 public class ErrorDialog {
-
 	protected Shell shell;
 	private Text errors;
 	private Button btnClose;

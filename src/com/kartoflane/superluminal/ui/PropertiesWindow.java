@@ -21,9 +21,7 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.elements.Systems;
 
 
-public class PropertiesWindow
-{
-
+public class PropertiesWindow {
 	protected Shell shell;
 	private Spinner textLevel;
 	private Spinner textPower;

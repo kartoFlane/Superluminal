@@ -16,10 +16,8 @@ import com.kartoflane.superluminal.core.Main;
 
 /**
  * Class representing the ship.
- *
  */
-public class FTLShip implements Serializable
-{
+public class FTLShip implements Serializable {
 	private static final long serialVersionUID = 344200154077072015L;
 	/**
 	 * Size of the anchor handle;

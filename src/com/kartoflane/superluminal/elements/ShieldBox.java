@@ -151,8 +151,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	}
 	
 	@Override
-	public void mouseUp(MouseEvent e)
-	{
+	public void mouseUp(MouseEvent e) {
 		if (move) {
 			Main.cursor.setLocationAbsolute(bounds.x, bounds.y);
 			if (e.button == 3) 
@@ -175,8 +174,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	}
 
 	@Override
-	public void mouseDown(MouseEvent e)
-	{
+	public void mouseDown(MouseEvent e) {
 		if (bounds.contains(e.x, e.y) && Main.showShield) {
 			select();
 			if (!Main.modAlt) {
@@ -201,8 +199,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	}
 
 	@Override
-	public void mouseMove(MouseEvent e)
-	{
+	public void mouseMove(MouseEvent e) {
 		if (isVisible()) {
 			if (!Main.modAlt && move && !isPinned()) {
 				Rectangle oldBounds = Main.cloneRect(bounds);
@@ -273,8 +270,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	}
 
 	@Override
-	public Point getOffset()
-	{
+	public Point getOffset() {
 		return offset;
 	}
 }

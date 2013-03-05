@@ -111,8 +111,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 	}
 
 	@Override
-	public void mouseUp(MouseEvent e)
-	{
+	public void mouseUp(MouseEvent e) {
 		moveAnchor = false;
 		moveVertical = false;
 		Main.cursor.setVisible(true);
@@ -120,8 +119,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 	}
 
 	@Override
-	public void mouseDown(MouseEvent e)
-	{
+	public void mouseDown(MouseEvent e) {
 		if (box.contains(e.x, e.y) && isVisible() && Main.showAnchor) {
 			Main.cursor.setVisible(false);
 			if (e.button == 1) {
@@ -137,8 +135,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 	}
 
 	@Override
-	public void mouseMove(MouseEvent e)
-	{
+	public void mouseMove(MouseEvent e) {
 		if (moveAnchor) {
 			int x,y;
 			Rectangle oldBounds = Main.cloneRect(bounds);
@@ -198,8 +195,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 	}
 
 	@Override
-	public void mouseDoubleClick(MouseEvent e)
-	{
+	public void mouseDoubleClick(MouseEvent e) {
 		if (e.button == 3) {
 			int prevV = Main.ship.vertical;
 			Main.ship.vertical = 0;

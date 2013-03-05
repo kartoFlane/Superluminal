@@ -422,8 +422,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	}
 
 	@Override
-	public void mouseUp(MouseEvent e)
-	{
+	public void mouseUp(MouseEvent e) {
 		Main.cursor.setVisible(true);
 		if (move) {
 			Main.copyRect(bounds, Main.cursor.getBounds());
@@ -440,8 +439,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	}
 
 	@Override
-	public void mouseDown(MouseEvent e)
-	{
+	public void mouseDown(MouseEvent e) {
 		if (Main.tltmPointer.getSelection()) {
 			if (bounds.contains(e.x, e.y)) {
 				select();
@@ -491,8 +489,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	}
 
 	@Override
-	public void mouseMove(MouseEvent e)
-	{
+	public void mouseMove(MouseEvent e) {
 		if (move && selected) {
 			
 			if (Main.modCtrl) {
@@ -520,8 +517,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	}
 
 	@Override
-	public void select()
-	{
+	public void select() {
 		if (Main.tltmGib.getSelection()) {
 			if (Main.selectedGib != null) Main.selectedGib.deselect();
 			Main.selectedGib = null;
@@ -536,8 +532,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	}
 
 	@Override
-	public void deselect()
-	{
+	public void deselect() {
 		selected = false;
 		move = false;
 		setBorderColor(null);

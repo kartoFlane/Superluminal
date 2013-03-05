@@ -17,10 +17,8 @@ import com.kartoflane.superluminal.painter.LayeredPainter;
 
 /**
  * Class representing a single room in a ship.
- *
  */
-public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoom>, DraggableBox
-{
+public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoom>, DraggableBox {
 	private static final long serialVersionUID = 2768589659254502754L;
 	public int id;
 	public Point[] corners = new Point[4];
@@ -431,8 +429,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	}
 	
 	@Override
-	public void mouseDown(MouseEvent e)
-	{
+	public void mouseDown(MouseEvent e) {
 		if (bounds.contains(e.x, e.y)) {
 			select();
 			offset.x = e.x - bounds.x;
@@ -582,8 +579,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	public void mouseHover(MouseEvent e) {}
 
 	@Override
-	public void setOffset(int x, int y) {
-	}
+	public void setOffset(int x, int y) {}
 
 	@Override
 	public Point getOffset() {

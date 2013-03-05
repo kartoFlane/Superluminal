@@ -1,7 +1,6 @@
 package com.kartoflane.superluminal.elements;
 
-public enum Slide
-{
+public enum Slide {
 	UP,
 	DOWN,
 	LEFT, 

@@ -1,7 +1,6 @@
 package com.kartoflane.superluminal.elements;
 
-public enum Systems
-{
+public enum Systems {
 	EMPTY,
 	PILOT,
 	OXYGEN,

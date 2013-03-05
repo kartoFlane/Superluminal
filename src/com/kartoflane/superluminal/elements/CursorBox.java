@@ -130,8 +130,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	}
 	
 	@Override
-	public void mouseUp(MouseEvent e)
-	{
+	public void mouseUp(MouseEvent e) {
 		lastClick.x = e.x; lastClick.y = e.y;
 		if (e.button == 1) {
 			if (Main.tltmRoom.getSelection() && room_canBePlaced) {
@@ -235,14 +234,12 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	}
 
 	@Override
-	public void mouseDown(MouseEvent e)
-	{
+	public void mouseDown(MouseEvent e) {
 		lastClick.x = e.x; lastClick.y = e.y;
 	}
 
 	@Override
-	public void mouseMove(MouseEvent e)
-	{
+	public void mouseMove(MouseEvent e) {
 		if (isVisible()) {
 			Rectangle oldBounds = Main.cloneRect(bounds);
 			Rectangle temp;

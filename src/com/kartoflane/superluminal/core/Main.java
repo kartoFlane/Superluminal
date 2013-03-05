@@ -286,14 +286,14 @@ public class Main {
 	 * === TODO
 	 * == IMMEDIATE PRIO:
 	 * 	- gibs editor - animation
-	 * 
-	 * == MEDIUM PRIO:
 	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 
-	 * == LOW PRIO:
+	 * == MEDIUM PRIO:
 	 * 	- tools
 	 * 		- room splitting
 	 * 		- mounts - indicator for mirror and slide dir
+	 * 
+	 * == LOW PRIO:
 	 *  - room interior -> make it part of SysBox, not FTLRoom + maybe add possibility to link glow and other images, and automatically correctly export them?
 	 *  - change from ConfigIO to Properties java class
 	 * 	- Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
@@ -301,26 +301,6 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * 	- fixed crystal cruiser 2 being classified as "other" instead of "player".
-	 * 	- fixed arrow keys not working with text fields
-	 * 	- fixed tab inserting tabs in description field, instead of jumping to the next field.
-	 * 	- fixed the editor not detecting the unpacked archives after the directory was moved somewhere else (changed paths to be relative)
-	 * 	- fixed precision of gibs' linear and angular velocities to two decimal places in shipname.xml
-	 * 	- added ship choice dialog for regular ship loading
-	 * 	- added possibility to import room layout from shipname.txt
-	 * 	- added "About" window
-	 * 	- added a progress bar for archive unpacking
-	 * 	- added: archive window will now try to locate FTL installation by checking default paths - if found, the dialogs will open to this location
-	 * 	- added option to show/hide grid, located in View menu, or by pressing X
-	 * 	- fixed an error in exported enemy ship blueprints ("droneList missiles=")
-	 * 	- fixed a bug causing the editor to crash when a new ship was loaded while hull was still selected
-	 * 	- fixed double-clicking on the list in ship choice dialog without any selection causing a crash
-	 * 	- fixed weapon mounts positioning - should be 100% accurate now
-	 * 	- added possibility to view powered/unpowered states of weapons - alt-left-click on mount to toggle it.
-	 * 	- in export window, it is now possible to write path into the text field - an alternative to the browse button
-	 * 	- weapon mounts now can be placed without having to set weapon slots, up to a maximum of 8. To compensate,
-	 * 		the editor will export only the first 4 (or less, equal to number of weapon slots) mounts that have slide other than NO.
-	 * 		if the ship has artillery, the first mount with a NO slide will be exported as artillery mount.
 	 */
 	
 	// =================================================================================================== //
@@ -424,7 +404,11 @@ public class Main {
 			shell.setEnabled(false);
 			dirWindow.btnClose.setEnabled(false);
 			dirWindow.label.setText("Please, browse to your FTL installation directory and select data.dat and resource.dat archives located in /resources/ folder.");
-			Main.installPath = dirWindow.findInstallation().getAbsolutePath();
+			
+			File installFile = dirWindow.findInstallation();
+			if (installFile != null)
+				Main.installPath = installFile.getAbsolutePath();
+			
 			dirWindow.open();
 		}
 		

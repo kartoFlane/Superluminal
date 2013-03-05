@@ -146,8 +146,7 @@ public class HullBox extends ImageBox implements DraggableBox {
 	}
 	
 	@Override
-	public void mouseUp(MouseEvent e)
-	{
+	public void mouseUp(MouseEvent e) {
 		if (move) {
 			Main.cursor.setLocationAbsolute(bounds.x, bounds.y);
 			Main.cursor.setSize(bounds.width, bounds.height);
@@ -168,8 +167,7 @@ public class HullBox extends ImageBox implements DraggableBox {
 	}
 
 	@Override
-	public void mouseDown(MouseEvent e)
-	{
+	public void mouseDown(MouseEvent e) {
 		if (bounds.contains(e.x, e.y) && (Main.showHull || Main.showFloor)) {
 			if (e.button == 1) {
 				select();

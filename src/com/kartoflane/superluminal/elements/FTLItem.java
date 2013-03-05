@@ -1,7 +1,6 @@
 package com.kartoflane.superluminal.elements;
 
-public class FTLItem
-{
+public class FTLItem {
 	public String blueprint;
 	public String name;
 	public String category;

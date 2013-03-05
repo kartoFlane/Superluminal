@@ -5,8 +5,7 @@ import java.util.TreeMap;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.LayeredPainter;
 
-public class Grid
-{
+public class Grid {
 	int horizontalCells;
 	int verticalCells;
 	TreeMap<Integer, TreeMap<Integer, GridBox>> gridArray;

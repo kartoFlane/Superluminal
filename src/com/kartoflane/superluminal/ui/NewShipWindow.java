@@ -14,21 +14,17 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 
 
-public class NewShipWindow extends Dialog
-{
-
+public class NewShipWindow extends Dialog {
 	protected int result = 1;
 	protected Shell shell;
 
-	public NewShipWindow(Shell parent)
-	{
+	public NewShipWindow(Shell parent) {
 		
 		super(parent, SWT.BORDER | SWT.TITLE);
 		setText(Main.APPNAME + " - New Ship");
 	}
 
-	public int open()
-	{
+	public int open() {
 		createContents();
 		shell.open();
 		shell.layout();
@@ -42,8 +38,7 @@ public class NewShipWindow extends Dialog
 		return result;
 	}
 
-	private void createContents()
-	{
+	private void createContents() {
 		shell = new Shell(getParent(), SWT.BORDER | SWT.TITLE);
 		shell.setText(getText());
 		shell.setFont(Main.appFont);

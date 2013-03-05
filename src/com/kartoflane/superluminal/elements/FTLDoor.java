@@ -19,8 +19,7 @@ import com.kartoflane.superluminal.painter.PaintBox;
  * Class representing a single door in a ship.
  *
  */
-public class FTLDoor extends PaintBox implements Serializable, DraggableBox
-{
+public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 	private static final long serialVersionUID = 4263579449630517639L;
 	public boolean horizontal;
 	private Color lineColor = null;
@@ -166,8 +165,7 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 	}
 
 	@Override
-	public void mouseDown(MouseEvent e)
-	{
+	public void mouseDown(MouseEvent e) {
 		if (bounds.contains(e.x, e.y) && e.button == 1) {
 			if (Main.selectedDoor != null) Main.selectedDoor.deselect();
 			select();
@@ -217,11 +215,7 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox
 	}
 
 	@Override
-	public void mouseHover(MouseEvent e)
-	{
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseHover(MouseEvent e) {}
 
 	@Override
 	public void setOffset(int x, int y) {}

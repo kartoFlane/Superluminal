@@ -21,9 +21,7 @@ import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Group;
 
 
-public class GibPropertiesWindow
-{
-
+public class GibPropertiesWindow {
 	protected Shell shell;
 	private Button btnOk;
 	private Composite composite;

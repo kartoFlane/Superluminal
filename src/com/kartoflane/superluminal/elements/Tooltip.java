@@ -6,8 +6,7 @@ import org.eclipse.swt.SWT;
 
 import com.kartoflane.superluminal.core.Main;
 
-public class Tooltip extends Composite
-{
+public class Tooltip extends Composite {
 	private Text text;
 
 	public Tooltip() {
@@ -16,7 +15,7 @@ public class Tooltip extends Composite
 		text = new Text(this, SWT.BORDER | SWT.WRAP | SWT.MULTI);
 		text.setEditable(false);
 		text.setBounds(0, 0, 250, 200);
-		text.setEnabled(false);
+		text.setEnabled(true);
 	}
 	
 	public void setText(String msg) {
