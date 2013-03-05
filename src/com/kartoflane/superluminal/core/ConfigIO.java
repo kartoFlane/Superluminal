@@ -36,7 +36,7 @@ public class ConfigIO {
 			//out.write("snapMountsToHull = " + Main.snapMountsToHull + ShipIO.lineDelimiter);
 			out.write("arbitraryPosOverride = " + Main.arbitraryPosOverride + ShipIO.lineDelimiter);
 		// === view
-			out.write("showGrid = " + Main.showGrid + ShipIO.lineDelimiter);
+			//out.write("showGrid = " + Main.showGrid + ShipIO.lineDelimiter);
 			//out.write("showAnchor = " + Main.showAnchor + ShipIO.lineDelimiter);
 			//out.write("showMounts = " + Main.showMounts + ShipIO.lineDelimiter);
 			//out.write("showRooms = " + Main.showRooms + ShipIO.lineDelimiter);

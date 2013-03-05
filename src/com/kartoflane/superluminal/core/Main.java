@@ -85,6 +85,9 @@ import com.kartoflane.superluminal.ui.PropertiesWindow;
 import com.kartoflane.superluminal.ui.ShipBrowser;
 import com.kartoflane.superluminal.ui.ShipChoiceDialog;
 import com.kartoflane.superluminal.ui.ShipPropertiesWindow;
+import org.eclipse.swt.widgets.Spinner;
+import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.ModifyEvent;
 
 public class Main {
 		// === CONSTANTS
@@ -111,7 +114,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "3-3-13";
+	public final static String VERSION = "5-3-13";
 	
 		// === Important objects
 	public static Shell shell;
@@ -272,6 +275,9 @@ public class Main {
 	public static HullBox hullBox;
 	public static ShieldBox shieldBox;
 	public static Tooltip tooltip;
+	private static Spinner stepSpinner;
+	
+	public static int arbitraryStep = 1;
 	
 	// =================================================================================================== //
 	
@@ -305,7 +311,7 @@ public class Main {
 	 * 	- added "About" window
 	 * 	- added a progress bar for archive unpacking
 	 * 	- added: archive window will now try to locate FTL installation by checking default paths - if found, the dialogs will open to this location
-	 * 	- added option to show/hide grid, located in View menu
+	 * 	- added option to show/hide grid, located in View menu, or by pressing X
 	 * 	- fixed an error in exported enemy ship blueprints ("droneList missiles=")
 	 * 	- fixed a bug causing the editor to crash when a new ship was loaded while hull was still selected
 	 * 	- fixed double-clicking on the list in ship choice dialog without any selection causing a crash
@@ -380,7 +386,7 @@ public class Main {
 		removeDoor = ConfigIO.getBoolean("removeDoor");
 		arbitraryPosOverride = ConfigIO.getBoolean("arbitraryPosOverride");
 		// view
-		showGrid = ConfigIO.getBoolean("showGrid");
+		//showGrid = ConfigIO.getBoolean("showGrid");
 		loadFloor = ConfigIO.getBoolean("loadFloor");
 		loadShield = ConfigIO.getBoolean("loadShield");
 		loadSystem = ConfigIO.getBoolean("loadSystem");
@@ -429,6 +435,7 @@ public class Main {
 			erDialog.open();
 		}
 		
+		shell.pack();
 		shell.setMinimumSize(GRID_W*35, GRID_H*35);
 		shell.open();
 		
@@ -617,9 +624,9 @@ public class Main {
 		new MenuItem(menu_view, SWT.SEPARATOR);
 		
 		// === View -> Show grid
-		MenuItem mntmGrid = new MenuItem(menu_view, SWT.CHECK);
+		final MenuItem mntmGrid = new MenuItem(menu_view, SWT.CHECK);
 		mntmGrid.setSelection(showGrid);
-		mntmGrid.setText("Show Grid");
+		mntmGrid.setText("Show Grid \tX");
 		
 		new MenuItem(menu_view, SWT.SEPARATOR);
 		
@@ -865,10 +872,24 @@ public class Main {
 		// === Container -> set position composite
 		Composite coSetPosition = new Composite(composite, SWT.NONE);
 		coSetPosition.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1));
-		GridLayout gl_coSetPosition = new GridLayout(7, false);
+		GridLayout gl_coSetPosition = new GridLayout(8, false);
 		gl_coSetPosition.marginWidth = 0;
 		gl_coSetPosition.marginHeight = 0;
 		coSetPosition.setLayout(gl_coSetPosition);
+		
+		// === Container -> step spinner
+		stepSpinner = new Spinner(coSetPosition, SWT.BORDER);
+		stepSpinner.setSelection(arbitraryStep);
+		stepSpinner.setMinimum(1);
+		stepSpinner.setToolTipText("Step Value" + ShipIO.lineDelimiter
+				+ "Set up the value that gets added whenever you hit click the -/+ buttons");
+		stepSpinner.setEnabled(false);
+		
+		stepSpinner.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				arbitraryStep = stepSpinner.getSelection();
+			}
+		});
 		
 		// === Cotnainer -> set position composite -> X
 		Label lblX = new Label(coSetPosition, SWT.NONE);
@@ -890,7 +911,7 @@ public class Main {
 
 		// === Cotnainer -> set position composite -> X buttons container -> X minus
 		btnXminus = new Button(setPosXBtnsCo, SWT.CENTER);
-		btnXminus.setToolTipText("Subtract 35");
+		btnXminus.setToolTipText("Subtract");
 		btnXminus.setEnabled(false);
 		btnXminus.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnXminus.setFont(appFont);
@@ -899,7 +920,7 @@ public class Main {
 
 		// === Cotnainer -> set position composite -> X buttons container -> X plus
 		btnXplus = new Button(setPosXBtnsCo, SWT.CENTER);
-		btnXplus.setToolTipText("Add 35");
+		btnXplus.setToolTipText("Add");
 		btnXplus.setEnabled(false);
 		btnXplus.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnXplus.setBounds(0, 0, 75, 25);
@@ -932,7 +953,7 @@ public class Main {
 
 		// === Cotnainer -> set position composite -> Y buttons container -> Y minus
 		btnYminus = new Button(setPosYBtnsCo, SWT.CENTER);
-		btnYminus.setToolTipText("Subtract 35");
+		btnYminus.setToolTipText("Subtract");
 		btnYminus.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnYminus.setFont(appFont);
 		btnYminus.setText("-");
@@ -940,7 +961,7 @@ public class Main {
 
 		// === Cotnainer -> set position composite -> Y buttons container -> Y plus
 		btnYplus = new Button(setPosYBtnsCo, SWT.CENTER);
-		btnYplus.setToolTipText("Add 35");
+		btnYplus.setToolTipText("Add");
 		btnYplus.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		btnYplus.setFont(appFont);
 		btnYplus.setText("+");
@@ -1306,7 +1327,7 @@ public class Main {
 					updateSelectedPosText();				  
 				}
 				canvas.forceFocus();
-				e.doit = false;
+				e.doit = (e.detail == SWT.TRAVERSE_TAB_NEXT || e.detail == SWT.TRAVERSE_TAB_PREVIOUS);
 			}
 		});
 		
@@ -1318,31 +1339,31 @@ public class Main {
 					updateSelectedPosText();		  
 				}
 				canvas.forceFocus();
-				e.doit = false;
+				e.doit = (e.detail == SWT.TRAVERSE_TAB_NEXT || e.detail == SWT.TRAVERSE_TAB_PREVIOUS);
 			}
 		});
 
 		btnXminus.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				txtX.setText(""+(Integer.valueOf(txtX.getText())-((selectedRoom==null) ? 35 : 1)));
+				txtX.setText(""+(Integer.valueOf(txtX.getText())-((selectedRoom==null) ? arbitraryStep : 1)));
 				updateSelectedPosition();
 			} });
 
 		btnXplus.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				txtX.setText(""+(Integer.valueOf(txtX.getText())+((selectedRoom==null) ? 35 : 1)));
+				txtX.setText(""+(Integer.valueOf(txtX.getText())+((selectedRoom==null) ? arbitraryStep : 1)));
 				updateSelectedPosition();
 			} });
 
 		btnYminus.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				txtY.setText(""+(Integer.valueOf(txtY.getText())-((selectedRoom==null) ? 35 : 1)));
+				txtY.setText(""+(Integer.valueOf(txtY.getText())-((selectedRoom==null) ? arbitraryStep : 1)));
 				updateSelectedPosition();
 			} });
 
 		btnYplus.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				txtY.setText(""+(Integer.valueOf(txtY.getText())+((selectedRoom==null) ? 35 : 1)));
+				txtY.setText(""+(Integer.valueOf(txtY.getText())+((selectedRoom==null) ? arbitraryStep : 1)));
 				updateSelectedPosition();
 			} });
 		
@@ -1724,6 +1745,12 @@ public class Main {
 						showShield = !showShield;
 						mntmShowShield.setSelection(showShield);
 						canvas.redraw();
+					} else if (e.keyCode == 'x') {
+						showGrid = !showGrid;
+						mntmGrid.setSelection(showGrid);
+						grid.setVisible(showGrid);
+						
+						canvas.redraw();					
 						
 						// === pin
 					} else if (e.keyCode == '`' || e.keyCode == SWT.SPACE) {
@@ -2493,6 +2520,7 @@ public class Main {
 				btnShipProperties.setEnabled(false);
 				txtX.setEnabled(false);
 				txtY.setEnabled(false);
+				stepSpinner.setEnabled(false);
 
 				mntmSaveShip.setEnabled(false);
 				mntmSaveShipAs.setEnabled(false);
@@ -2550,7 +2578,7 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				showGrid = ((MenuItem) e.widget).getSelection();
 				grid.setVisible(showGrid);
-				ConfigIO.saveConfig();
+				//ConfigIO.saveConfig();
 				canvas.redraw();
 			}
 		});
@@ -3150,6 +3178,7 @@ public class Main {
 		txtY.setEnabled(enable);
 		btnYplus.setEnabled(enable);
 		btnYminus.setEnabled(enable);
+		stepSpinner.setEnabled(enable);
 		
 		if (!enable) {
 			txtX.setText("");
