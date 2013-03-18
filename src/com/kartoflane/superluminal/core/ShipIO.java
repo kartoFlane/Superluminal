@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.DecimalFormat;
@@ -60,12 +61,14 @@ import com.kartoflane.superluminal.ui.ShipBrowser;
 
 public class ShipIO {
 	public static Set<String> errors = new HashSet<String>();
+	
 	public static Set<String> playerBlueprintNames = new TreeSet<String>();
 	public static Set<String> enemyBlueprintNames = new TreeSet<String>();
-	static Set<String> otherBlueprintNames = new TreeSet<String>();
+	public static Set<String> otherBlueprintNames = new TreeSet<String>();
 	public static Map<String, String> playerShipNames = new HashMap<String, String>();
 	public static Map<String, String> enemyShipNames = new HashMap<String, String>();
-	static Map<String, String> otherShipNames = new HashMap<String, String>();
+	public static Map<String, String> otherShipNames = new HashMap<String, String>();
+	
 	public static Map<String, FTLItem> weaponMap = new HashMap<String, FTLItem>();
 	public static Map<String, FTLItem> droneMap = new HashMap<String, FTLItem>();
 	public static Map<String, FTLItem> augMap = new HashMap<String, FTLItem>();
@@ -95,14 +98,8 @@ public class ShipIO {
 	private static boolean negativeY = false;
 	
 	private static LinkedList<String> playerList = new LinkedList<String>();
-	
-	/**
-	 * false - loading using Image class
-	 * true - loading using SWTResourceManager
-	 */
-	static boolean loadingSwitch = false;
-	
-	static boolean IOdebug = false;
+
+	public static boolean IOdebug = false;
 	
 	// =================================================================
 	
@@ -1793,6 +1790,9 @@ search: for (File f : dir.listFiles()) {
 		} catch (FileNotFoundException e) {
 			Main.erDialog.add("Error: export - hull image not found.");
 		} catch (IOException e) {
+			Main.erDialog.add("Error: export - hull image - general IO error - details logged in debug.log");
+			e.printStackTrace();
+			System.out.println("");
 		} catch (NullPointerException e) {
 			Main.erDialog.add("Warning: export - hull has not been set up.");
 		}
@@ -1816,6 +1816,9 @@ search: for (File f : dir.listFiles()) {
 			} catch (FileNotFoundException e) {
 				Main.erDialog.add("Error: export - shield image not found.");
 			} catch (IOException e) {
+				Main.erDialog.add("Error: export - shield image - general IO error - details logged in debug.log");
+				e.printStackTrace();
+				System.out.println("");
 			} catch (NullPointerException e) {
 				Main.erDialog.add("Warning: export - shield has not been set up.");
 			}
@@ -1836,6 +1839,9 @@ search: for (File f : dir.listFiles()) {
 			} catch (FileNotFoundException e) {
 				Main.erDialog.add("Error: export - floor image not found.");
 			} catch (IOException e) {
+				Main.erDialog.add("Error: export - floor image - general IO error - details logged in debug.log");
+				e.printStackTrace();
+				System.out.println("");
 			} catch (NullPointerException e) {
 				Main.erDialog.add("Warning: export - floor has not been set up.");
 			}
@@ -1860,6 +1866,9 @@ search: for (File f : dir.listFiles()) {
 			} catch (FileNotFoundException e) {
 				Main.erDialog.add("Error: export - cloak image not found.");
 			} catch (IOException e) {
+				Main.erDialog.add("Error: export - cloak image - general IO error - details logged in debug.log");
+				e.printStackTrace();
+				System.out.println("");
 			} catch (NullPointerException e) {
 				Main.erDialog.add("Warning: export - cloak has not been set up.");
 			}
@@ -1880,6 +1889,9 @@ search: for (File f : dir.listFiles()) {
 			} catch (FileNotFoundException e) {
 				Main.erDialog.add("Error: export - miniship image not found.");
 			} catch (IOException e) {
+				Main.erDialog.add("Error: export - miniship image - general IO error - details logged in debug.log");
+				e.printStackTrace();
+				System.out.println("");
 			} catch (NullPointerException e) {
 				Main.erDialog.add("Warning: export - miniship image has not been set up.");
 			}
@@ -1908,6 +1920,9 @@ search: for (File f : dir.listFiles()) {
 							java.nio.file.Files.copy(Paths.get(tempSrc + "_glow2.png"), Paths.get(tempDest + "_glow2.png"), StandardCopyOption.REPLACE_EXISTING);
 							java.nio.file.Files.copy(Paths.get(tempSrc + "_glow3.png"), Paths.get(tempDest + "_glow3.png"), StandardCopyOption.REPLACE_EXISTING);
 						} catch (FileNotFoundException e) {
+							debug("Warning: export - one of the glow images for " + source.getName() + " was not found.");
+						} catch (NoSuchFileException e) {
+							debug("Warning: export - one of the glow images for " + source.getName() + " was not found.");
 						}
 						//r.img = r.img.substring(r.img.lastIndexOf(pathDelimiter)) + Main.ship.imageName + "_room_" + r.getSystem().toString().toLowerCase();
 					}
@@ -1918,6 +1933,9 @@ search: for (File f : dir.listFiles()) {
 		} catch (FileNotFoundException e) {
 			Main.erDialog.add("Error: export - one of room interior images was not found.");
 		} catch (IOException e) {
+			Main.erDialog.add("Error: export - interior images - general IO error - details logged in debug.log");
+			e.printStackTrace();
+			System.out.println("");
 		} catch (NullPointerException e) {
 			Main.erDialog.add("Error: export - one of system interior images has not been set up.");
 		}
@@ -1934,6 +1952,9 @@ search: for (File f : dir.listFiles()) {
 				}
 			}
 		} catch (IOException e) {
+			Main.erDialog.add("Error: export - gibs images - general IO error - details logged in debug.log");
+			e.printStackTrace();
+			System.out.println("");
 		}
 		exp.progressBar.setSelection(70);
 		
@@ -1983,7 +2004,6 @@ search: for (File f : dir.listFiles()) {
 				fw.write(r.getBounds().width/35 + lineDelimiter);
 				fw.write(r.getBounds().height/35 + lineDelimiter);
 			}
-			
 
 			int x,y;
 			for (FTLDoor d : Main.ship.doors) {
@@ -1991,12 +2011,12 @@ search: for (File f : dir.listFiles()) {
 				x = (d.getBounds().x-Main.ship.anchor.x-Main.ship.offset.x*35+(d.horizontal ? -2 : 3))/35;
 				y = (d.getBounds().y-Main.ship.anchor.y-Main.ship.offset.y*35+(d.horizontal ? 3 : -2))/35;
 				
-				debug("(" + x + ", " + y + ")");
+				//debug("(" + x + ", " + y + ")");
 				
 				fw.write(x + lineDelimiter);
 				fw.write(y + lineDelimiter);
-				x = Main.ship.findLeftRoom(d);
-				y = Main.ship.findRightRoom(d);
+				x = (d.leftId==-2) ? Main.ship.findLeftRoom(d) : d.leftId;
+				y = (d.rightId==-2) ? Main.ship.findRightRoom(d) : d.rightId;
 				fw.write(((x==-1)?y:x) + lineDelimiter);
 				fw.write(((x!=-1)?y:x) + lineDelimiter);
 				fw.write((d.horizontal ? 0 : 1) + lineDelimiter);
@@ -2021,7 +2041,7 @@ search: for (File f : dir.listFiles()) {
 			fw = new FileWriter(pathDir + pathDelimiter + "data" + pathDelimiter + fileName + ".xml", false);
 
 			fw.write("<!-- Copyright (c) 2012 by Subset Games. All rights reserved -->" + lineDelimiter);
-			fw.write("<!-- Exported file -->"  + lineDelimiter);
+			fw.write("<!-- Superluminal exported file -->"  + lineDelimiter);
 			
 			fw.write(lineDelimiter);
 			
@@ -2167,6 +2187,7 @@ search: for (File f : dir.listFiles()) {
 					if (Main.ship.crewMax==0) {
 						fw.write("\t" + "<crewCount amount=\"0\" class=\"human\"/>");
 						fw.write(lineDelimiter);
+						break;
 					} else {
 						if (Main.ship.crewMap.get(key) > 0) {
 							if (!key.equals("random")) {
@@ -2392,6 +2413,11 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 				Main.erDialog.add("Warning: compatibility with projects from versions 6-2 and earlier was broken in 18-2-13. Project can't be loaded.");
 				Main.ship = null;
 				return;
+			}
+			
+			if (Main.ship.version < 9) {
+				for (FTLMount m : Main.ship.mounts)
+					m.mountPoint = new Point(0,0);
 			}
 
 			debug("\tloading linked ship images...");

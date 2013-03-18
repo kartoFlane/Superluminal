@@ -253,7 +253,6 @@ public class Main {
 	private MenuItem mntmShowFloor;
 	private MenuItem mntmShowShield;
 	public static Button btnCloaked;
-	private Button btnPirate;
 	private static Button btnXminus;
 	private static Button btnXplus;
 	private static Button btnYminus;
@@ -286,21 +285,22 @@ public class Main {
 	 * === TODO
 	 * == IMMEDIATE PRIO:
 	 * 	- gibs editor - animation
-	 * 	- linking doors to rooms -> overrides automatically assigned left/right top/down IDs
 	 * 
 	 * == MEDIUM PRIO:
-	 * 	- tools
-	 * 		- room splitting
-	 * 		- mounts - indicator for mirror and slide dir
+	 * 	- mounts - indicator for mirror and slide dir
 	 * 
 	 * == LOW PRIO:
 	 *  - room interior -> make it part of SysBox, not FTLRoom + maybe add possibility to link glow and other images, and automatically correctly export them?
 	 *  - change from ConfigIO to Properties java class
 	 * 	- Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
-	 * 	- Pirate version of ships viewable, similar to cloak?
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
+	 * 	- fixed: player ships with max crew equal to 0 (automated ships) now exports the crew tag only once (previously there would be 7 additional, superfluous copies)
+	 * 	- added: calculate optimal offset button
+	 * 	- added: re-implemented room splitting
+	 * 	- added: possibility to link doors to rooms, to create "gateways" that allow crewmen to move between rooms even if they're not physically connected (exploits an FTL bug)
+	 * 
 	 */
 	
 	// =================================================================================================== //
@@ -420,7 +420,7 @@ public class Main {
 		}
 		
 		shell.pack();
-		shell.setMinimumSize(GRID_W*35, GRID_H*35);
+		shell.setMinimumSize(GRID_W*35+40, GRID_H*35);
 		shell.open();
 		
 		shell.addControlListener(new ControlAdapter() {
@@ -580,16 +580,25 @@ public class Main {
 		mntmRemoveDoors.setText("Automatic Door Cleanup");
 		mntmRemoveDoors.setSelection(removeDoor);
 		
+		// === Edit -> Arbitrary position override
 		MenuItem mntmArbitraryPositionOverride = new MenuItem(menu_edit, SWT.CHECK);
 		mntmArbitraryPositionOverride.setText("Arbitrary Position Overrides Pin");
 		mntmArbitraryPositionOverride.setSelection(arbitraryPosOverride);
 		
 		new MenuItem(menu_edit, SWT.SEPARATOR);
+
+		// === Edit -> Calculate optimal offset
+		MenuItem mntmCalculateOptimalOffset = new MenuItem(menu_edit, SWT.NONE);
+		mntmCalculateOptimalOffset.setText("Calculate Optimal Offset");
 		
+		new MenuItem(menu_edit, SWT.SEPARATOR);
+		
+		// === Edit -> Convert to player
 		mntmConToPlayer = new MenuItem(menu_edit, SWT.NONE);
 		mntmConToPlayer.setEnabled(false);
 		mntmConToPlayer.setText("Convert To Player");
-		
+
+		// === Edit -> Convert to enemy
 		mntmConToEnemy = new MenuItem(menu_edit, SWT.NONE);
 		mntmConToEnemy.setEnabled(false);
 		mntmConToEnemy.setText("Convert To Enemy");
@@ -866,7 +875,7 @@ public class Main {
 		stepSpinner.setSelection(arbitraryStep);
 		stepSpinner.setMinimum(1);
 		stepSpinner.setToolTipText("Step Value" + ShipIO.lineDelimiter
-				+ "Set up the value that gets added whenever you hit click the -/+ buttons");
+				+ "Set up the value that gets added whenever you click the -/+ buttons");
 		stepSpinner.setEnabled(false);
 		
 		stepSpinner.addModifyListener(new ModifyListener() {
@@ -964,7 +973,7 @@ public class Main {
 
 		// === Cotnainer -> state buttons composite
 		Composite stateBtnsCo = new Composite(composite, SWT.NONE);
-		GridLayout gl_stateBtnsCo = new GridLayout(2, false);
+		GridLayout gl_stateBtnsCo = new GridLayout(1, false);
 		gl_stateBtnsCo.marginWidth = 0;
 		gl_stateBtnsCo.verticalSpacing = 0;
 		gl_stateBtnsCo.marginHeight = 0;
@@ -978,15 +987,6 @@ public class Main {
 		btnCloaked.setImage(Cache.checkOutImage(shell, "/img/smallsys/smallcloak.png"));
 		btnCloaked.setToolTipText("View the cloaked version of the ship.");
 		btnCloaked.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
-
-		// === Cotnainer -> state buttons composite -> pirate
-		btnPirate = new Button(stateBtnsCo, SWT.TOGGLE | SWT.CENTER);
-		btnPirate.setEnabled(false);
-		btnPirate.setFont(appFont);
-		btnPirate.setToolTipText("View the pirate version of the ship.");
-		btnPirate.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
-		btnPirate.setImage(Cache.checkOutImage(shell, "/img/pirate.png"));
-		new Label(composite, SWT.NONE);
 		
 	// === Canvas
 		
@@ -1750,7 +1750,7 @@ public class Main {
 						canvas.redraw();
 						
 						// === tool hotkeys
-					} else if (e.stateMask == SWT.NONE && (e.keyCode == 'q' || e.keyCode == 'w' || e.keyCode == 'e' || e.keyCode == 'r' || e.keyCode == 't' || e.keyCode == 'g')) {
+					} else if (e.stateMask == SWT.NONE && Main.ship != null && (e.keyCode == 'q' || e.keyCode == 'w' || e.keyCode == 'e' || e.keyCode == 'r' || e.keyCode == 't' || e.keyCode == 'g')) {
 						deselectAll();
 						boolean prev = tltmGib.getSelection();
 						tltmPointer.setSelection(e.keyCode == 'q');
@@ -2525,7 +2525,6 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				removeDoor = ((MenuItem) e.widget).getSelection();
 				ConfigIO.saveConfig();
-				canvas.redraw();
 			}
 		});
 
@@ -2534,6 +2533,33 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				arbitraryPosOverride = ((MenuItem) e.widget).getSelection();
 				ConfigIO.saveConfig();
+			}
+		});
+		
+		mntmCalculateOptimalOffset.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (ship == null || ship.rooms.size() == 0) return;
+				
+				Point size = ship.computeShipSize();
+				// ~18 is max X size, 12 is max Y size
+				final int X_MAX = 16;
+				final int Y_MAX = 11;
+
+				size.x /=35;
+				size.y /=35;
+				
+				ship.offset.x = Math.max((X_MAX - size.x)/2, 0);
+				ship.offset.y = Math.max((Y_MAX - size.y)/2, 0);
+				
+				size = ship.findLowBounds();
+				int x = size.x - ship.offset.x * 35;
+				int y = size.y - ship.offset.y * 35;
+				anchor.setLocation(x, y, false);
+				Main.ship.anchor.x = x;
+				Main.ship.anchor.y = y;
+				
+				canvas.redraw();
 			}
 		});
 		
@@ -2657,8 +2683,8 @@ public class Main {
 			
 			ship.shieldPath = null;
 			ship.shieldOverride = null;
-			if (shieldImage != null && !shieldImage.isDisposed() && !ShipIO.loadingSwitch)
-				shieldImage.dispose();
+			if (shieldImage != null && !shieldImage.isDisposed())
+				shieldBox.setImage(null, true);
 			shieldImage = null;
 			
 			shieldEllipse.x = 0;
@@ -2697,16 +2723,16 @@ public class Main {
 			
 			btnShields.setEnabled(false);
 			
-			if (shieldImage != null && !shieldImage.isDisposed() && !ShipIO.loadingSwitch)
-				shieldImage.dispose();
+			if (shieldImage != null && !shieldImage.isDisposed())
+				shieldBox.setImage(null, true);
 			shieldImage = null;
 
 			ship.shieldOverride = null;
 			ship.shieldPath = resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship" + ShipIO.pathDelimiter + "enemy_shields.png";
 			ShipIO.loadImage(ship.shieldPath, "shields");
 			
-			if (floorImage != null && !floorImage.isDisposed() && !ShipIO.loadingSwitch)
-				floorImage.dispose();
+			if (floorImage != null && !floorImage.isDisposed())
+				hullBox.setFloorImage(null);
 			floorImage = null;
 			ship.floorPath = null;
 			ship.cloakOverride = null;
@@ -2959,6 +2985,13 @@ public class Main {
 		}
 		return null;
 	}
+	
+	public static FTLRoom getRoomAt(int x, int y) {
+		for (FTLRoom r : ship.rooms) {
+			if (r.getBounds().contains(x, y)) return r;
+		}
+		return null;
+	}
 
 	public static boolean isSystemAssigned(Systems sys, FTLRoom r) {
 		for (FTLRoom rm : ship.rooms) {
@@ -3067,7 +3100,22 @@ public class Main {
 		}
 		return null;
 	}
+	
+	/**
+	 * Returns a door entity at given coordinates, if there is any. Null otherwise.
+	 */
+	public static FTLDoor getDoorAt(int x, int y) {
+		for (FTLDoor dr : ship.doors) {
+			if (dr.getBounds().contains(x, y)) {
+				return dr;
+			}
+		}
+		return null;
+	}
 
+	/**
+	 * Checks if given rectangle is positioned at the border of a room (at a wall)
+	 */
 	public static boolean isDoorAtWall(Rectangle rect) {
 		for (FTLRoom r : ship.rooms) {
 			if (rect != null && r != null && rect.intersects(r.getBounds()) && !containsRect(r.getBounds(), rect))
@@ -3076,7 +3124,10 @@ public class Main {
 		return false;
 	}
 	
-	public static Rectangle getDoorAt(int x, int y) {
+	/**
+	 * Returns a rectangle with dimensions of a door at given coordinates, properly oriented.
+	 */
+	public static Rectangle getDoorRectAt(int x, int y) {
 		Rectangle dr = new Rectangle(0,0,0,0);
 		Point p = new Point(x, y);
 		for(int i=0; i<GRID_W; i++) {
@@ -3086,6 +3137,7 @@ public class Main {
 				if (dr.contains(p))
 					return dr;
 				
+				// vertical
 				dr.x = i*35-3; dr.y = j*35+2; dr.width = 6; dr.height = 31;
 				if (dr.contains(p))
 					return dr;
@@ -3095,20 +3147,7 @@ public class Main {
 	}
 	
 	public Rectangle getDoorFromMouse() {
-		Rectangle dr = new Rectangle(0,0,0,0);
-		for(int x=0; x<GRID_W; x++) {
-			for(int y=0; y<GRID_H; y++) {
-				// horizontal
-				dr.x = x*35+2; dr.y = y*35-3; dr.width = 31; dr.height = 6;
-				if (dr.contains(mousePos))
-					return dr;
-				
-				dr.x = x*35-3; dr.y = y*35+2; dr.width = 6; dr.height = 31;
-				if (dr.contains(mousePos))
-					return dr;
-			}
-		}
-		return null;
+		return getDoorRectAt(mousePos.x, mousePos.y);
 	}
 	
 	//=================

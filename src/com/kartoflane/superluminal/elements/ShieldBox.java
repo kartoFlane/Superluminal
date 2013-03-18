@@ -50,6 +50,10 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 		Main.updateSelectedPosText();
 	}
 	
+	public void setLocationCenter(int x, int y) {
+		setLocation(x - bounds.width/2, y - bounds.height/2);
+	}
+	
 	public void setSize(int w, int h) {
 		Rectangle oldBounds = Main.cloneRect(bounds);
 		bounds.width = w;

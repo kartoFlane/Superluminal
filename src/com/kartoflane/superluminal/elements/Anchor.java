@@ -42,7 +42,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 	
 	public void setLocation(int x, int y, boolean updateElements) {
 		if (Main.ship != null && ((x - Main.ship.anchor.x)/35 != 0 || (y - Main.ship.anchor.y)/35 != 0) && updateElements)
-			Main.ship.updateElements(new Point(x, y), FTLShip.AxisFlag.BOTH);
+			Main.ship.updateElements(new Point(x, y), AxisFlag.BOTH);
 		bounds.x = x;
 		bounds.y = y;
 		if (Main.ship != null && Main.ship.vertical > 0)

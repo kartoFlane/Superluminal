@@ -160,8 +160,6 @@ public class ShipBrowser {
 		
 		btnConfirm.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				Main.shell.setEnabled(true);
-
 				File unpacked_blueprints = null;
 				unpacked_blueprints = new File("archives" + ShipIO.pathDelimiter + "data" + ShipIO.pathDelimiter + "autoBlueprints.xml");
 				ArrayList<String> blueList = new ArrayList<String>();
@@ -183,9 +181,11 @@ public class ShipBrowser {
 						Main.mntmClose.notifyListeners(SWT.Selection, null);
 						ShipIO.loadShip(blueList.get(0), unpacked_blueprints, -1);
 					} else {
+						shell.setEnabled(false);
 						Main.choiceDialog.setChoices(blueList, unpacked_blueprints);
 						String blueprint = Main.choiceDialog.open();
 
+						shell.setEnabled(true);
 						Main.mntmClose.notifyListeners(SWT.Selection, null);
 						ShipIO.loadShip(blueprint, unpacked_blueprints, Main.choiceDialog.declaration);
 					}
@@ -193,7 +193,8 @@ public class ShipBrowser {
 					Main.erDialog.print("Error: load ship - no ship declarations found. No data was loaded. This shouldn't ever happen.");
 				}
 				//ShipIO.loadShip(selectedShip, null, -1);
-				
+
+				Main.shell.setEnabled(true);
 				ConfigIO.saveConfig();
 				shell.dispose();
 			}

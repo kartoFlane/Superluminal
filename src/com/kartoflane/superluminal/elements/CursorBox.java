@@ -88,8 +88,22 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				e.gc.setForeground(redColor);
 				e.gc.setBackground(redColor);
 			}
-			e.gc.setAlpha(64);
-			e.gc.fillRectangle(bounds);
+			
+			if (Main.modShift) {
+				e.gc.setAlpha(255);
+				int prevWidth = e.gc.getLineWidth();
+				e.gc.setLineWidth(3);
+				
+				if (Main.selectedDoor != null)
+					e.gc.drawLine(Main.selectedDoor.getBounds().x + Main.selectedDoor.getBounds().width/2,
+							Main.selectedDoor.getBounds().y + Main.selectedDoor.getBounds().height/2,
+							Main.mousePos.x, Main.mousePos.y);
+				
+				e.gc.setLineWidth(prevWidth);
+			} else {
+				e.gc.setAlpha(64);
+				e.gc.fillRectangle(bounds);
+			}
 		} else if (Main.tltmMount.getSelection()) {
 			if (mount_canBePlaced) {
 				e.gc.setForeground(greenColor);
@@ -132,22 +146,35 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	@Override
 	public void mouseUp(MouseEvent e) {
 		lastClick.x = e.x; lastClick.y = e.y;
+		
 		if (e.button == 1) {
 			if (Main.tltmRoom.getSelection() && room_canBePlaced) {
-				FTLRoom r = new FTLRoom(Main.fixRect(bounds));
-	
-				r.id = Main.getLowestId();
-				r.add(Main.ship);
-				
-				Main.canvasRedraw(r.getBounds(), false);
-				
-			} else if (Main.tltmDoor.getSelection() && door_canBePlaced) {
-				FTLDoor d = new FTLDoor(bounds.x, bounds.y, bounds.width > 10);
-				d.setLocationAbsolute(bounds.x + (d.horizontal ? 0 : 35), bounds.y + (d.horizontal ? 35 : 0));
-				d.fixRectOrientation();
-				
-				d.add(Main.ship);
-				
+				FTLRoom r = null;
+				if (Main.modShift) {
+					r = Main.getRoomContainingRect(bounds);
+					if (bounds.width > 20) {
+						r.split((bounds.y-r.getBounds().y)/35 + 1, AxisFlag.X);
+					} else {
+						r.split((bounds.x-r.getBounds().x)/35 + 1, AxisFlag.Y);
+					}
+					room_canBePlaced = !Main.isDoorAtWall(bounds);
+					Main.canvas.redraw();
+				} else {
+					r = new FTLRoom(Main.fixRect(bounds));
+
+					r.id = Main.getLowestId();
+					r.add(Main.ship);
+					
+					Main.canvasRedraw(r.getBounds(), false);
+				}
+			} else if (Main.tltmDoor.getSelection()) {
+				if (door_canBePlaced && !Main.modShift) {
+					FTLDoor d = new FTLDoor(bounds.x, bounds.y, bounds.width > 10);
+					d.setLocationAbsolute(bounds.x + (d.horizontal ? 0 : 35), bounds.y + (d.horizontal ? 35 : 0));
+					d.fixRectOrientation();
+					
+					d.add(Main.ship);
+				}
 			} else if (Main.tltmMount.getSelection()) {
 				if (Main.modShift) {
 					Main.mountToolMirror = !Main.mountToolMirror; 
@@ -231,11 +258,33 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				Main.canvasRedraw(Main.getRoomWithSystem(slot_sys).getBounds(), false);
 			}
 		}
+		
+		if (Main.tltmDoor.getSelection() && Main.selectedDoor != null) {
+			// left mouse -> left ID, right mouse -> right ID
+			FTLRoom r = Main.getRoomAt(e.x, e.y);
+			if (e.button == 1) {
+				Main.selectedDoor.leftId = (r==null ? -2 : r.id); 
+			} else if (e.button == 3) {
+				Main.selectedDoor.rightId = (r==null ? -2 : r.id);
+			}
+			
+			if (Main.modShift && Main.selectedDoor != null)
+				Main.canvas.redraw(Math.min(Main.mousePos.x, Main.selectedDoor.getBounds().x + Main.selectedDoor.getBounds().width/2) -5,
+						Math.min(Main.mousePos.y, Main.selectedDoor.getBounds().y + Main.selectedDoor.getBounds().height/2) -5,
+						Math.max(Main.mousePos.x, Main.selectedDoor.getBounds().x + Main.selectedDoor.getBounds().width/2) + 10,
+						Math.max(Main.mousePos.y, Main.selectedDoor.getBounds().y + Main.selectedDoor.getBounds().height/2) + 10,
+						false);
+		
+			Main.selectedDoor = null;
+		}
 	}
 
 	@Override
 	public void mouseDown(MouseEvent e) {
 		lastClick.x = e.x; lastClick.y = e.y;
+		
+		if (Main.tltmDoor.getSelection() && Main.modShift)
+			Main.selectedDoor = Main.getDoorAt(Main.mousePos.x, Main.mousePos.y);
 	}
 
 	@Override
@@ -248,7 +297,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				if (Main.anchor.getBox().contains(e.x, e.y)) {
 					bounds.width = 0; bounds.height = 0;
 				} else {
-					temp = Main.getDoorAt(e.x, e.y);
+					temp = Main.getDoorRectAt(e.x, e.y);
 					if (temp != null && Main.ship != null && Main.isDoorAtWall(temp) && Main.showRooms) {
 						Main.copyRect(temp, bounds);
 					} else {
@@ -271,25 +320,50 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				
 			} else if (Main.tltmRoom.getSelection()) {
 				setVisible(true);
-				temp = Main.getRectAt(e.x, e.y);
-				if (temp != null && !Main.leftMouseDown) {
-					Main.copyRect(temp, bounds);
-				} else if (temp != null) {
-					bounds.x = Main.downToGrid(lastClick.x) + ((e.x > lastClick.x) ? (0) : (35));
-					bounds.y = Main.downToGrid(lastClick.y) + ((e.y > lastClick.y) ? (0) : (35));
+
+				if (Main.modShift) {
+					temp = Main.getDoorRectAt(e.x, e.y);
+					if (temp != null) {
+						FTLRoom r = Main.getRoomContainingRect(temp);
+						if (r != null) {
+							if (temp.width > 20) { // horizontal split
+								temp.x = r.getBounds().x + 1;
+								temp.width = r.getBounds().width - 2;
+							} else { // vertical split
+								temp.y = r.getBounds().y + 1;
+								temp.height = r.getBounds().height - 2;
+							}
+							Main.copyRect(temp, bounds);
+							
+							room_canBePlaced = !Main.isDoorAtWall(bounds);
+						} else {
+							bounds.x = 0;
+							bounds.y = 0;
+							bounds.width = 0;
+							bounds.height = 0;
+						}
+					}
+				} else {
+					temp = Main.getRectAt(e.x, e.y);
+					if (temp != null && !Main.leftMouseDown) {
+						Main.copyRect(temp, bounds);
+					} else if (temp != null) {
+						bounds.x = Main.downToGrid(lastClick.x) + ((e.x > lastClick.x) ? (0) : (35));
+						bounds.y = Main.downToGrid(lastClick.y) + ((e.y > lastClick.y) ? (0) : (35));
+						
+						int x = ((e.x > lastClick.x)
+								? Math.min(Main.GRID_W * 35 - bounds.x, Main.upToGrid(e.x - bounds.x)+35)
+								: Main.upToGrid(Main.mousePos.x - bounds.x)-35);
+						int y = ((e.y > lastClick.y)
+								? Math.min(Main.GRID_H * 35 - bounds.y, Main.upToGrid(e.y - bounds.y)+35)
+								: Main.upToGrid(Main.mousePos.y - bounds.y)-35);
+						
+						bounds.width = x;
+						bounds.height = y;
+					}
 					
-					int x = ((e.x > lastClick.x)
-							? Math.min(Main.GRID_W * 35 - bounds.x, Main.upToGrid(e.x - bounds.x)+35)
-							: Main.upToGrid(Main.mousePos.x - bounds.x)-35);
-					int y = ((e.y > lastClick.y)
-							? Math.min(Main.GRID_H * 35 - bounds.y, Main.upToGrid(e.y - bounds.y)+35)
-							: Main.upToGrid(Main.mousePos.y - bounds.y)-35);
-					
-					bounds.width = x;
-					bounds.height = y;
+					room_canBePlaced = canPlaceRoom();
 				}
-				
-				room_canBePlaced = canPlaceRoom();
 
 				Rectangle tempRect = Main.fixRect(bounds);
 				oldBounds = Main.fixRect(oldBounds);
@@ -297,14 +371,33 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				Main.canvas.redraw(oldBounds.x-3, oldBounds.y-3, oldBounds.width+6, oldBounds.height+6, false);
 				
 			} else if (Main.tltmDoor.getSelection()) {
-				temp = Main.getDoorAt(e.x, e.y);
 				door_canBePlaced = false;
-				if (temp != null) {
-					Main.copyRect(temp, bounds);
-					door_canBePlaced = Main.isDoorAtWall(temp) && Main.wallToDoor(temp) == null;
+				
+				if (Main.modShift && Main.selectedDoor != null) {
+					temp = Main.getRectAt(e.x, e.y);
+					if (temp != null) {
+						FTLRoom r = Main.getRoomAt(e.x, e.y);
+						Main.copyRect((r==null ? temp : r.getBounds()), bounds);
+					}
+					
+					door_canBePlaced = canPlaceDoor(temp);
 				} else {
-					bounds.width = -10;
-					bounds.height = -10;
+					temp = Main.getDoorRectAt(e.x, e.y);
+					if (temp != null) {
+						Main.copyRect(temp, bounds);
+						door_canBePlaced = canPlaceDoor(temp);
+					} else {
+						bounds.width = -10;
+						bounds.height = -10;
+					}
+				}
+				
+				if (Main.modShift && Main.selectedDoor != null) {
+					Main.canvas.redraw(Math.min(e.x, Main.selectedDoor.getBounds().x + Main.selectedDoor.getBounds().width/2) -15,
+							Math.min(e.y, Main.selectedDoor.getBounds().y + Main.selectedDoor.getBounds().height/2) -15,
+							Math.max(e.x, Main.selectedDoor.getBounds().x + Main.selectedDoor.getBounds().width/2) + 30,
+							Math.max(e.y, Main.selectedDoor.getBounds().y + Main.selectedDoor.getBounds().height/2) + 30,
+							false);
 				}
 				
 				Main.canvas.redraw(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+6, false);
@@ -385,6 +478,13 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	private boolean canPlaceSlot(FTLRoom r) {
 		return (r.getSystem().equals(Systems.PILOT) || r.getSystem().equals(Systems.SHIELDS) || r.getSystem().equals(Systems.WEAPONS)
 				|| r.getSystem().equals(Systems.ENGINES) || r.getSystem().equals(Systems.MEDBAY));
+	}
+	
+	private boolean canPlaceDoor(Rectangle temp) {
+		return Main.modShift
+				? ((Main.isDoorAtWall(temp) && Main.wallToDoor(temp) != null)
+						|| (Main.selectedDoor != null && Main.getRoomContainingRect(Main.getRectAt(Main.mousePos.x, Main.mousePos.y)) != null))
+				: (Main.isDoorAtWall(temp) && Main.wallToDoor(temp) == null);
 	}
 
 	@Override

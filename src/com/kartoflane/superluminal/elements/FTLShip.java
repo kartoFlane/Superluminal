@@ -32,9 +32,6 @@ public class FTLShip implements Serializable {
 	 * Ship's own designation
 	 */
 	public int version = 0;
-
-	public enum AxisFlag
-	{ X, Y, BOTH };
 	
 	public boolean isPlayer;
 	public boolean weaponsBySet;
@@ -251,8 +248,8 @@ public class FTLShip implements Serializable {
 			}
 		}
 		
-		x=(y==1000) ? 0 : x;
-		y=(y==1000) ? 0 : y;
+		x=(y==10000) ? 0 : x;
+		y=(y==10000) ? 0 : y;
 		
 		return new Point(x, y);
 	}

@@ -28,6 +28,9 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 	private RGB door_rgb = null;
 	private boolean move = false;
 	
+	public int leftId = -2;
+	public int rightId = -2;
+	
 	public void stripUnserializable() {
 		super.stripUnserializable();
 		Cache.checkInColor(this, line_rgb);
@@ -151,6 +154,41 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 					e.gc.drawImage(pin, bounds.x-15, bounds.y+9);
 			}
 			
+			if (Main.tltmPointer.getSelection() && selected) {
+				e.gc.setAlpha(255);
+				e.gc.setLineWidth(3);
+				
+				Color tempColor = null;
+				RGB tempRGB = null;
+				FTLRoom r = null;
+				
+				if (leftId != -2) {
+					tempRGB = new RGB(128, 0, 128); // magenta
+					tempColor = Cache.checkOutColor(this, tempRGB);
+					r = Main.ship.getRoomWithId(leftId);
+					
+					e.gc.setForeground(tempColor);
+					e.gc.drawLine(bounds.x + bounds.width/2, bounds.y + bounds.height/2,
+							r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+					
+					Cache.checkInColor(this, tempRGB);
+					tempColor = null;
+				}
+				
+				if (rightId != -2) {
+					tempRGB = new RGB(0, 128, 128); // teal
+					tempColor = Cache.checkOutColor(this, tempRGB);
+					r = Main.ship.getRoomWithId(rightId);
+					
+					e.gc.setForeground(tempColor);
+					e.gc.drawLine(bounds.x + bounds.width/2, bounds.y + bounds.height/2,
+							r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+					
+					Cache.checkInColor(this, tempRGB);
+					tempColor = null;
+				}
+			}
+			
 			e.gc.setAlpha(prevAlpha);
 			e.gc.setLineWidth(prevWidth);
 			e.gc.setBackground(prevBg);
@@ -196,6 +234,7 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 		setDoorColor(new RGB(200, 150, 200));
 		Main.selectedDoor = this;
 		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
+		redrawIdLines();
 	}
 	
 	public void deselect() {
@@ -204,6 +243,7 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 		setBorderColor(null);
 		setDoorColor(new RGB(255, 150, 48));
 		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
+		redrawIdLines();
 	}
 	
 	public void dispose() {
@@ -211,7 +251,33 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 		Cache.checkInColor(this, line_rgb);
 		Cache.checkInColor(this, door_rgb);
 		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
+		redrawIdLines();
 		super.dispose();
+	}
+	
+	private void redrawIdLines() {
+		FTLRoom r;
+		Point temp;
+		if (leftId != -2) {
+			r = Main.ship.getRoomWithId(leftId);
+			temp = new Point(r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+			
+			Main.canvas.redraw(Math.min(temp.x, bounds.x + bounds.width/2) -5,
+					Math.min(temp.y, bounds.y + bounds.height/2) -5,
+					Math.max(temp.x, bounds.x + bounds.width/2) + 10,
+					Math.max(temp.y, bounds.y + bounds.height/2) + 10,
+					false);
+		}
+		if (rightId != -2) {
+			r = Main.ship.getRoomWithId(rightId);
+			temp = new Point(r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+			
+			Main.canvas.redraw(Math.min(temp.x, bounds.x + bounds.width/2) -5,
+					Math.min(temp.y, bounds.y + bounds.height/2) -5,
+					Math.max(temp.x, bounds.x + bounds.width/2) + 10,
+					Math.max(temp.y, bounds.y + bounds.height/2) + 10,
+					false);
+		}
 	}
 
 	@Override

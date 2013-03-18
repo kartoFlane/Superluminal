@@ -59,6 +59,12 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	
 	public FTLRoom(int x, int y, int w, int h) {
 		super(new RGB(230, 225, 220));
+
+		x = Main.roundToGrid(x);
+		y = Main.roundToGrid(y);
+		w = Main.roundToGrid(w);
+		h = Main.roundToGrid(h);
+		
 		origin = new Rectangle(x, y, w, h);
 		offset = new Point(0,0);
 		setBorderColor(new RGB(0, 0, 0));
@@ -555,6 +561,70 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			
 			p = Main.shieldBox.getLocation();
 			Main.shieldBox.setLocation(p.x + pt.x, p.y + pt.y);
+		}
+	}
+	
+	/**
+	 * Flag X is horizontal split, flag Y is vertical split.
+	 * @param gridCells How many grid cells, from top or left, the new room is to have
+	 * @param axis either X or Y - BOTH flag has no effect 
+	 */
+	public void split(int gridCells, AxisFlag axis) {
+		if (axis.equals(AxisFlag.BOTH) || gridCells == 0) return;
+		
+		FTLRoom newRoom = null;
+		if (axis.equals(AxisFlag.X)) {
+			newRoom = new FTLRoom(bounds.x, bounds.y + gridCells*35, bounds.width, gridCells*35);
+			newRoom.id = Main.getLowestId();
+
+			Main.ship.rooms.add(newRoom);
+			Main.layeredPainter.add(newRoom, LayeredPainter.ROOM);
+			Main.idList.add(newRoom.id);
+
+			newRoom.setSize(bounds.width, gridCells*35);
+			newRoom.setLocationAbsolute(bounds.x, bounds.y);
+			setLocationAbsolute(bounds.x, bounds.y+gridCells*35);
+			setSize(bounds.width, bounds.height-gridCells*35);
+		} else {
+			newRoom = new FTLRoom(bounds.x + gridCells*35, bounds.y, gridCells*35, gridCells);
+			newRoom.id = Main.getLowestId();
+
+			Main.ship.rooms.add(newRoom);
+			Main.layeredPainter.add(newRoom, LayeredPainter.ROOM);
+			Main.idList.add(newRoom.id);
+
+			newRoom.setSize(gridCells*35, bounds.height);
+			newRoom.setLocationAbsolute(bounds.x, bounds.y);
+			setLocationAbsolute(bounds.x+gridCells*35, bounds.y);
+			setSize(bounds.width-gridCells*35, bounds.height);
+		}
+		
+		if (newRoom.getBounds().width < 35 || newRoom.getBounds().height < 35) {
+			newRoom.dispose();
+			Main.ship.rooms.remove(newRoom);
+		}
+		
+		if (bounds.width < 35 || bounds.height < 35) {
+			dispose();
+			Main.ship.rooms.remove(this);
+		}
+		
+		if (newRoom != null) {
+			Point p = Main.ship.findLowBounds();
+			int x = Math.min(newRoom.bounds.x, p.x);
+			int y = Math.min(newRoom.bounds.y, p.y);
+			
+			Main.ship.offset.x = (p.x - x)/35;
+			Main.ship.offset.y = (p.y - y)/35;
+		}
+		
+		if (Main.ship != null) {
+			Point p = Main.ship.findLowBounds();
+			Point pt = Main.ship.findHighBounds();
+			p.x = p.x + (pt.x - p.x)/2;
+			p.y = p.y + (pt.y - p.y)/2;
+			
+			Main.shieldBox.setLocationCenter(p.x, p.y);
 		}
 	}
 
