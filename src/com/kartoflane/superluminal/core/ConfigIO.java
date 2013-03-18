@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,38 +19,79 @@ public class ConfigIO {
 	static BufferedReader in;
 	
 	public static void saveConfig() {
-		try {
-			fw = new FileWriter("superluminal.ini");
-			out = new BufferedWriter(fw);
+		if (Main.propertiesSwitch) {
+			Properties properties = new Properties();
+			FileReader fr = null;
+			try {
+				fr = new FileReader("superluminal.ini");
+				properties.load(fr);
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					if (fr != null)
+						fr.close();
+				} catch (IOException e1) {
+				}
+			}
+
+			properties.setProperty("exportPath", Main.exportPath);
+			properties.setProperty("projectPath", Main.projectPath);
+			properties.setProperty("installPath", Main.installPath);
+			properties.setProperty("dataPath", Main.dataPath);
+			properties.setProperty("resPath", Main.resPath);
+			properties.setProperty("removeDoor", new Boolean(Main.removeDoor).toString());
+			properties.setProperty("arbitraryPosOverride", new Boolean(Main.arbitraryPosOverride).toString());
+			properties.setProperty("loadFloor", new Boolean(Main.loadFloor).toString());
+			properties.setProperty("loadShield", new Boolean(Main.loadShield).toString());
+			properties.setProperty("loadSystem", new Boolean(Main.loadSystem).toString());
 			
-			// === WRITE VARIABLES
-		// === exporter
-			out.write("exportPath = " + Main.exportPath + ShipIO.lineDelimiter);
-			out.write("projectPath = " + Main.projectPath + ShipIO.lineDelimiter);
-			out.write("installPath = " + Main.installPath + ShipIO.lineDelimiter);
-		// === browser
-			out.write("dataPath = " + Main.dataPath + ShipIO.lineDelimiter);
-			out.write("resPath = " + Main.resPath + ShipIO.lineDelimiter);
-		// === edit
-			out.write("removeDoor = " + Main.removeDoor + ShipIO.lineDelimiter);
-			//out.write("snapMounts = " + Main.snapMounts + ShipIO.lineDelimiter);
-			//out.write("snapMountsToHull = " + Main.snapMountsToHull + ShipIO.lineDelimiter);
-			out.write("arbitraryPosOverride = " + Main.arbitraryPosOverride + ShipIO.lineDelimiter);
-		// === view
-			//out.write("showGrid = " + Main.showGrid + ShipIO.lineDelimiter);
-			//out.write("showAnchor = " + Main.showAnchor + ShipIO.lineDelimiter);
-			//out.write("showMounts = " + Main.showMounts + ShipIO.lineDelimiter);
-			//out.write("showRooms = " + Main.showRooms + ShipIO.lineDelimiter);
-			//out.write("showHull = " + Main.showHull + ShipIO.lineDelimiter);
-			//out.write("showFloor = " + Main.showFloor + ShipIO.lineDelimiter);
-			//out.write("showShield = " + Main.showShield + ShipIO.lineDelimiter);
-			out.write("loadFloor = " + Main.loadFloor + ShipIO.lineDelimiter);
-			out.write("loadShield = " + Main.loadShield + ShipIO.lineDelimiter);
-			out.write("loadSystem = " + Main.loadSystem + ShipIO.lineDelimiter);
-			
-			out.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+			try {
+				fw = new FileWriter("superluminal.ini");
+				properties.store(fw, "");
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					if (fw != null)
+						fw.close();
+				} catch (IOException e1) {
+				}
+			}
+		} else {
+			try {
+				fw = new FileWriter("superluminal.ini");
+				out = new BufferedWriter(fw);
+	
+				// === WRITE VARIABLES
+			// === exporter
+				out.write("exportPath = " + Main.exportPath + ShipIO.lineDelimiter);
+				out.write("projectPath = " + Main.projectPath + ShipIO.lineDelimiter);
+				out.write("installPath = " + Main.installPath + ShipIO.lineDelimiter);
+			// === browser
+				out.write("dataPath = " + Main.dataPath + ShipIO.lineDelimiter);
+				out.write("resPath = " + Main.resPath + ShipIO.lineDelimiter);
+			// === edit
+				out.write("removeDoor = " + Main.removeDoor + ShipIO.lineDelimiter);
+				//out.write("snapMounts = " + Main.snapMounts + ShipIO.lineDelimiter);
+				//out.write("snapMountsToHull = " + Main.snapMountsToHull + ShipIO.lineDelimiter);
+				out.write("arbitraryPosOverride = " + Main.arbitraryPosOverride + ShipIO.lineDelimiter);
+			// === view
+				//out.write("showGrid = " + Main.showGrid + ShipIO.lineDelimiter);
+				//out.write("showAnchor = " + Main.showAnchor + ShipIO.lineDelimiter);
+				//out.write("showMounts = " + Main.showMounts + ShipIO.lineDelimiter);
+				//out.write("showRooms = " + Main.showRooms + ShipIO.lineDelimiter);
+				//out.write("showHull = " + Main.showHull + ShipIO.lineDelimiter);
+				//out.write("showFloor = " + Main.showFloor + ShipIO.lineDelimiter);
+				//out.write("showShield = " + Main.showShield + ShipIO.lineDelimiter);
+				out.write("loadFloor = " + Main.loadFloor + ShipIO.lineDelimiter);
+				out.write("loadShield = " + Main.loadShield + ShipIO.lineDelimiter);
+				out.write("loadSystem = " + Main.loadSystem + ShipIO.lineDelimiter);
+				
+				out.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	

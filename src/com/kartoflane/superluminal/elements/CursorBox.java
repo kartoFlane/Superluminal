@@ -131,7 +131,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 										? "\\/"
 										: " >"),
 					bounds.x + (Main.mountToolHorizontal ? 3 : (bounds.width-e.gc.stringExtent("__").x)/2),
-					bounds.y + (Main.mountToolHorizontal ? (bounds.height-e.gc.stringExtent("/\\").y)/2-1 : 2),
+					bounds.y + (Main.mountToolHorizontal ? (bounds.height-e.gc.stringExtent("__").y)/2-1 : 2),
 					true);
 			
 		} else if (Main.tltmSystem.getSelection()) {

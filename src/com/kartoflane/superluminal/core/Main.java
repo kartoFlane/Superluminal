@@ -4,12 +4,14 @@ import java.awt.Desktop;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.zip.ZipFile;
 
 import org.eclipse.swt.SWT;
@@ -19,6 +21,8 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MenuAdapter;
 import org.eclipse.swt.events.MenuEvent;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
@@ -52,6 +56,7 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
@@ -85,9 +90,6 @@ import com.kartoflane.superluminal.ui.PropertiesWindow;
 import com.kartoflane.superluminal.ui.ShipBrowser;
 import com.kartoflane.superluminal.ui.ShipChoiceDialog;
 import com.kartoflane.superluminal.ui.ShipPropertiesWindow;
-import org.eclipse.swt.widgets.Spinner;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.ModifyEvent;
 
 public class Main {
 		// === CONSTANTS
@@ -114,7 +116,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "5-3-13";
+	public final static String VERSION = "18-3-13";
 	
 		// === Important objects
 	public static Shell shell;
@@ -277,6 +279,7 @@ public class Main {
 	private static Spinner stepSpinner;
 	
 	public static int arbitraryStep = 1;
+	public static final boolean propertiesSwitch = false;
 	
 	// =================================================================================================== //
 	
@@ -285,7 +288,6 @@ public class Main {
 	 * === TODO
 	 * == IMMEDIATE PRIO:
 	 * 	- gibs editor - animation
-	 *  - change from ConfigIO to Properties java class
 	 * 
 	 * == MEDIUM PRIO:
 	 * 	- Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
@@ -351,28 +353,55 @@ public class Main {
 		GRID_W = (GRID_W > GRID_W_MAX) ? GRID_W_MAX : GRID_W;
 		GRID_H = (GRID_H > GRID_H_MAX) ? GRID_H_MAX : GRID_H;
 		
-		// create config file if it doesn't exist already
-		if (!ConfigIO.configExists())
-			ConfigIO.saveConfig();
-		
-		// load values from config
-		
-		// browse
-		exportPath = ConfigIO.scourFor("exportPath");
-		projectPath = ConfigIO.scourFor("projectPath");
-		installPath = ConfigIO.scourFor("installPath");
-		// files
-		dataPath = ConfigIO.scourFor("dataPath");
-		resPath = ConfigIO.scourFor("resPath");
-		// edit
-		removeDoor = ConfigIO.getBoolean("removeDoor");
-		arbitraryPosOverride = ConfigIO.getBoolean("arbitraryPosOverride");
-		// view
-		//showGrid = ConfigIO.getBoolean("showGrid");
-		loadFloor = ConfigIO.getBoolean("loadFloor");
-		loadShield = ConfigIO.getBoolean("loadShield");
-		loadSystem = ConfigIO.getBoolean("loadSystem");
-		
+		if (propertiesSwitch) {
+			// open properties
+			Properties properties = new Properties();
+			FileReader fr = null;
+			try {
+				fr = new FileReader("superluminal.ini");
+				properties.load(fr);
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					if (fr != null)
+						fr.close();
+				} catch (IOException e1) {
+				}
+			}
+			
+			// load values from config
+			exportPath = properties.getProperty("exportPath");
+			projectPath = properties.getProperty("projectPath");
+			installPath = properties.getProperty("installPath");
+			dataPath = properties.getProperty("dataPath");
+			resPath = properties.getProperty("resPath");
+			removeDoor = Boolean.valueOf(properties.getProperty("removeDoor"));
+			arbitraryPosOverride = Boolean.valueOf(properties.getProperty("arbitraryPosOverride"));
+			loadFloor = Boolean.valueOf(properties.getProperty("loadFloor"));
+			loadShield = Boolean.valueOf(properties.getProperty("loadShield"));
+			loadSystem = Boolean.valueOf(properties.getProperty("loadSystem"));
+		} else {
+			// create config file if it doesn't exist already
+			if (!ConfigIO.configExists())
+				ConfigIO.saveConfig();
+
+			// load values from config
+			exportPath = ConfigIO.scourFor("exportPath");
+			projectPath = ConfigIO.scourFor("projectPath");
+			installPath = ConfigIO.scourFor("installPath");
+			// files
+			dataPath = ConfigIO.scourFor("dataPath");
+			resPath = ConfigIO.scourFor("resPath");
+			// edit
+			removeDoor = ConfigIO.getBoolean("removeDoor");
+			arbitraryPosOverride = ConfigIO.getBoolean("arbitraryPosOverride");
+			// view
+			//showGrid = ConfigIO.getBoolean("showGrid");
+			loadFloor = ConfigIO.getBoolean("loadFloor");
+			loadShield = ConfigIO.getBoolean("loadShield");
+			loadSystem = ConfigIO.getBoolean("loadSystem");
+		}
 		
 		appFont = new Font(Display.getCurrent(), "Monospaced", 9, SWT.NORMAL);
 		if (appFont == null) {
