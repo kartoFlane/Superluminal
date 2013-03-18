@@ -2238,14 +2238,21 @@ search: for (File f : dir.listFiles()) {
 						fw.write("\t\t<"+r.getSystem().toString().toLowerCase()
 								+" power=\""+Main.ship.powerMap.get(r.getSystem())
 								+"\" max=\""+Main.ship.levelMap.get(r.getSystem())
-								+"\" room=\""+r.id+"\"");
-						
-						if (Main.ship.startMap.get(r.getSystem())) {
-							fw.write("/>");
-						} else {
-							fw.write(" start=\"false\"/>");
-						}
+								+"\" room=\""+r.id
+								+"\" start=\""+Main.ship.startMap.get(r.getSystem())+"\"");
 
+						if ((Main.ship.slotMap.keySet().contains(r.getSystem()) && Main.ship.slotMap.get(r.getSystem()) != -2) || r.getSystem().equals(Systems.MEDBAY)) {
+							fw.write(">");
+							fw.write(lineDelimiter);
+							fw.write("\t\t\t" + "<slot>" + lineDelimiter);
+							if (!r.getSystem().equals(Systems.MEDBAY))
+								fw.write("\t\t\t\t" + "<direction>"+Main.ship.slotDirMap.get(r.getSystem()).toString().toLowerCase()+"</direction>" + lineDelimiter);
+							fw.write("\t\t\t\t" + "<number>"+Main.ship.slotMap.get(r.getSystem())+"</number>" + lineDelimiter);
+							fw.write("\t\t\t" + "</slot>" + lineDelimiter);
+							fw.write("\t\t" + "</" + r.getSystem().toString().toLowerCase() + ">");
+						} else {
+							fw.write("/>");
+						}
 						fw.write(lineDelimiter);
 					}
 				}
