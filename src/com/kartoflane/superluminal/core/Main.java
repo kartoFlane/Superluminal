@@ -288,9 +288,10 @@ public class Main {
 	 * === TODO
 	 * == IMMEDIATE PRIO:
 	 * 	- gibs editor - animation
+	 * 	- Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
+	 * 	- rooms get exported with wrong sizes, even though in editor they're fine, in-game they are shifted 1 grid cell left/upwards
 	 * 
 	 * == MEDIUM PRIO:
-	 * 	- Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
 	 * 
 	 * == LOW PRIO:
 	 *  - add possibility to link glow and other images, and automatically correctly export them
@@ -305,6 +306,7 @@ public class Main {
 	 * 	- changed: slightly modified the way interior images are handled, nothing too important, but there -may- be some hidden bugs and crashes due to my forgetfulness
 	 * 	- fixed: fixed systems' start availability status not loading when opening a project
 	 * 	- fixed: enemy ships would export without information about system slot, fixed that
+	 * 	- fixed: adjusted the size of coordinate boxes at the bottom of the editor, so that the text they're displaying won't get cut off
 	 *
 	 */
 	
@@ -452,7 +454,7 @@ public class Main {
 		}
 		
 		shell.pack();
-		shell.setMinimumSize(GRID_W*35+40, GRID_H*35);
+		shell.setMinimumSize(GRID_W*35+60, GRID_H*35);
 		shell.open();
 		
 		shell.addControlListener(new ControlAdapter() {
@@ -815,7 +817,7 @@ public class Main {
 		// === Container -> buttonComposite -> Hull image button
 		btnHull = new Button(composite, SWT.NONE);
 		GridData gd_btnHull = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
-		gd_btnHull.minimumWidth = 70;
+		gd_btnHull.minimumWidth = 75;
 		btnHull.setLayoutData(gd_btnHull);
 		btnHull.setFont(appFont);
 		btnHull.setEnabled(false);
@@ -824,7 +826,7 @@ public class Main {
 		// === Container -> buttonComposite -> shield image button
 		btnShields = new Button(composite, SWT.NONE);
 		GridData gd_btnShields = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
-		gd_btnShields.minimumWidth = 70;
+		gd_btnShields.minimumWidth = 75;
 		btnShields.setLayoutData(gd_btnShields);
 		btnShields.setFont(appFont);
 		btnShields.setToolTipText("Shield is aligned in relation to rooms. Place a room before choosing shield graphic.");
@@ -834,7 +836,7 @@ public class Main {
 		// === Container -> buttonComposite -> floor image button
 		btnFloor = new Button(composite, SWT.NONE);
 		GridData gd_btnFloor = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
-		gd_btnFloor.minimumWidth = 70;
+		gd_btnFloor.minimumWidth = 75;
 		btnFloor.setLayoutData(gd_btnFloor);
 		btnFloor.setFont(appFont);
 		btnFloor.setEnabled(false);
@@ -843,7 +845,7 @@ public class Main {
 		// === Container -> buttonComposite -> cloak image button
 		btnCloak = new Button(composite, SWT.NONE);
 		GridData gd_btnCloak = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
-		gd_btnCloak.minimumWidth = 70;
+		gd_btnCloak.minimumWidth = 75;
 		btnCloak.setLayoutData(gd_btnCloak);
 		btnCloak.setSize(70, 25);
 		btnCloak.setFont(appFont);
@@ -1019,6 +1021,7 @@ public class Main {
 		btnCloaked.setImage(Cache.checkOutImage(shell, "/img/smallsys/smallcloak.png"));
 		btnCloaked.setToolTipText("View the cloaked version of the ship.");
 		btnCloaked.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
+		new Label(composite, SWT.NONE);
 		
 	// === Canvas
 		
@@ -1253,51 +1256,42 @@ public class Main {
 		menuGib = new Menu(canvas);
 		
 		// === Text Info Fields
-		
 		Composite textHolder = new Composite(shell, SWT.NONE);
-		GridData gd_textHolder = new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1);
-		gd_textHolder.heightHint = 18;
-		textHolder.setLayoutData(gd_textHolder);
-		textHolder.setLayout(new FormLayout());
+		GridLayout gl_textHolder = new GridLayout(4, false);
+		gl_textHolder.verticalSpacing = 0;
+		gl_textHolder.marginWidth = 0;
+		gl_textHolder.marginHeight = 0;
+		textHolder.setLayout(gl_textHolder);
+		textHolder.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		// === Position of the pointer on the grid
 		mGridPosText = new Label(textHolder, SWT.BORDER | SWT.CENTER);
+		GridData gd_mGridPosText = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
+		gd_mGridPosText.widthHint = 70;
+		gd_mGridPosText.minimumWidth = 150;
+		mGridPosText.setLayoutData(gd_mGridPosText);
 		mGridPosText.setFont(appFont);
-		FormData fd_mGridPosText = new FormData();
-		fd_mGridPosText.bottom = new FormAttachment(100);
-		fd_mGridPosText.top = new FormAttachment(0);
-		fd_mGridPosText.left = new FormAttachment(0);
-		mGridPosText.setLayoutData(fd_mGridPosText);
 		
 		mPosText = new Label(textHolder, SWT.BORDER | SWT.CENTER);
+		GridData gd_mPosText = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
+		gd_mPosText.widthHint = 110;
+		gd_mPosText.minimumWidth = 150;
+		mPosText.setLayoutData(gd_mPosText);
 		mPosText.setFont(appFont);
-		FormData fd_mPosText = new FormData();
-		fd_mPosText.bottom = new FormAttachment(100);
-		fd_mPosText.top = new FormAttachment(mGridPosText, 0, SWT.TOP);
-		fd_mPosText.left = new FormAttachment(mGridPosText, 6);
-		mPosText.setLayoutData(fd_mPosText);
 		
 		// === Number of rooms and doors in the ship
 		shipInfoText = new Label(textHolder, SWT.BORDER);
-		fd_mPosText.right = new FormAttachment(shipInfoText, -6);
-		fd_mGridPosText.right = new FormAttachment(shipInfoText, -84);
+		shipInfoText.setAlignment(SWT.CENTER);
+		GridData gd_shipInfoText = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
+		gd_shipInfoText.widthHint = 160;
+		gd_shipInfoText.minimumWidth = 300;
+		shipInfoText.setLayoutData(gd_shipInfoText);
 		shipInfoText.setFont(appFont);
-		FormData fd_shipInfoText = new FormData();
-		fd_shipInfoText.bottom = new FormAttachment(100);
-		fd_shipInfoText.top = new FormAttachment(0);
-		fd_shipInfoText.left = new FormAttachment(0, 129);
-		shipInfoText.setLayoutData(fd_shipInfoText);
 		
 		// === Status bar
 		text = new Label(textHolder, SWT.WRAP | SWT.BORDER);
-		fd_shipInfoText.right = new FormAttachment(text, -6);
+		text.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		text.setFont(appFont);
-		FormData fd_text = new FormData();
-		fd_text.bottom = new FormAttachment(100);
-		fd_text.right = new FormAttachment(100);
-		fd_text.left = new FormAttachment(0, 265);
-		fd_text.top = new FormAttachment(0);
-		text.setLayoutData(fd_text);
 		new Label(shell, SWT.NONE);
 
 		shell.pack();
@@ -1624,6 +1618,7 @@ public class Main {
 
 		btnCloaked.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
+				// cloak graphic is handled by HullBox class, the button itself is only used to provide the toggle functionality
 				canvas.redraw();
 			}
 		});
