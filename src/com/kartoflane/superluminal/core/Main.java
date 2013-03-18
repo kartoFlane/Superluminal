@@ -189,7 +189,7 @@ public class Main {
 	
 		// === Flags for Weapon Mounting tool
 	public static Slide mountToolSlide = Slide.UP;
-	public static boolean mountToolMirror = true;
+	public static boolean mountToolMirror = false;
 	public static boolean mountToolHorizontal = true;
 	
 		// === Image holders
@@ -285,22 +285,24 @@ public class Main {
 	 * === TODO
 	 * == IMMEDIATE PRIO:
 	 * 	- gibs editor - animation
+	 *  - change from ConfigIO to Properties java class
 	 * 
 	 * == MEDIUM PRIO:
-	 * 	- mounts - indicator for mirror and slide dir
+	 * 	- Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
 	 * 
 	 * == LOW PRIO:
-	 *  - room interior -> make it part of SysBox, not FTLRoom + maybe add possibility to link glow and other images, and automatically correctly export them?
-	 *  - change from ConfigIO to Properties java class
-	 * 	- Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
+	 *  - add possibility to link glow and other images, and automatically correctly export them
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
 	 * 	- fixed: player ships with max crew equal to 0 (automated ships) now exports the crew tag only once (previously there would be 7 additional, superfluous copies)
-	 * 	- added: calculate optimal offset button
+	 * 	- added: calculate optimal offset option
 	 * 	- added: re-implemented room splitting
+	 * 	- added: re-implemented weapon mount slide and mirror indicators
 	 * 	- added: possibility to link doors to rooms, to create "gateways" that allow crewmen to move between rooms even if they're not physically connected (exploits an FTL bug)
-	 * 
+	 * 	- changed: slightly modified the way interior images are handled, nothing too important, but there -may- be some hidden bugs and crashes due to my forgetfulness
+	 * 	- fixed: fixed systems' start availability status not loading when opening a project
+	 *
 	 */
 	
 	// =================================================================================================== //
@@ -1209,6 +1211,13 @@ public class Main {
 		mntmSysImage.setEnabled(false);
 		mntmSysImage.setText("Set Interior Image...");
 		
+		// === Systems -> Remove System Image
+		final MenuItem mntmRemoveInterior = new MenuItem(menuSystem, SWT.NONE);
+		mntmRemoveInterior.setEnabled(false);
+		mntmRemoveInterior.setText("Remove Interior Image");
+		mntmRemoveInterior.setEnabled(true);
+		
+		
 	// === Gib Assignment Context Menu
 
 		menuGib = new Menu(canvas);
@@ -1945,6 +1954,11 @@ public class Main {
 					interiorPath = new String(path);
 					selectedRoom.setInterior(path);
 				}
+			}
+		});
+		mntmRemoveInterior.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				selectedRoom.setInterior(null);
 			}
 		});
 

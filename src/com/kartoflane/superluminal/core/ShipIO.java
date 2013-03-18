@@ -432,7 +432,6 @@ ship:			while(sc.hasNext()) {
 														start = Boolean.valueOf(matcher.group(2));
 													}
 													
-													
 													r = shipBeingLoaded.getRoomWithId(id);
 													if (r != null) {
 														try {
@@ -788,29 +787,31 @@ scan:			while(sc.hasNext()) {
 																pattern = Pattern.compile("(\\s*?img\\s*?=\\s*?\")(.*?)(\")");
 																matcher = pattern.matcher(s);
 																if (matcher.find()) {
-																	r.img = matcher.group(2);
-																	
-																	if (fileToScan != null) {
-																		r.img = fileToScan.getParentFile().getParentFile().getAbsolutePath() + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
-																	} else {
-																		r.img = "skip.loading";
-																	}
-																	f = new File(r.img);
-																	if (!f.exists()) {
-																		r.img = matcher.group(2);
-																		r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
-																	}
-																	
-																	if (Main.loadSystem) {
-																		r.setInterior(r.img);
-																		//Main.erDialog.add("Error: load interior images - interior image not found.");
+																	if (r.sysBox != null) {
+																		r.sysBox.interiorPath = matcher.group(2);
+																		
+																		if (fileToScan != null) {
+																			r.sysBox.interiorPath = fileToScan.getParentFile().getParentFile().getAbsolutePath() + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.sysBox.interiorPath + ".png";
+																		} else {
+																			r.sysBox.interiorPath = "skip.loading";
+																		}
+																		f = new File(r.sysBox.interiorPath);
+																		if (!f.exists()) {
+																			r.sysBox.interiorPath = matcher.group(2);
+																			r.sysBox.interiorPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.sysBox.interiorPath + ".png";
+																		}
+																		
+																		if (Main.loadSystem) {
+																			r.setInterior(r.sysBox.interiorPath);
+																			//Main.erDialog.add("Error: load interior images - interior image not found.");
+																		}
 																	}
 																} else if (!r.getSystem().equals(Systems.TELEPORTER) && !r.getSystem().equals(Systems.EMPTY)) {
 																	// load default sysImg for the room (teleporter doesn't have default graphic)
-																	if (Main.loadSystem) {
-																		r.img = "room_"+r.getSystem().toString().toLowerCase();
-																		r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.img + ".png";
-																		r.setInterior(r.img);
+																	if (Main.loadSystem && r.sysBox != null) {
+																		r.sysBox.interiorPath = "room_"+r.getSystem().toString().toLowerCase();
+																		r.sysBox.interiorPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.sysBox.interiorPath + ".png";
+																		r.setInterior(r.sysBox.interiorPath);
 																	}
 																}
 																
@@ -1904,15 +1905,15 @@ search: for (File f : dir.listFiles()) {
 			double progress = 0;
 			String img;
 			for (FTLRoom r : Main.ship.rooms) {
-				if (!r.getSystem().equals(Systems.EMPTY) && !r.getSystem().equals(Systems.TELEPORTER) && !isNull(r.img)) {
-					img = r.img.substring(r.img.lastIndexOf(pathDelimiter));
-					source = new File(r.img);
+				if (!r.getSystem().equals(Systems.EMPTY) && !r.getSystem().equals(Systems.TELEPORTER) && r.sysBox != null && !isNull(r.sysBox.interiorPath)) {
+					img = r.sysBox.interiorPath.substring(r.sysBox.interiorPath.lastIndexOf(pathDelimiter));
+					source = new File(r.sysBox.interiorPath);
 					destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + img);
 					//destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + Main.ship.imageName + "_room_" + r.getSystem().toString().toLowerCase() + ".png");
 					if (dontCheck || !isDefaultResource(source)) {
 						destination.mkdirs();
-						java.nio.file.Files.copy(Paths.get(r.img), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-						String tempSrc = r.img.replace(".png", "");
+						java.nio.file.Files.copy(Paths.get(r.sysBox.interiorPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+						String tempSrc = r.sysBox.interiorPath.replace(".png", "");
 						String tempDest = destination.getAbsolutePath().replace(".png", "");
 						try {
 							java.nio.file.Files.copy(Paths.get(tempSrc + "_glow.png"), Paths.get(tempDest + "_glow.png"), StandardCopyOption.REPLACE_EXISTING);
@@ -2141,10 +2142,10 @@ search: for (File f : dir.listFiles()) {
 				fw.write("\t<systemList>"+lineDelimiter);
 				
 				for (FTLRoom r : Main.ship.rooms) {
-					if (!r.getSystem().equals(Systems.EMPTY)) {
+					if (r.sysBox != null && !r.getSystem().equals(Systems.EMPTY)) {
 						fw.write("\t\t<"+r.getSystem().toString().toLowerCase()+" power=\""+Main.ship.levelMap.get(r.getSystem())+"\" room=\""+r.id+"\" start=\""+Main.ship.startMap.get(r.getSystem())+"\"");
-						if (!isNull(r.img)) {
-							fw.write(" img=\""+r.img.substring(r.img.lastIndexOf(pathDelimiter)+1, r.img.lastIndexOf('.'))+"\"");
+						if (!isNull(r.sysBox.interiorPath)) {
+							fw.write(" img=\""+r.sysBox.interiorPath.substring(r.sysBox.interiorPath.lastIndexOf(pathDelimiter)+1, r.sysBox.interiorPath.lastIndexOf('.'))+"\"");
 						}
 						if ((Main.ship.slotMap.keySet().contains(r.getSystem()) && Main.ship.slotMap.get(r.getSystem()) != -2) || r.getSystem().equals(Systems.MEDBAY)) {
 							fw.write(">");
@@ -2378,22 +2379,19 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 	
 	public static void loadSystemImages(File fileToScan) {
 		for (FTLRoom r : Main.ship.rooms) {
-			if (!isNull(r.img))
+			if (r.sysBox != null && !isNull(r.sysBox.interiorPath))
 				loadSystemImage(r, fileToScan);
 		}
 	}
 	
 	public static void loadSystemImage(FTLRoom r, File fileToScan) {
-		try {
-			if (isNull(r.img) && !r.getSystem().equals(Systems.TELEPORTER) && !r.getSystem().equals(Systems.EMPTY)) { // load default graphics (teleporter doesn't have default graphic)
-				r.img = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + "room_" + r.getSystem().toString().toLowerCase() + ".png";
+		if (r.sysBox != null) {
+			if (isNull(r.sysBox.interiorPath) && !r.getSystem().equals(Systems.TELEPORTER) && !r.getSystem().equals(Systems.EMPTY)) { // load default graphics (teleporter doesn't have default graphic)
+				r.sysBox.interiorPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + "room_" + r.getSystem().toString().toLowerCase() + ".png";
 			}
-			
-			if (Main.loadSystem && !isNull(r.img))
-				r.sysImg = Cache.checkOutImageAbsolute(r, r.img);
-		} catch (SWTException e) {
-			r.img = null;
-			r.sysImg = null;
+		
+			if (Main.loadSystem && !isNull(r.sysBox.interiorPath))
+				r.sysBox.interior = Cache.checkOutImageAbsolute(r.sysBox, r.sysBox.interiorPath);
 		}
 	}
 	
@@ -2423,12 +2421,6 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 			debug("\tloading linked ship images...");
 			loadShipImages(Main.ship, null);
 			debug("\t\tdone");
-			
-			if (Main.ship.isPlayer) {
-				debug("\tloading room interiors' images...");
-				loadSystemImages(null);
-				debug("\t\tdone");
-			}
 
 			debug("\tloading weapon images...");
 			loadWeaponImages(Main.ship);
@@ -2441,6 +2433,20 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 			debug("\tloading unserializable data...");
 			Main.loadUnserializable();
 			debug("\t\tdone");
+			
+			if (Main.ship.version < 10)
+				for (FTLRoom r : Main.ship.rooms)
+					if (r.sysBox != null)
+						r.sysBox.interiorPath = r.img;
+			
+			if (Main.ship.isPlayer) {
+				debug("\tloading room interiors' images...");
+				loadSystemImages(null);
+				debug("\t\tdone");
+			}
+			
+			for (FTLRoom r : Main.ship.rooms)
+				if (r.sysBox != null) r.sysBox.setAvailable(Main.ship.startMap.get(r.getSystem()));
 
 			debug("\tregistering items for painter...");
 			Main.registerItemsForPainter();
@@ -2509,8 +2515,7 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 	}
 	
 		// ASK THE USER TO SPECIFY SAVE DIRECTORY
-	public static void askSaveDir()
-	{
+	public static void askSaveDir() {
 		FileDialog dialog = new FileDialog(Main.shell, SWT.SAVE);
 		String[] filterExtensions = new String[] {"*.shp"};
 		dialog.setFilterExtensions(filterExtensions);
@@ -2526,8 +2531,7 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 	}
 	
 		// ASK THE USER TO SPECIFY FILE TO LOAD
-	public static void askLoadDir()
-	{
+	public static void askLoadDir() {
 		FileDialog dialog = new FileDialog(Main.shell, SWT.OPEN);
 		String[] filterExtensions = new String[] {"*.shp"};
 		dialog.setFilterExtensions(filterExtensions);

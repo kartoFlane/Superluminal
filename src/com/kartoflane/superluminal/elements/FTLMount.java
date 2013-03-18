@@ -219,6 +219,25 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		}
 	}
 	
+	public static void redrawLoc(Rectangle oldBounds, Rectangle bounds, Slide slide) {
+		if (slide.equals(Slide.NO)) {
+			Main.canvas.redraw(oldBounds.x-3, oldBounds.y-3, bounds.width+6, bounds.height+6, false);
+			Main.canvas.redraw(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+6, false);
+		} else if (slide.equals(Slide.UP)) {
+			Main.canvas.redraw(oldBounds.x-3, oldBounds.y-43, bounds.width+6, bounds.height+46, false);
+			Main.canvas.redraw(bounds.x-3, bounds.y-43, bounds.width+6, bounds.height+46, false);
+		} else if (slide.equals(Slide.RIGHT)) {
+			Main.canvas.redraw(oldBounds.x-3, oldBounds.y-3, bounds.width+46, bounds.height+6, false);
+			Main.canvas.redraw(bounds.x-3, bounds.y-3, bounds.width+46, bounds.height+6, false);
+		} else if (slide.equals(Slide.DOWN)) {
+			Main.canvas.redraw(oldBounds.x-3, oldBounds.y-3, bounds.width+6, bounds.height+46, false);
+			Main.canvas.redraw(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+46, false);
+		} else if (slide.equals(Slide.LEFT)) {
+			Main.canvas.redraw(oldBounds.x-43, oldBounds.y-3, bounds.width+46, bounds.height+6, false);
+			Main.canvas.redraw(bounds.x-43, bounds.y-3, bounds.width+46, bounds.height+6, false);
+		}
+	}
+	
 	private void redrawLoc(Slide slideOld) {
 		redrawLoc(bounds.x, bounds.y);
 		
@@ -285,7 +304,9 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		return powered;
 	}
 	
-	
+	/**
+	 * Draws a direction arrow at the center of given rectangle, indicating given Slide
+	 */
 	public static void drawDirection(PaintEvent e, Slide s, Rectangle rect) {
 		final int LENGTH = 40;
 		final int ARROWHEAD = 8;

@@ -54,7 +54,8 @@ public class Cache {
 				image = new Image(Display.getCurrent(), stream);
 				cachedImagesMap.put(path, image);
 			} catch (IllegalArgumentException e) {
-				Main.erDialog.add(String.format("%s: Warning loading \"%s\": resource not found.", customer.getClass().getSimpleName(), path));
+				//Main.erDialog.add(String.format("%s: Warning - loading \"%s\": resource not found.", customer.getClass().getSimpleName(), path));
+				Main.debug(String.format("%s: Warning - loading \"%s\": resource not found.", customer.getClass().getSimpleName(), path));
 			} catch (SWTException e) {
 				Main.erDialog.add(String.format("%s: Error loading \"%s\": resource contains invalid data.", customer.getClass().getSimpleName(), path));
 			}
@@ -93,7 +94,7 @@ public class Cache {
 						//Main.erDialog.add(String.format("%s: Error loading \"%s\": file not found.", customer.getClass().getSimpleName(), f.getName()));
 					}
 				} catch (IllegalArgumentException e) {
-					Main.erDialog.add(String.format("%s: Warning loading \"%s\": null argument.", customer.getClass().getSimpleName(), path));
+					Main.erDialog.add(String.format("%s: Warning - loading \"%s\": null argument.", customer.getClass().getSimpleName(), path));
 				} catch (SWTException e) {
 					Main.erDialog.add(String.format("%s: Error loading \"%s\": file contains invalid data.", customer.getClass().getSimpleName(), path));
 				}

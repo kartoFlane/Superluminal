@@ -70,6 +70,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 		
 		if ((Main.tltmPointer.getSelection() || Main.tltmGib.getSelection()) && borderColor != null) {
 			e.gc.setForeground(borderColor);
+			
 		} else if (Main.tltmRoom.getSelection()) {
 			if (room_canBePlaced) {
 				e.gc.setForeground(greenColor);
@@ -80,6 +81,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			}
 			e.gc.setAlpha(64);
 			e.gc.fillRectangle(bounds);
+			
 		} else if (Main.tltmDoor.getSelection()) {
 			if (door_canBePlaced) {
 				e.gc.setForeground(greenColor);
@@ -104,6 +106,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				e.gc.setAlpha(64);
 				e.gc.fillRectangle(bounds);
 			}
+			
 		} else if (Main.tltmMount.getSelection()) {
 			if (mount_canBePlaced) {
 				e.gc.setForeground(greenColor);
@@ -112,8 +115,25 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				e.gc.setForeground(redColor);
 				e.gc.setBackground(redColor);
 			}
+			e.gc.setAlpha(255);
+			FTLMount.drawDirection(e, Main.mountToolSlide, bounds);
+			
 			e.gc.setAlpha(64);
 			e.gc.fillRectangle(bounds);
+			
+			e.gc.setFont(Main.appFont);
+			e.gc.setAlpha(255);
+			e.gc.drawString(Main.mountToolMirror
+								? (Main.mountToolHorizontal
+										? "/\\"
+										: " <")
+								: (Main.mountToolHorizontal
+										? "\\/"
+										: " >"),
+					bounds.x + (Main.mountToolHorizontal ? 3 : (bounds.width-e.gc.stringExtent("__").x)/2),
+					bounds.y + (Main.mountToolHorizontal ? (bounds.height-e.gc.stringExtent("/\\").y)/2-1 : 2),
+					true);
+			
 		} else if (Main.tltmSystem.getSelection()) {
 			if (slot_canBePlaced) {
 				e.gc.setForeground(greenColor);
@@ -124,6 +144,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			}
 			e.gc.setAlpha(64);
 			e.gc.fillRectangle(bounds);
+			
 		} else if (Main.tltmGib.getSelection()) {
 		}
 
@@ -177,7 +198,8 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				}
 			} else if (Main.tltmMount.getSelection()) {
 				if (Main.modShift) {
-					Main.mountToolMirror = !Main.mountToolMirror; 
+					Main.mountToolMirror = !Main.mountToolMirror;
+					Main.canvasRedraw(bounds, false);
 				} else if (mount_canBePlaced) {
 					FTLMount m = new FTLMount();
 					m.pos.x = e.x - Main.ship.imageRect.x;
@@ -227,6 +249,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 		} else if (e.button == 3) {
 			if (Main.tltmMount.getSelection()) {
 				if (Main.modShift) {
+					Slide s = Main.mountToolSlide;
 					Main.mountToolSlide = ((Main.mountToolSlide.equals(Slide.UP))
 								? (Slide.RIGHT)
 								: (Main.mountToolSlide.equals(Slide.RIGHT))
@@ -238,6 +261,8 @@ public class CursorBox extends PaintBox implements DraggableBox {
 											: (Main.mountToolSlide.equals(Slide.NO))
 												? (Slide.UP)
 												: Main.mountToolSlide);
+					FTLMount.redrawLoc(bounds, bounds, s);
+					FTLMount.redrawLoc(bounds, bounds, Main.mountToolSlide);
 				} else {
 					Rectangle oldBounds = Main.cloneRect(bounds);
 					Main.mountToolHorizontal = !Main.mountToolHorizontal;
@@ -415,6 +440,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				
 				Main.canvas.redraw(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+6, false);
 				Main.canvas.redraw(oldBounds.x-3, oldBounds.y-3, oldBounds.width+6, oldBounds.height+6, false);
+				FTLMount.redrawLoc(oldBounds, bounds, Main.mountToolSlide);
 				
 			} else if (Main.tltmSystem.getSelection()) {
 				temp = Main.getRectAt(e.x, e.y);

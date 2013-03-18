@@ -25,7 +25,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	private Point selectedCorner;
 	private Point offset;
 	private Systems sys;
-	private SystemBox sysBox;
+	public SystemBox sysBox;
 	public int slot;
 	public Slide dir;
 	public String img;
@@ -44,8 +44,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		Cache.checkInColor(this, slot_rgb);
 		slotColor = null;
 		sysBox = null;
-		Cache.checkInImageAbsolute(this, img);
-		sysImg = null;
+		//Cache.checkInImageAbsolute(this, img);
+		//sysImg = null;
 		super.stripUnserializable();
 	}
 	
@@ -53,7 +53,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		grid_color = Main.grid.getCellAt(1,1).getGridColor();
 		slotColor = Cache.checkOutColor(this, slot_rgb);
 		sysBox = Main.systemsMap.get(sys);
-		sysImg = Cache.checkOutImageAbsolute(this, img);
+		//sysImg = Cache.checkOutImageAbsolute(this, img);
 		super.loadUnserializable();
 	}
 	
@@ -102,14 +102,16 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	}
 	
 	public void setInterior(String path) {
-		if (img != null)
-			Cache.checkInImageAbsolute(this, img);
-		img = null;
-		if (!sys.equals(Systems.EMPTY) && !sys.equals(Systems.TELEPORTER)) {
-			img = path;
-			sysImg = Cache.checkOutImageAbsolute(this, img);
+		if (sysBox != null) {
+			if (sysBox.interiorPath != null)
+				Cache.checkInImageAbsolute(sysBox, sysBox.interiorPath);
+			sysBox.interiorPath = null;
+			if (!sys.equals(Systems.EMPTY) && !sys.equals(Systems.TELEPORTER)) {
+				sysBox.interiorPath = path;
+				sysBox.interior = Cache.checkOutImageAbsolute(sysBox, sysBox.interiorPath);
+			}
+			Main.canvasRedraw(bounds, false);
 		}
-		Main.canvasRedraw(bounds, false);
 	}
 	
 	public void assignSystem(SystemBox box) {
@@ -148,10 +150,6 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		} else {
 			sysBox = null;
 			sys = sysName;
-			if (img != null)
-				Cache.checkInImageAbsolute(this, img);
-			img = null;
-			sysImg = null;
 			setColor(new RGB(230, 225, 220));
 		}
 	}
@@ -398,8 +396,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			for (int i=1; i < bounds.height/35; i++)
 				e.gc.drawLine(bounds.x, bounds.y + i*35, bounds.x+bounds.width, bounds.y + i*35);
 	
-			if (sysImg != null)
-				e.gc.drawImage(sysImg, 0, 0, sysImg.getBounds().width, sysImg.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
+			if (sysBox != null && sysBox.interior != null)
+				e.gc.drawImage(sysBox.interior, 0, 0, sysBox.interior.getBounds().width, sysBox.interior.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
 			
 			e.gc.setForeground(prevBg);
 			if (selected) {

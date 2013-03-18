@@ -3,6 +3,7 @@ package com.kartoflane.superluminal.elements;
 import java.io.Serializable;
 
 import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Rectangle;
 
 import com.kartoflane.superluminal.core.Main;
@@ -15,6 +16,8 @@ public class SystemBox extends ImageBox implements Serializable {
 	private Systems sys;
 	private boolean availableAtStart = true;
 	private int sysLevel = 0;
+	public Image interior = null;
+	public String interiorPath = null;
 	
 	public SystemBox(Systems name) {
 		super();
