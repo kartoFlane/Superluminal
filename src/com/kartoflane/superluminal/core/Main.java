@@ -62,6 +62,7 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 
 import com.kartoflane.superluminal.elements.Anchor;
+import com.kartoflane.superluminal.elements.AxisFlag;
 import com.kartoflane.superluminal.elements.CursorBox;
 import com.kartoflane.superluminal.elements.FTLDoor;
 import com.kartoflane.superluminal.elements.FTLGib;
@@ -212,6 +213,7 @@ public class Main {
 	private static String ftlLoadPath = "";
 	private static String importPath = "";
 	private static File temporaryFiles = null;
+	private static boolean temporaryFilesInUse = false;
 	/**
 	 * Path of current project file, for quick saving via Ctrl+S
 	 */
@@ -280,6 +282,7 @@ public class Main {
 	
 	public static int arbitraryStep = 1;
 	public static final boolean propertiesSwitch = false;
+	public static AxisFlag dragDir = null;
 	
 	// =================================================================================================== //
 	
@@ -288,8 +291,6 @@ public class Main {
 	 * === TODO
 	 * == IMMEDIATE PRIO:
 	 * 	- gibs editor - animation
-	 * 	- Perhaps re-allocate precision mode to ctrl-drag and change shift-drag to only move things along one axis, like it works it Photoshop.
-	 * 	- rooms get exported with wrong sizes, even though in editor they're fine, in-game they are shifted 1 grid cell left/upwards
 	 * 
 	 * == MEDIUM PRIO:
 	 * 
@@ -301,12 +302,16 @@ public class Main {
 	 * 	- fixed: player ships with max crew equal to 0 (automated ships) now exports the crew tag only once (previously there would be 7 additional, superfluous copies)
 	 * 	- added: calculate optimal offset option
 	 * 	- added: re-implemented room splitting
-	 * 	- added: re-implemented weapon mount slide and mirror indicators
+	 * 	- added: re-implemented weapon mount tool slide and mirror indicators
 	 * 	- added: possibility to link doors to rooms, to create "gateways" that allow crewmen to move between rooms even if they're not physically connected (exploits an FTL bug)
 	 * 	- changed: slightly modified the way interior images are handled, nothing too important, but there -may- be some hidden bugs and crashes due to my forgetfulness
 	 * 	- fixed: fixed systems' start availability status not loading when opening a project
 	 * 	- fixed: enemy ships would export without information about system slot, fixed that
 	 * 	- fixed: adjusted the size of coordinate boxes at the bottom of the editor, so that the text they're displaying won't get cut off
+	 * 	- fixed: ships loaded from an .ftl package now will export with images
+	 * 	- fixed: disparities between in-editor and in-game positions of rooms -should- now be gone
+	 * 	- added: added shift-dragging. Works on hull, shield, mounts and gibs.
+	 * 	- changed: because of the above, weapon mounts' mirror toggle has been changed from shift-left-click to alt-right-click
 	 *
 	 */
 	
@@ -622,8 +627,9 @@ public class Main {
 		new MenuItem(menu_edit, SWT.SEPARATOR);
 
 		// === Edit -> Calculate optimal offset
-		MenuItem mntmCalculateOptimalOffset = new MenuItem(menu_edit, SWT.NONE);
+		final MenuItem mntmCalculateOptimalOffset = new MenuItem(menu_edit, SWT.NONE);
 		mntmCalculateOptimalOffset.setText("Calculate Optimal Offset");
+		mntmCalculateOptimalOffset.setEnabled(false);
 		
 		new MenuItem(menu_edit, SWT.SEPARATOR);
 		
@@ -766,7 +772,9 @@ public class Main {
 		tltmDoor = new ToolItem(toolBar, SWT.RADIO);
 		tltmDoor.setWidth(60);
 		tltmDoor.setToolTipText("Door Creation Tool [E]"
-								+ShipIO.lineDelimiter+" - Hover over an edge of a room and click to place door");
+								+ShipIO.lineDelimiter+" - Hover over an edge of a room and click to place door"
+								+ShipIO.lineDelimiter+" - Hold down shift and left/right click on a door to select it, then drag the mouse"
+								+ShipIO.lineDelimiter+"(while holding the button down) over to a room to link the door to it.");
 		tltmDoor.setImage(toolsMap.get("door"));
 		
 		// === Container -> Tools -> Weapon mounting
@@ -1626,10 +1634,11 @@ public class Main {
 	// === SHELL
 		
 		shell.getDisplay().addFilter(SWT.KeyUp, new Listener() {
-			public void handleEvent(Event e)
-			{
-				if (e.keyCode == SWT.SHIFT)
+			public void handleEvent(Event e) {
+				if (e.keyCode == SWT.SHIFT) {
 					modShift = false;
+					dragDir = null;
+				}
 				if (e.keyCode == SWT.ALT)
 					modAlt = false;
 				if (e.keyCode == SWT.CTRL)
@@ -1639,10 +1648,10 @@ public class Main {
 		
 		shell.getDisplay().addFilter(SWT.KeyDown, new Listener() {
 			public void handleEvent(Event e) {
-				if (e.keyCode == SWT.ALT)
-					modAlt = true;
 				if (e.keyCode == SWT.SHIFT)
 					modShift = true;
+				if (e.keyCode == SWT.ALT)
+					modAlt = true;
 				if (e.keyCode == SWT.CTRL) {
 					modCtrl = true;
 					
@@ -1786,7 +1795,9 @@ public class Main {
 						// === tool hotkeys
 					} else if (e.stateMask == SWT.NONE && Main.ship != null && (e.keyCode == 'q' || e.keyCode == 'w' || e.keyCode == 'e' || e.keyCode == 'r' || e.keyCode == 't' || e.keyCode == 'g')) {
 						deselectAll();
-						boolean prev = tltmGib.getSelection();
+						boolean prevGib = tltmGib.getSelection();
+						boolean prevMount = tltmMount.getSelection();
+						
 						tltmPointer.setSelection(e.keyCode == 'q');
 						tltmRoom.setSelection(e.keyCode == 'w');
 						tltmDoor.setSelection(e.keyCode == 'e');
@@ -1795,10 +1806,10 @@ public class Main {
 						tltmGib.setSelection(e.keyCode == 'g');
 						
 						gibDialog.setVisible(tltmGib.getSelection());
-						if (prev && !tltmGib.getSelection()) gibWindow.escape();
+						if (prevGib && !tltmGib.getSelection()) gibWindow.escape();
 
 						btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath) && !tltmGib.getSelection());
-						if (prev || tltmGib.getSelection())
+						if (prevGib || prevMount || tltmGib.getSelection())
 							canvas.redraw();
 						
 						// === nudge function
@@ -2073,6 +2084,7 @@ public class Main {
 					mntmClose.setEnabled(true);
 					mntmImport.setEnabled(true);
 					mntmArchives.setEnabled(false);
+					mntmCalculateOptimalOffset.setEnabled(true);
 					
 					currentPath = null;
 					
@@ -2092,8 +2104,7 @@ public class Main {
 
 				shipBrowser.shell.addDisposeListener(new DisposeListener() {
 					@Override
-					public void widgetDisposed(DisposeEvent e)
-					{
+					public void widgetDisposed(DisposeEvent e) {
 						if (ship != null) {
 							anchor.setVisible(true);
 							
@@ -2120,6 +2131,7 @@ public class Main {
 							mntmClose.setEnabled(true);
 							mntmImport.setEnabled(true);
 							mntmArchives.setEnabled(false);
+							mntmCalculateOptimalOffset.setEnabled(true);
 							
 							if (ship.isPlayer) {
 								if (loadShield && shieldImage != null && !shieldImage.isDisposed()) {
@@ -2182,6 +2194,7 @@ public class Main {
 					
 					temporaryFiles = new File("sprlmnl_tmp");
 					temporaryFiles.mkdirs();
+					temporaryFilesInUse = true;
 					
 					ZipFile zf = null;
 					try {
@@ -2256,14 +2269,6 @@ public class Main {
 							
 							ShipIO.clearOldMaps();
 						}
-
-						if (temporaryFiles != null) {
-							debug("\tdeleting temporary directory... ", false);
-							ShipIO.deleteFolderContents(temporaryFiles);
-							if (temporaryFiles.exists()) ShipIO.rmdir(temporaryFiles);
-							debug("done", true);
-							temporaryFiles = null;
-						}
 					}
 				}
 
@@ -2293,6 +2298,7 @@ public class Main {
 					mntmClose.setEnabled(true);
 					mntmImport.setEnabled(true);
 					mntmArchives.setEnabled(false);
+					mntmCalculateOptimalOffset.setEnabled(true);
 					
 					if (ship.isPlayer) {
 						if (loadShield && shieldImage != null && !shieldImage.isDisposed()) {
@@ -2425,6 +2431,7 @@ public class Main {
 					mntmClose.setEnabled(true);
 					mntmImport.setEnabled(true);
 					mntmArchives.setEnabled(false);
+					mntmCalculateOptimalOffset.setEnabled(true);
 					
 					mntmConToPlayer.setEnabled(!ship.isPlayer);
 					mntmConToEnemy.setEnabled(ship.isPlayer);
@@ -2482,6 +2489,8 @@ public class Main {
 					}
 					menuGibItems.clear();
 					
+					for (SystemBox sb : systemsMap.values())
+						sb.clearInterior();
 					for (FTLRoom r : ship.rooms)
 						r.dispose();
 					for (FTLDoor d : ship.doors)
@@ -2503,6 +2512,15 @@ public class Main {
 					
 					gibDialog.clearList();
 					gibDialog.letters.clear();
+				}
+
+				if (temporaryFiles != null && !temporaryFilesInUse) {
+					debug("\tdeleting temporary directory... ", false);
+					ShipIO.deleteFolderContents(temporaryFiles);
+					if (temporaryFiles.exists()) ShipIO.rmdir(temporaryFiles);
+					debug("done", true);
+					temporaryFiles = null;
+					temporaryFilesInUse = false;
 				}
 				
 				shieldBox.deselect();
@@ -2551,6 +2569,9 @@ public class Main {
 				mntmClose.setEnabled(false);
 				mntmImport.setEnabled(false);
 				mntmArchives.setEnabled(true);
+				mntmConToEnemy.setEnabled(false);
+				mntmConToPlayer.setEnabled(false);
+				mntmCalculateOptimalOffset.setEnabled(false);
 
 				ship = null;
 				
@@ -3506,6 +3527,20 @@ public class Main {
 	
 	public static String getParent(String path) {
 		return path.substring(0, path.lastIndexOf(ShipIO.pathDelimiter)) + ShipIO.pathDelimiter;
+	}
+	
+	public static float getAngle(int cx, int cy, int tx, int ty) {
+	    float angle = (float) Math.toDegrees(Math.atan2(tx - cx, ty - cy));
+
+	    if(angle < 0) {
+	        angle += 360;
+	    }
+
+	    return angle;
+	}
+	
+	public static float getAngle(Point center, Point target) {
+	    return getAngle(center.x, center.y, target.x, target.y);
 	}
 }
 

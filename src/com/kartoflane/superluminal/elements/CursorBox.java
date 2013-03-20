@@ -167,6 +167,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	@Override
 	public void mouseUp(MouseEvent e) {
 		lastClick.x = e.x; lastClick.y = e.y;
+		Main.dragDir = null;
 		
 		if (e.button == 1) {
 			if (Main.tltmRoom.getSelection() && room_canBePlaced) {
@@ -197,10 +198,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					d.add(Main.ship);
 				}
 			} else if (Main.tltmMount.getSelection()) {
-				if (Main.modShift) {
-					Main.mountToolMirror = !Main.mountToolMirror;
-					Main.canvasRedraw(bounds, false);
-				} else if (mount_canBePlaced) {
+				if (mount_canBePlaced) {
 					FTLMount m = new FTLMount();
 					m.pos.x = e.x - Main.ship.imageRect.x;
 					m.pos.y = e.y - Main.ship.imageRect.y;
@@ -248,7 +246,10 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			
 		} else if (e.button == 3) {
 			if (Main.tltmMount.getSelection()) {
-				if (Main.modShift) {
+				if (Main.modAlt) {
+					Main.mountToolMirror = !Main.mountToolMirror;
+					Main.canvasRedraw(bounds, false);
+				} else if (Main.modShift) {
 					Slide s = Main.mountToolSlide;
 					Main.mountToolSlide = ((Main.mountToolSlide.equals(Slide.UP))
 								? (Slide.RIGHT)

@@ -631,7 +631,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			sysBox.unassign();
 		
 		Cache.checkInColor(this, slot_rgb);
-		Cache.checkInImageAbsolute(this, img);
+		//Cache.checkInImageAbsolute(this, img);
 		Main.layeredPainter.remove(this);
 		Main.idList.remove(id);
 		

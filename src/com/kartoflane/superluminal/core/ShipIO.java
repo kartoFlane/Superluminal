@@ -58,7 +58,6 @@ import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.ui.ShipBrowser;
 
 
-
 public class ShipIO {
 	public static Set<String> errors = new HashSet<String>();
 	
@@ -1970,13 +1969,11 @@ search: for (File f : dir.listFiles()) {
 			fw = new FileWriter(pathDir + pathDelimiter + "data" + pathDelimiter + fileName + ".txt", false);
 			
 			fw.write("X_OFFSET" + lineDelimiter);
-			if (Main.ship.offset.x == 0)
-				Main.ship.offset.x = (Main.ship.findLowBounds().x-Main.ship.anchor.x)/35;
+			Main.ship.offset.x = Math.round(((float) Main.ship.findLowBounds().x - (float) Main.ship.anchor.x)/35);
 			fw.write(Main.ship.offset.x + lineDelimiter);
 			
 			fw.write("Y_OFFSET" + lineDelimiter);
-			if (Main.ship.offset.y == 0)
-				Main.ship.offset.y = (Main.ship.findLowBounds().y-Main.ship.anchor.y)/35;
+			Main.ship.offset.y =  Math.round(((float) Main.ship.findLowBounds().y - (float) Main.ship.anchor.y)/35);
 			fw.write(Main.ship.offset.y + lineDelimiter);
 			
 			fw.write("VERTICAL" + lineDelimiter);

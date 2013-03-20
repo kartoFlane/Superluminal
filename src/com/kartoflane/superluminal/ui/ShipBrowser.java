@@ -116,8 +116,7 @@ public class ShipBrowser {
 		
 		shell.addListener(SWT.Close, new Listener() {
 			@Override
-			public void handleEvent(Event event)
-			{
+			public void handleEvent(Event event) {
 				Main.shell.setEnabled(true);
 				shell.dispose();
 			}

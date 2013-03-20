@@ -207,11 +207,25 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 		if (isVisible()) {
 			if (!Main.modAlt && move && !isPinned()) {
 				Rectangle oldBounds = Main.cloneRect(bounds);
+
+				if (Main.modShift) { // dragging in one direction, decide direction
+					if (Math.pow((orig.x + offset.x - e.x),2)+Math.pow((orig.y + offset.y - e.y),2) >= 3 && (Main.dragDir == null || Main.dragDir==AxisFlag.BOTH)) { // to prevent picking wrong direction due to unintended mouse movement
+						float angle = Main.getAngle(orig.x+offset.x, orig.y+offset.y, e.x, e.y);
+						//Main.debug(angle);
+						if ((angle > 315 || angle <= 45) || (angle > 135 && angle <= 225)) { // Y axis
+							Main.dragDir = AxisFlag.Y;
+						} else if ((angle > 45 && angle <= 135) || (angle > 225 && angle <= 315)) { // X axis
+							Main.dragDir = AxisFlag.X;
+						}
+					}
+				}
 				
-				if (Main.modCtrl) {
-					setLocation(orig.x - (orig.x + offset.x - e.x)/10, orig.y - (orig.y + offset.y - e.y)/10);
-				} else {
-					setLocation(e.x - offset.x, e.y - offset.y);
+				if (Main.modCtrl) { // precision mode
+					setLocation((Main.dragDir==AxisFlag.Y) ? bounds.x : orig.x - (orig.x + offset.x - e.x)/10,
+							(Main.dragDir==AxisFlag.X) ? bounds.y : orig.y - (orig.y + offset.y - e.y)/10);
+				} else { // normal dragging
+					setLocation((Main.dragDir==AxisFlag.Y) ? bounds.x : e.x - offset.x,
+							(Main.dragDir==AxisFlag.X) ? bounds.y : e.y - offset.y);
 				}
 				
 				Main.canvasRedraw(oldBounds, false);

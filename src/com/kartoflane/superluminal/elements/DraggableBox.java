@@ -4,7 +4,8 @@ import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 
-public interface DraggableBox {	
+public interface DraggableBox {
+	
 	public Rectangle getBounds();
 	
 	public void setVisible(boolean vis);

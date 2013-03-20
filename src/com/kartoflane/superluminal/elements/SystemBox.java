@@ -7,6 +7,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Rectangle;
 
 import com.kartoflane.superluminal.core.Main;
+import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ImageBox;
 
 
@@ -78,7 +79,16 @@ public class SystemBox extends ImageBox implements Serializable {
 		return room;
 	}
 	
+	public void clearInterior() {
+		if (interior != null)
+			Cache.checkInImageAbsolute(this, interiorPath);
+		interior = null;
+		interiorPath = null;
+	}
+	
 	public void dispose() {
+		clearInterior();
+		unassign();
 		super.dispose();
 	}
 }

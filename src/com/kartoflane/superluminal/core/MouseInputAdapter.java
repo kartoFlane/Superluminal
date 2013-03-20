@@ -224,8 +224,7 @@ public class MouseInputAdapter implements MouseListener, MouseMoveListener, Mous
 	public void mouseHover(MouseEvent e) {}
 
 	@Override
-	public void mouseDoubleClick(MouseEvent e)
-	{
+	public void mouseDoubleClick(MouseEvent e) {
 		if (Main.tltmPointer.getSelection()) {
 			if (Main.ship != null) {
 				for (FTLRoom r : Main.ship.rooms) {
