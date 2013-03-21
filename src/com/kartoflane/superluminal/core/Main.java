@@ -306,7 +306,7 @@ public class Main {
 	 * 	- added: possibility to link doors to rooms, to create "gateways" that allow crewmen to move between rooms even if they're not physically connected (exploits an FTL bug)
 	 * 	- changed: slightly modified the way interior images are handled, nothing too important, but there -may- be some hidden bugs and crashes due to my forgetfulness
 	 * 	- fixed: fixed systems' start availability status not loading when opening a project
-	 * 	- fixed: enemy ships would export without information about system slot, fixed that
+	 * 	- fixed: enemy ships would load and export without information about system slot, fixed that
 	 * 	- fixed: adjusted the size of coordinate boxes at the bottom of the editor, so that the text they're displaying won't get cut off
 	 * 	- fixed: ships loaded from an .ftl package now will correctly export with images from that package
 	 * 	- fixed: disparities between in-editor and in-game positions of rooms -should- now be gone

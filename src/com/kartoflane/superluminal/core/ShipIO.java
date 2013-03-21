@@ -428,7 +428,7 @@ ship:			while(sc.hasNext()) {
 													pattern = Pattern.compile("(.*?)(\\s*?start\\s*?=\\s*?\")(.*?)(\".*?)");
 													matcher = pattern.matcher(str);
 													if (matcher.find()) {
-														start = Boolean.valueOf(matcher.group(2));
+														start = Boolean.valueOf(matcher.group(3));
 													}
 													
 													r = shipBeingLoaded.getRoomWithId(id);
@@ -445,6 +445,26 @@ ship:			while(sc.hasNext()) {
 														}
 													} else {
 														Main.erDialog.add("Error: load ship - rooms with specified ID not found. Some systems' data may be missing.");
+													}
+													
+													if (!str.contains("/>")) {
+														s = sc.next(); // <slot>
+														s = sc.next(); // <direction>
+														pattern = Pattern.compile("(.*?)(<direction>)(.*?)(</direction>)");
+														matcher = pattern.matcher(s);
+														if (matcher.find()) {
+															shipBeingLoaded.slotDirMap.put(r.getSystem(), Slide.valueOf(matcher.group(3).toUpperCase()));
+															s = sc.next(); // <number>
+														}
+														pattern = Pattern.compile("(.*?)(<number>)(.*?)(</number>)");
+														matcher = pattern.matcher(s);
+														if (matcher.find()) {
+															shipBeingLoaded.slotMap.put(r.getSystem(), Integer.valueOf(matcher.group(3)));
+														}
+													} else if (r.getSystem().equals(Systems.WEAPONS) || r.getSystem().equals(Systems.SHIELDS) || r.getSystem().equals(Systems.ENGINES) || r.getSystem().equals(Systems.PILOT) || r.getSystem().equals(Systems.MEDBAY)) {
+														// get defaults
+														shipBeingLoaded.slotDirMap.put(r.getSystem(), FTLRoom.getDefaultDir(r.getSystem()));
+														shipBeingLoaded.slotMap.put(r.getSystem(), FTLRoom.getDefaultSlot(r.getSystem()));
 													}
 												}
 											}
