@@ -308,10 +308,11 @@ public class Main {
 	 * 	- fixed: fixed systems' start availability status not loading when opening a project
 	 * 	- fixed: enemy ships would export without information about system slot, fixed that
 	 * 	- fixed: adjusted the size of coordinate boxes at the bottom of the editor, so that the text they're displaying won't get cut off
-	 * 	- fixed: ships loaded from an .ftl package now will export with images
+	 * 	- fixed: ships loaded from an .ftl package now will correctly export with images from that package
 	 * 	- fixed: disparities between in-editor and in-game positions of rooms -should- now be gone
-	 * 	- added: added shift-dragging. Works on hull, shield, mounts and gibs.
+	 * 	- added: added shift-dragging. Works on hull, shield, mounts and gibs. Works with precision mode.
 	 * 	- changed: because of the above, weapon mounts' mirror toggle has been changed from shift-left-click to alt-right-click
+	 * 	- fixed: fixed an oversight in KuroSaru's datLib that would cause the editor to create a wrong folder structure on Macs.
 	 *
 	 */
 	
@@ -2196,6 +2197,13 @@ public class Main {
 					temporaryFiles.mkdirs();
 					temporaryFilesInUse = true;
 					
+					if (temporaryFiles != null && temporaryFiles.exists()) {
+						debug("\tdeleting temporary directory... ", false);
+						ShipIO.deleteFolderContents(temporaryFiles);
+						if (temporaryFiles.exists()) ShipIO.rmdir(temporaryFiles);
+						debug("done", true);
+					}
+					
 					ZipFile zf = null;
 					try {
 						zf = new ZipFile(path);
@@ -2270,6 +2278,8 @@ public class Main {
 							ShipIO.clearOldMaps();
 						}
 					}
+					
+					temporaryFilesInUse = false;
 				}
 
 				if (ship != null) {
