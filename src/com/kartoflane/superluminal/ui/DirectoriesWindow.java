@@ -180,6 +180,7 @@ public class DirectoriesWindow {
 		
 		File f = new File("archives");
 		if (f.exists()) {
+			ShipIO.debug("Deleting old archives...");
 			ShipIO.deleteFolderContents(f);
 			ShipIO.rmdir(f);
 		}
@@ -190,10 +191,13 @@ public class DirectoriesWindow {
 		resLib = new datLib(resources);
 		
 		exportProgressIncrement = 100 / Double.valueOf(dataLib.IndexSize() + resLib.IndexSize());
-		
-		dataLib.Extract("", "archives");
+
+		ShipIO.debug("Extracting data.dat...");
+		dataLib.Extract("data", "archives");
+		ShipIO.debug("Extracting resources.dat...");
 		resLib.Extract("img", "archives" + ShipIO.pathDelimiter + "resources");
 		
+		ShipIO.debug("Extraction completed.");
 
 		Main.dataPath = "archives" + ShipIO.pathDelimiter + "data";
 		Main.resPath = "archives" + ShipIO.pathDelimiter + "resources";

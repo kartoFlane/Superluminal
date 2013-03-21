@@ -20,6 +20,7 @@ public class ConfigIO {
 	
 	public static void saveConfig() {
 		if (Main.propertiesSwitch) {
+			// settings using Java Properties class
 			Properties properties = new Properties();
 			FileReader fr = null;
 			try {
@@ -59,6 +60,7 @@ public class ConfigIO {
 				}
 			}
 		} else {
+			// settings using writing directly to a file
 			try {
 				fw = new FileWriter("superluminal.ini");
 				out = new BufferedWriter(fw);
