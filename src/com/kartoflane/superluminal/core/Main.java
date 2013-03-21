@@ -306,13 +306,14 @@ public class Main {
 	 * 	- added: possibility to link doors to rooms, to create "gateways" that allow crewmen to move between rooms even if they're not physically connected (exploits an FTL bug)
 	 * 	- changed: slightly modified the way interior images are handled, nothing too important, but there -may- be some hidden bugs and crashes due to my forgetfulness
 	 * 	- fixed: fixed systems' start availability status not loading when opening a project
-	 * 	- fixed: enemy ships would load and export without information about system slot, fixed that
+	 * 	- added: enemy ships would load and export without information about system slot, fixed that. Also, enemy ships that don't have the slot defined will now load their default slots
 	 * 	- fixed: adjusted the size of coordinate boxes at the bottom of the editor, so that the text they're displaying won't get cut off
 	 * 	- fixed: ships loaded from an .ftl package now will correctly export with images from that package
 	 * 	- fixed: disparities between in-editor and in-game positions of rooms -should- now be gone
 	 * 	- added: added shift-dragging. Works on hull, shield, mounts and gibs. Works with precision mode.
 	 * 	- changed: because of the above, weapon mounts' mirror toggle has been changed from shift-left-click to alt-right-click
 	 * 	- fixed: fixed an oversight in KuroSaru's datLib that would cause the editor to create a wrong folder structure on Macs.
+	 * 	- changed: ship choice dialog is now resizable
 	 *
 	 */
 	
@@ -354,7 +355,12 @@ public class Main {
 		shell.setText(APPNAME + " - Ship Editor");
 		shell.setLocation(100,50);
 
-		shell.setImage(Cache.checkOutImage(shell, "/img/Superluminal-2_64.png"));
+		Image smallIcon = Cache.checkOutImage(shell, "/img/Superluminal-2_16.png");
+		Image mediumIcon = Cache.checkOutImage(shell, "/img/Superluminal-2_32.png");
+		Image largeIcon = Cache.checkOutImage(shell, "/img/Superluminal-2_64.png");
+		Image hugeIcon = Cache.checkOutImage(shell, "/img/Superluminal-2_128.png");
+		Image[] images = new Image[] { smallIcon, mediumIcon, largeIcon, hugeIcon };
+		shell.setImages(images);
 		
 		// resize the window as to not exceed screen dimensions, with maximum size being defined by GRID_W_MAX and GRID_H_MAX
 		GRID_W = ((int) ((display.getBounds().width-35))/35);

@@ -1,6 +1,8 @@
 package com.kartoflane.superluminal.elements;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
@@ -11,6 +13,7 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 
 import com.kartoflane.superluminal.core.Main;
+import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ColorBox;
 import com.kartoflane.superluminal.painter.LayeredPainter;
@@ -346,7 +349,9 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	}
 	
 	public static int getDefaultSlot(Systems sys) {
-		int i = (sys.equals(Systems.ENGINES))
+		int i = -2;
+		if ((ShipIO.shipBeingLoaded!=null && ShipIO.shipBeingLoaded.isPlayer)||(Main.ship!=null && Main.ship.isPlayer)) {
+			i = (sys.equals(Systems.ENGINES))
 					? 2
 					: (sys.equals(Systems.PILOT))
 						? 0
@@ -357,11 +362,21 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 								: (sys.equals(Systems.MEDBAY))
 									? 1
 									: -2;
+		} else if (ShipIO.shipBeingLoaded!=null || Main.ship != null) {
+			i = (sys.equals(Systems.MEDBAY))
+					? -2
+					: (sys.equals(Systems.PILOT))
+						? 0
+						: (int) (Math.random()*1);
+		}
+		
 		return i;
 	}
 	
 	public static Slide getDefaultDir(Systems sys) {
-		Slide dir = (sys.equals(Systems.ENGINES))
+		Slide dir = null;
+		if ((ShipIO.shipBeingLoaded!=null && ShipIO.shipBeingLoaded.isPlayer)||(Main.ship!=null && Main.ship.isPlayer)) {
+			dir = (sys.equals(Systems.ENGINES))
 						? Slide.DOWN
 						: (sys.equals(Systems.PILOT))
 							? Slide.RIGHT
@@ -370,7 +385,42 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 								: (sys.equals(Systems.WEAPONS))
 									? Slide.UP
 									: Slide.NO;
+		} else if (ShipIO.shipBeingLoaded!=null || Main.ship != null) {
+			dir = (sys.equals(Systems.MEDBAY))
+					? Slide.NO
+					: (sys.equals(Systems.PILOT))
+						? Slide.UP
+						: getStationRandomDir(sys);
+			Main.debug(dir.getVector());
+		}
+		
 		return dir;
+	}
+	
+	public static Slide getRandomDir() {
+		int r = (int) (Math.random()*3);
+		return r==0 ? Slide.UP : (r==1 ? Slide.RIGHT : (r==2 ? Slide.DOWN : (r==3 ? Slide.LEFT : Slide.NO)));
+	}
+	
+	public static Slide getStationRandomDir(Systems sys) {
+		FTLRoom r = Main.systemsMap.get(sys).getRoom();
+		
+		List<Slide> list = new ArrayList<Slide>();
+		list.add(Slide.DOWN); list.add(Slide.UP); list.add(Slide.LEFT); list.add(Slide.RIGHT);
+		
+		if (ShipIO.shipBeingLoaded.slotMap.get(sys)==0) {
+			if (r.getBounds().width>35)
+				list.remove(Slide.RIGHT);
+			if (r.getBounds().height>35)
+				list.remove(Slide.DOWN);
+		} else {
+			if (r.getBounds().width>35)
+				list.remove(Slide.LEFT);
+			if (r.getBounds().height>35)
+				list.remove(Slide.UP);
+		}
+		
+		return list.get((int) ((Math.random()*list.size())));
 	}
 	
 	@Override

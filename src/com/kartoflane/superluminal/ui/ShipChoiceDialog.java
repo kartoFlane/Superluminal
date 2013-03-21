@@ -21,6 +21,8 @@ import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.events.ControlAdapter;
+import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.MouseAdapter;
@@ -37,8 +39,12 @@ public class ShipChoiceDialog {
 	public int declaration;
 	private boolean exit = false;
 	
+	private int width = 0;
+	private int height = 0;
+	private boolean initialized = false;
+	
 	public ShipChoiceDialog(Shell parent) {
-		shell = new Shell(parent, SWT.BORDER | SWT.TITLE);
+		shell = new Shell(parent, SWT.BORDER | SWT.RESIZE | SWT.TITLE);
 		shell.setText(Main.APPNAME + " - Ship Choice");
 		shell.setLayout(new GridLayout(1, false));
 		
@@ -47,6 +53,10 @@ public class ShipChoiceDialog {
 		createContents();
 		
 		shell.pack();
+		width = shell.getBounds().width;
+		height = shell.getBounds().height;
+		shell.setMinimumSize(width, height);
+		initialized = true;
 	}
 	
 	public String open() {
@@ -129,6 +139,7 @@ public class ShipChoiceDialog {
 					Main.erDialog.add("Error: no match found in ShipChoiceDialog list. This should never EVER happen.");
 				}
 				shell.setVisible(false);
+				initialized = false;
 				Main.shell.setEnabled(true);
 				Main.shell.setActive();
 			}
@@ -138,6 +149,18 @@ public class ShipChoiceDialog {
 			@Override
 			public void handleEvent(Event event) {
 				btnCancel.notifyListeners(SWT.Selection, null);
+			}
+		});
+
+		shell.addControlListener(new ControlAdapter() {
+			public void controlMoved(ControlEvent e) {
+			}
+			
+			public void controlResized(ControlEvent e) {
+				if (initialized) {
+					height = shell.getSize().y;
+					shell.setSize(width, height);
+				}
 			}
 		});
 		
