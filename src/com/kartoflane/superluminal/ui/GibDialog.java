@@ -32,7 +32,7 @@ public class GibDialog {
 	private Button btnDeleteGib;
 	private Button btnHideGib;
 	public HashSet<String> letters = new HashSet<String>();
-	private Button btnAnimate;
+	public Button btnAnimate;
 	public boolean animating = false;
 	private String dialog_path = Main.resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship";
 	
@@ -53,6 +53,7 @@ public class GibDialog {
 		btnHideGib.setEnabled(false);
 		
 		shell.setLocation(Main.shell.getBounds().x + Main.shell.getBounds().width - shell.getBounds().width - 20, Main.shell.getBounds().y + 100);
+		new Label(shell, SWT.NONE);
 	}
 	
 	public void setVisible(boolean vis) {
@@ -117,9 +118,10 @@ public class GibDialog {
 		btnDeleteGib.setText("Delete Gib");
 		
 		btnAnimate = new Button(shell, SWT.NONE);
-		btnAnimate.setEnabled(false);
 		btnAnimate.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		btnAnimate.setText("Animate");
+		// TODO
+		btnAnimate.setEnabled(false);
 		
 		list.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -228,6 +230,26 @@ public class GibDialog {
 				}
 			}
 		});
+		
+		btnAnimate.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				for (FTLGib g : Main.ship.gibs)
+					g.setAnimationValues();
+				Main.shell.setEnabled(false);
+				
+				enableButtons(false);
+				
+				Main.animateGibs = true;
+			}
+		});
+	}
+	
+	public void enableButtons(boolean enable) {
+		btnMoveUp.setEnabled(enable);
+		btnMoveDown.setEnabled(enable);
+		btnAddGib.setEnabled(enable);
+		btnDeleteGib.setEnabled(enable);
 	}
 	
 	private void hideSelected(boolean hide) {

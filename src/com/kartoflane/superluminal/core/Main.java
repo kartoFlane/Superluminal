@@ -117,7 +117,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "18-3-13";
+	public final static String VERSION = "24-3-13";
 	
 		// === Important objects
 	public static Shell shell;
@@ -284,6 +284,9 @@ public class Main {
 	public static final boolean propertiesSwitch = false;
 	public static AxisFlag dragDir = null;
 	
+	public static boolean animateGibs = false;
+	private static long timeElapsed = 0;
+	
 	// =================================================================================================== //
 	
 	/*
@@ -291,6 +294,7 @@ public class Main {
 	 * === TODO
 	 * == IMMEDIATE PRIO:
 	 * 	- gibs editor - animation
+	 * 		- cos nie tak z cos i sin -> przesuwaja tylko wzdluz osi
 	 * 
 	 * == MEDIUM PRIO:
 	 * 
@@ -299,21 +303,6 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * 	- fixed: player ships with max crew equal to 0 (automated ships) now exports the crew tag only once (previously there would be 7 additional, superfluous copies)
-	 * 	- added: calculate optimal offset option
-	 * 	- added: re-implemented room splitting
-	 * 	- added: re-implemented weapon mount tool slide and mirror indicators
-	 * 	- added: possibility to link doors to rooms, to create "gateways" that allow crewmen to move between rooms even if they're not physically connected (exploits an FTL bug)
-	 * 	- changed: slightly modified the way interior images are handled, nothing too important, but there -may- be some hidden bugs and crashes due to my forgetfulness
-	 * 	- fixed: fixed systems' start availability status not loading when opening a project
-	 * 	- added: enemy ships would load and export without information about system slot, fixed that. Also, enemy ships that don't have the slot defined will now load their default slots
-	 * 	- fixed: adjusted the size of coordinate boxes at the bottom of the editor, so that the text they're displaying won't get cut off
-	 * 	- fixed: ships loaded from an .ftl package now will correctly export with images from that package
-	 * 	- fixed: disparities between in-editor and in-game positions of rooms -should- now be gone
-	 * 	- added: added shift-dragging. Works on hull, shield, mounts and gibs. Works with precision mode.
-	 * 	- changed: because of the above, weapon mounts' mirror toggle has been changed from shift-left-click to alt-right-click
-	 * 	- fixed: fixed an oversight in KuroSaru's datLib that would cause the editor to create a wrong folder structure on Macs.
-	 * 	- changed: ship choice dialog is now resizable
 	 *
 	 */
 	
@@ -493,9 +482,10 @@ public class Main {
 		});
 		
 		shellStateChange = shell.getMaximized();
-		
+
 		display.timerExec(INTERVAL, new Runnable() {
 			public void run() {
+				// === used to resize grid when the editor window is maximized
 				if (canvas.isDisposed()) return;
 				if (shellStateChange != shell.getMaximized()) {
 					shellStateChange = shell.getMaximized();
@@ -515,6 +505,29 @@ public class Main {
 				if (ship != null)
 					shipInfoText.setText("rooms: " + ship.rooms.size() + ",  doors: " + ship.doors.size());
 
+				// === animate gibs
+				if (tltmGib.getSelection() && animateGibs) {
+					timeElapsed += INTERVAL;
+					animateGibs = timeElapsed < 4000;
+					gibDialog.btnAnimate.setEnabled(false);
+					for (FTLGib g : Main.ship.gibs) {
+						g.setLocation((int) Math.round(g.getBounds().x + g.animVel * Math.cos(g.animDir) - g.animVel * Math.sin(g.animDir)),
+								(int) Math.round(g.getBounds().y + g.animVel * Math.sin(g.animDir) + g.animVel * Math.cos(g.animDir)));
+						g.setRotation(g.animRotation + (float) g.animAng);
+					}
+					if (!animateGibs) {
+						for (FTLGib g : Main.ship.gibs) {
+							g.setLocationRelative(g.position.x, g.position.y);
+							g.setRotation(0);
+							shell.setEnabled(true);
+							gibDialog.btnAnimate.setEnabled(true);
+							gibDialog.enableButtons(true);
+							timeElapsed = 0;
+						}
+					}
+					canvas.redraw();
+				}
+				
 				display.timerExec(INTERVAL, this);
 			}
 		});

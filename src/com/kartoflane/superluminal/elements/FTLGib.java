@@ -25,6 +25,11 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	public int maxDir = 360;
 	public int number = 0;
 	
+	public double animVel = 0;
+	public double animAng = 0;
+	public int animDir = 0;
+	public float animRotation = 0;
+	
 	private Color green;
 	private RGB green_rgb = new RGB(0,255,0);
 	
@@ -125,6 +130,11 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 		Main.canvas.redraw(Main.hullBox.getBounds().x + old.x, Main.hullBox.getBounds().y + old.y, bounds.width, bounds.height, false);
 	}
 	
+	public void setRotation(float angle) {
+		super.setRotation((int) angle);
+		animRotation = angle;
+	}
+	
 	@Override
 	public void setOffset(int x, int y) {
 		original.x = x;
@@ -151,7 +161,7 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 			Transform transform = null;
 			transform = new Transform(e.gc.getDevice());
 			transform.translate(bounds.x + bounds.width/2, bounds.y + bounds.height/2);
-			transform.rotate(rotation);
+			transform.rotate(animRotation);
 			transform.translate(-bounds.x - bounds.width/2, -bounds.y - bounds.height/2);
 			e.gc.setTransform(transform);
 
@@ -278,7 +288,16 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 
 	@Override
 	public void mouseHover(MouseEvent e) {}
-
+	
+	public void setAnimationValues() {
+		//Min + (int)(Math.random() * ((Max - Min) + 1))
+		animVel = (minVel + Math.random() * ((maxVel - minVel) + 1))*0.25;
+		animAng = (minAng + Math.random() * ((maxAng - minAng) + 1))*0.25;
+		animDir = minDir + (int)(Math.random() * ((maxDir - minDir) + 1));
+		animRotation = 0;
+		Main.debug("vel: " + animVel + ", ang: " + animAng + ", dir: " + animDir);
+	}
+	
 	@Override
 	public void select() {
 		if (Main.selectedMount != null) Main.selectedMount.deselect();

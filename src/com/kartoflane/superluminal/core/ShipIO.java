@@ -2089,7 +2089,7 @@ search: for (File f : dir.listFiles()) {
 						fw.write(lineDelimiter);
 						count++;
 					}
-				} else if (mt != null && Main.isSystemAssigned(Systems.ARTILLERY)) {
+				} else if (mt == null && Main.isSystemAssigned(Systems.ARTILLERY)) {
 					mt = m;
 				}
 			}
@@ -2458,10 +2458,13 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 			Main.loadUnserializable();
 			debug("\t\tdone");
 			
-			if (Main.ship.version < 10)
+			if (Main.ship.version < 10) {
 				for (FTLRoom r : Main.ship.rooms)
 					if (r.sysBox != null)
 						r.sysBox.interiorPath = r.img;
+				for (FTLMount m : Main.ship.mounts)
+					m.imageLoc = new Point(0,0);
+			}
 			
 			if (Main.ship.isPlayer) {
 				debug("\tloading room interiors' images...");

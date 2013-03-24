@@ -18,7 +18,7 @@ public class ImageBox extends PaintBox implements Serializable {
 	protected int rotation = 0;
 	protected Rectangle redrawBounds;
 	protected boolean shrinkWrap = false;
-	protected Point imageLoc = new Point(0,0);
+	public Point imageLoc = new Point(0,0);
 	
 	public void stripUnserializable() {
 		super.stripUnserializable();
