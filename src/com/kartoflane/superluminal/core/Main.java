@@ -297,12 +297,16 @@ public class Main {
 	 * 		- cos nie tak z cos i sin -> przesuwaja tylko wzdluz osi
 	 * 
 	 * == MEDIUM PRIO:
+	 *  - add possibility to link glow and other images, and automatically correctly export them
 	 * 
 	 * == LOW PRIO:
-	 *  - add possibility to link glow and other images, and automatically correctly export them
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
+	 * 	- added: it is now possible to also set HORIZONTAL offset of a ship (analogous to VERTICAL) - shift-right-clicking
+	 * 	- added: when setting either horizontal or vertical offset, the mouse cursor will now automatically be moved to the offset
+	 * 	- added: when setting the offsets, a tooltip box appears displaying the current offset value
+	 * 	- added: when the editor encounters a crash-causing error, it'll now display a window informing you about it, and will try to save the current project as crash_save.shp in Superluminal's directory
 	 *
 	 */
 	
@@ -332,11 +336,23 @@ public class Main {
 			Main window = new Main();
 			window.open();
 		} catch (Exception e) {
+			MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+			box.setMessage("Superluminal has encountered an unknown error and must close." + ShipIO.lineDelimiter + "Your active project will be saved to Superluminal's directory if possible."
+					+ShipIO.lineDelimiter+ShipIO.lineDelimiter+"Please find crash.log file in Superluminal's directory and post its contents in the thread at FTL forums (link in About window).");
+			box.open();
+			
+			ShipIO.saveShipProject("crash_save.shp");
+
+			try {
+				System.setOut(new PrintStream(new FileOutputStream("crash.log")));
+				System.setErr(new PrintStream(new FileOutputStream("crash.log")));
+			} catch (FileNotFoundException ex) {}
+			
 			e.printStackTrace();
 		}
 	}
 
-	public void open() {
+	public void open() throws Exception {
 		final Display display = Display.getDefault();
 		
 		shell = new Shell(SWT.SHELL_TRIM | SWT.BORDER);

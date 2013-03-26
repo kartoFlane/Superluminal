@@ -1,4 +1,7 @@
 package com.kartoflane.superluminal.elements;
+import java.awt.AWTException;
+import java.awt.Robot;
+
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
@@ -20,6 +23,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 	private Rectangle box;
 	public boolean moveAnchor;
 	public boolean moveVertical;
+	private boolean initialClick = false;
 
 	public Anchor() {
 		super();
@@ -47,6 +51,8 @@ public class Anchor extends PaintBox implements DraggableBox {
 		bounds.y = y;
 		if (Main.ship != null && Main.ship.vertical > 0)
 			bounds.y -= Main.ship.vertical - 2;
+		if (Main.ship != null && Main.ship.horizontal > 0)
+			bounds.x -= Main.ship.horizontal - 2;
 		
 		box.x = x;
 		box.y = y;
@@ -86,10 +92,14 @@ public class Anchor extends PaintBox implements DraggableBox {
 			e.gc.drawLine(Main.ship.anchor.x, Main.ship.anchor.y, Main.ship.anchor.x, Main.GRID_H*35);
 			e.gc.setForeground(xLine);
 			e.gc.drawLine(Main.ship.anchor.x, Main.ship.anchor.y, Main.GRID_W*35, Main.ship.anchor.y);
-			// draw vertical line
+			// draw vertical and horizontal lines
 			if (Main.ship.vertical != 0) {
 				e.gc.setForeground(vLine);
 				e.gc.drawLine(Main.ship.anchor.x, Main.ship.anchor.y - Main.ship.vertical, Main.GRID_W*35, Main.ship.anchor.y - Main.ship.vertical);
+			}
+			if (Main.ship.horizontal != 0) {
+				e.gc.setForeground(vLine);
+				e.gc.drawLine(Main.ship.anchor.x - Main.ship.horizontal, Main.ship.anchor.y, Main.ship.anchor.x - Main.ship.horizontal, Main.GRID_H*35);
 			}
 	
 			if (moveAnchor) {
@@ -126,6 +136,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 				moveAnchor = true;
 			} else if (e.button == 3) {
 				moveVertical = true;
+				initialClick = true;
 				if (e.count == 2) {
 					mouseDoubleClick(e);
 				}
@@ -141,11 +152,13 @@ public class Anchor extends PaintBox implements DraggableBox {
 			Rectangle oldBounds = Main.cloneRect(bounds);
 			oldBounds.x -= 15;
 			oldBounds.y -= 15;
-			if (Main.ship.vertical != 0) {
-				if (Main.ship.vertical > 0) {
-					oldBounds.y = Main.ship.anchor.y - Main.ship.vertical-2;
-					oldBounds.height += Main.ship.vertical-4;
-				}
+			if (Main.ship.vertical > 0) {
+				oldBounds.y = Main.ship.anchor.y - Main.ship.vertical-2;
+				oldBounds.height += Main.ship.vertical-4;
+			}
+			if (Main.ship.horizontal > 0) {
+				oldBounds.x = Main.ship.anchor.x - Main.ship.horizontal-2;
+				oldBounds.width += Main.ship.horizontal-4;
 			}
 			
 			x = e.x;
@@ -167,7 +180,6 @@ public class Anchor extends PaintBox implements DraggableBox {
 			x = Math.min(x, Main.GRID_W*35-35 - size.x - Main.ship.offset.x*35);
 			y = Math.min(y, Main.GRID_H*35-35 - size.y - Main.ship.offset.y*35);
 			
-			
 			x = Main.roundToGrid(x);
 			y = Main.roundToGrid(y);
 
@@ -177,30 +189,65 @@ public class Anchor extends PaintBox implements DraggableBox {
 			setSize(Main.GRID_W*35, Main.GRID_H*35);
 			
 			Main.canvasRedraw(oldBounds, false);
-			/*
-			Main.canvas.redraw(0, Main.ship.anchor.y + Main.ship.vertical - 2, Main.GRID_W*35, 4, false);
-			Main.canvas.redraw(Main.ship.anchor.x - FTLShip.ANCHOR - 2, Main.ship.anchor.y - FTLShip.ANCHOR - 2, Main.GRID_W*35, FTLShip.ANCHOR + 4, false);
-			Main.canvas.redraw(Main.ship.anchor.x - FTLShip.ANCHOR - 2, Main.ship.anchor.y - FTLShip.ANCHOR - 2, FTLShip.ANCHOR + 4, Main.GRID_H*35, false);
-			*/
 		} else if (moveVertical) {
-			int prevV = Main.ship.vertical;
-			Main.ship.vertical = Main.ship.anchor.y - e.y;
-			if (Main.ship.vertical > 0) {
-				bounds.y -= Main.ship.vertical;
-				bounds.height += Main.ship.vertical;
+			Point p = null;
+			
+			if (Main.modShift) {
+				p = Main.canvas.toDisplay(Main.ship.anchor.x - Main.ship.horizontal, Main.ship.anchor.y);
+				int prevH = Main.ship.horizontal;
+				Main.ship.horizontal = Main.ship.anchor.x - e.x;
+				if (Main.ship.horizontal > 0) {
+					bounds.x -= Main.ship.horizontal;
+					bounds.width += Main.ship.horizontal;
+				}
+				Main.canvas.redraw(Main.ship.anchor.x - prevH - 2, Main.ship.anchor.y, 4, Main.GRID_H*35, false);
+				Main.canvas.redraw(Main.ship.anchor.x - Main.ship.horizontal - 2, Main.ship.anchor.y, 4, Main.GRID_H*35, false);
+				
+				Main.tooltip.setText(""+Main.ship.horizontal);
+				Main.tooltip.setLocation(e.x+1, Main.ship.anchor.y);
+			} else {
+				p = Main.canvas.toDisplay(Main.ship.anchor.x, Main.ship.anchor.y - Main.ship.vertical);
+				int prevV = Main.ship.vertical;
+				Main.ship.vertical = Main.ship.anchor.y - e.y;
+				if (Main.ship.vertical > 0) {
+					bounds.y -= Main.ship.vertical;
+					bounds.height += Main.ship.vertical;
+				}
+				Main.canvas.redraw(Main.ship.anchor.x, Main.ship.anchor.y - prevV - 2, Main.GRID_W*35, 4, false);
+				Main.canvas.redraw(Main.ship.anchor.x, Main.ship.anchor.y - Main.ship.vertical - 2, Main.GRID_W*35, 4, false);
+
+				Main.tooltip.setText(""+Main.ship.vertical);
+				Main.tooltip.setLocation(Main.ship.anchor.x, e.y+1);
 			}
-			Main.canvas.redraw(Main.ship.anchor.x, Main.ship.anchor.y - prevV - 2, Main.GRID_W*35, 4, false);
-			Main.canvas.redraw(Main.ship.anchor.x, Main.ship.anchor.y - Main.ship.vertical - 2, Main.GRID_W*35, 4, false);
+			
+			if (initialClick) {
+				initialClick = false;
+				Robot robot;
+				try {
+					robot = new Robot();
+					robot.mouseMove(p.x, p.y);
+				} catch (AWTException ex) {
+				}
+			}
+			
+			Main.tooltip.setVisible(true);
 		}
 	}
 
 	@Override
 	public void mouseDoubleClick(MouseEvent e) {
 		if (e.button == 3) {
-			int prevV = Main.ship.vertical;
-			Main.ship.vertical = 0;
-			Main.canvas.redraw(Main.ship.anchor.x, Main.ship.anchor.y - prevV - 2, Main.GRID_W*35, 4, false);
-			Main.canvas.redraw(Main.ship.anchor.x, Main.ship.anchor.y - Main.ship.vertical - 2, Main.GRID_W*35, 4, false);
+			if (Main.modShift) {
+				int prevH = Main.ship.horizontal;
+				Main.ship.horizontal = 0;
+				Main.canvas.redraw(Main.ship.anchor.x - prevH - 2, Main.ship.anchor.y, 4, Main.GRID_H*35, false);
+				Main.canvas.redraw(Main.ship.anchor.x - Main.ship.horizontal - 2, Main.ship.anchor.y, 4, Main.GRID_H*35, false);
+			} else {
+				int prevV = Main.ship.vertical;
+				Main.ship.vertical = 0;
+				Main.canvas.redraw(Main.ship.anchor.x, Main.ship.anchor.y - prevV - 2, Main.GRID_W*35, 4, false);
+				Main.canvas.redraw(Main.ship.anchor.x, Main.ship.anchor.y - Main.ship.vertical - 2, Main.GRID_W*35, 4, false);
+			}
 		}
 	}
 

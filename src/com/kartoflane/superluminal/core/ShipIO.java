@@ -1209,6 +1209,10 @@ scan:			while(sc.hasNext()) {
 					ship.vertical = Integer.valueOf(scanner.next());
 					debug("\t\tVERTICAL section found: " + ship.vertical);
 					foundSection = true;
+				} else if (s.equals("HORIZONTAL")) {
+					ship.horizontal = Integer.valueOf(scanner.next());
+					debug("\t\tHORIZONTAL section found: " + ship.horizontal);
+					foundSection = true;
 				} else if (s.equals("ELLIPSE")) {
 					ellipse = new Rectangle(scanner.nextInt(),scanner.nextInt(),scanner.nextInt(),scanner.nextInt());
 					// ellipse has format of (width, height, xoffset, yoffset), while Rectangle class has (x, y, width, height)
@@ -1995,6 +1999,9 @@ search: for (File f : dir.listFiles()) {
 			fw.write("Y_OFFSET" + lineDelimiter);
 			Main.ship.offset.y =  Math.round(((float) Main.ship.findLowBounds().y - (float) Main.ship.anchor.y)/35);
 			fw.write(Main.ship.offset.y + lineDelimiter);
+
+			fw.write("HORIZONTAL" + lineDelimiter);
+			fw.write(Main.ship.horizontal + lineDelimiter);
 			
 			fw.write("VERTICAL" + lineDelimiter);
 			fw.write(Main.ship.vertical + lineDelimiter);
@@ -2028,8 +2035,6 @@ search: for (File f : dir.listFiles()) {
 				fw.write("DOOR" + lineDelimiter);
 				x = (d.getBounds().x-Main.ship.anchor.x-Main.ship.offset.x*35+(d.horizontal ? -2 : 3))/35;
 				y = (d.getBounds().y-Main.ship.anchor.y-Main.ship.offset.y*35+(d.horizontal ? 3 : -2))/35;
-				
-				//debug("(" + x + ", " + y + ")");
 				
 				fw.write(x + lineDelimiter);
 				fw.write(y + lineDelimiter);
@@ -2079,9 +2084,8 @@ search: for (File f : dir.listFiles()) {
 				if (!m.slide.equals(Slide.NO)) {
 					if (count < Main.ship.weaponSlots) {
 						fw.write("\t");
-						//int c = m.isRotated() ? m.getSize().y : m.getSize().x;
-						fw.write("<mount x=\"" + (m.pos.x /* + (m.isRotated() ? -c : 0)*/) + "\" ");
-						fw.write("y=\"" + (m.pos.y /* + (!m.isRotated() ? -c : 0)*/) + "\" ");
+						fw.write("<mount x=\"" + m.pos.x + "\" ");
+						fw.write("y=\"" + m.pos.y + "\" ");
 						fw.write("rotate=\"" + m.isRotated() + "\" ");
 						fw.write("mirror=\"" + m.mirror + "\" ");
 						fw.write("gib=\"" + m.gib + "\" ");

@@ -69,7 +69,9 @@ public class FTLShip implements Serializable {
 	public String layout;
 	public String imageName;
 	public String descr;
+	
 	public int vertical = 0;
+	public int horizontal = 0;
 	
 	public int hullHealth = 0;
 	public int reactorPower = 0;
