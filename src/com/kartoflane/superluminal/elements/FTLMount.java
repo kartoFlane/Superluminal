@@ -34,6 +34,13 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	private boolean powered = true;
 	
 	/**
+	 * Used to save old position for gib animation
+	 */
+	public Point animPos = new Point(0,0);
+	public double animX = 0;
+	public double animY = 0;
+	
+	/**
 	 * True means the weapons are oriented horizontally, while false means they're oriented vertically
 	 * (Bascially true for player ships, false for enemy ships)
 	 */
@@ -378,7 +385,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 								? ((powered)
 									? 0
 									: (slide == Slide.DOWN
-										? -bounds.height/2 * (mirror ? -1 : 1) 
+										? -bounds.height/2 * (mirror ? -1 : 1)
 										: bounds.height/2 * (mirror ? -1 : 1)))
 								: 0),
 						bounds.y - (bounds.width-bounds.height)/2 + bounds.width/2 - mountPoint.y

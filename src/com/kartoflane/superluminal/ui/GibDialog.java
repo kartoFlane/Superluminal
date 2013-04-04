@@ -3,10 +3,13 @@ package com.kartoflane.superluminal.ui;
 import java.util.HashSet;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -21,6 +24,7 @@ import org.eclipse.swt.widgets.Shell;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.elements.FTLGib;
+import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.painter.LayeredPainter;
 
 public class GibDialog {
@@ -35,6 +39,8 @@ public class GibDialog {
 	public Button btnAnimate;
 	public boolean animating = false;
 	private String dialog_path = Main.resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship";
+	public Point relativePosition = new Point(0,0);
+	public boolean autoReposition = false;
 	
 	public boolean mainMoved = true;
 	
@@ -53,7 +59,8 @@ public class GibDialog {
 		btnHideGib.setEnabled(false);
 		
 		shell.setLocation(Main.shell.getBounds().x + Main.shell.getBounds().width - shell.getBounds().width - 20, Main.shell.getBounds().y + 100);
-		new Label(shell, SWT.NONE);
+		relativePosition.x = shell.getLocation().x - Main.shell.getLocation().x;
+		relativePosition.y = shell.getLocation().y - Main.shell.getLocation().y;
 	}
 	
 	public void setVisible(boolean vis) {
@@ -120,8 +127,6 @@ public class GibDialog {
 		btnAnimate = new Button(shell, SWT.NONE);
 		btnAnimate.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		btnAnimate.setText("Animate");
-		// TODO
-		btnAnimate.setEnabled(false);
 		
 		list.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -150,7 +155,7 @@ public class GibDialog {
 		list.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseDoubleClick(MouseEvent e) {
-				if (Main.selectedGib!=null && !Main.gibWindow.isVisible()) Main.gibWindow.open();
+				if (Main.selectedGib!=null && !Main.gibWindow.isVisible() && !Main.animateGibs) Main.gibWindow.open();
 			}
 		});
 		
@@ -231,25 +236,77 @@ public class GibDialog {
 			}
 		});
 		
+		shell.addControlListener(new ControlListener() {
+			@Override
+			public void controlMoved(ControlEvent e) {
+				if (!autoReposition) {
+					relativePosition.x = shell.getLocation().x - Main.shell.getLocation().x;
+					relativePosition.y = shell.getLocation().y - Main.shell.getLocation().y;
+				}
+			}
+
+			@Override
+			public void controlResized(ControlEvent e) {}
+		});
+		
 		btnAnimate.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				for (FTLGib g : Main.ship.gibs)
-					g.setAnimationValues();
-				Main.shell.setEnabled(false);
+				if (!Main.animateGibs) {
+					Main.animateGibs = true;
+					for (FTLGib g : Main.ship.gibs)
+						g.setAnimationValues();
+					for (FTLMount m : Main.ship.mounts) {
+						m.setVisible(false);
+						/*
+						if (m.gib==0) {
+							m.setVisible(false);
+							continue;
+						}
+						m.animX = m.getBounds().x;
+						m.animY = m.getBounds().y;
+						m.animPos.x = m.getLocation().x;
+						m.animPos.y = m.getLocation().y;
+						//m.animDist = Math.sqrt(Math.pow((m.animX - Main.ship.gibs.get(m.gib-1).getBounds().x), 2)+Math.pow((m.animY - Main.ship.gibs.get(m.gib-1).getBounds().y), 2));
+						*/
+					}
+					
+					Main.shell.setEnabled(false);
+					Main.gibWindow.escape();
+					
+					enableButtons(false);
+				} else {
+					Main.animateGibs = false;
+					Main.timeElapsed = 0;
+					Main.shell.setEnabled(true);
+					enableButtons(true);
+					for (FTLGib g : Main.ship.gibs) {
+						g.setLocationRelative(g.position.x, g.position.y);
+						g.setRotation(0);
+					}
+					for (FTLMount m : Main.ship.mounts) {
+						/*
+						m.setLocation(m.animPos.x, m.animPos.y);
+						m.setRotation((int) Math.round(m.isRotated() ? 90 : 0));
+						if (m.gib==0) m.setVisible(true);
+						*/
+						m.setVisible(true);
+					}
+					
+					Main.canvas.redraw();
+				}
 				
-				enableButtons(false);
-				
-				Main.animateGibs = true;
 			}
 		});
 	}
 	
 	public void enableButtons(boolean enable) {
-		btnMoveUp.setEnabled(enable);
-		btnMoveDown.setEnabled(enable);
+		//btnAnimate.setEnabled(enable);
+		btnAnimate.setText(enable ? "Animate" : "Stop");
 		btnAddGib.setEnabled(enable);
-		btnDeleteGib.setEnabled(enable);
+		if (Main.selectedGib!=null)
+			Main.selectedGib.deselect();
+		list.setEnabled(enable);
 	}
 	
 	private void hideSelected(boolean hide) {
@@ -319,7 +376,14 @@ public class GibDialog {
 			gb.number = i;
 			Main.gibDialog.list.add(gb.number + ". gib " + gb.ID);
 		}
-
+	}
+	
+	public Point getLocation() {
+		return shell.getLocation();
+	}
+	
+	public void setLocation(int x, int y) {
+		shell.setLocation(x, y);
 	}
 	
 	public void select(int index) {

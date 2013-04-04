@@ -7,7 +7,6 @@ import java.util.List;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
@@ -31,8 +30,12 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	public SystemBox sysBox;
 	public int slot;
 	public Slide dir;
+	
+	/**
+	 * Path to the interior image; kept for compatibility
+	 */
 	public String img;
-	public Image sysImg;
+	public FTLInterior interiorData = null;
 	
 	private Color grid_color;
 	private Rectangle origin;
@@ -46,6 +49,9 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		grid_color = null;
 		Cache.checkInColor(this, slot_rgb);
 		slotColor = null;
+		if (sysBox != null) {
+			img = interiorData.interiorPath;
+		}
 		sysBox = null;
 		//Cache.checkInImageAbsolute(this, img);
 		//sysImg = null;
@@ -56,6 +62,10 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		grid_color = Main.grid.getCellAt(1,1).getGridColor();
 		slotColor = Cache.checkOutColor(this, slot_rgb);
 		sysBox = Main.systemsMap.get(sys);
+		if (sysBox!=null) {
+			interiorData = sysBox.interiorData;
+			interiorData.interiorPath = img;
+		}
 		//sysImg = Cache.checkOutImageAbsolute(this, img);
 		super.loadUnserializable();
 	}
@@ -106,13 +116,15 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	
 	public void setInterior(String path) {
 		if (sysBox != null) {
-			if (sysBox.interiorPath != null)
-				Cache.checkInImageAbsolute(sysBox, sysBox.interiorPath);
-			sysBox.interiorPath = null;
+			if (interiorData.interiorPath != null)
+				Cache.checkInImageAbsolute(sysBox, interiorData.interiorPath);
+			interiorData.interiorPath = null;
 			if (!sys.equals(Systems.EMPTY) && !sys.equals(Systems.TELEPORTER)) {
-				sysBox.interiorPath = path;
-				sysBox.interior = Cache.checkOutImageAbsolute(sysBox, sysBox.interiorPath);
+				//Main.ship.interiorMap.get(sys).interiorPath = path;
+				interiorData.interiorPath = path;
+				sysBox.interior = Cache.checkOutImageAbsolute(sysBox, interiorData.interiorPath);
 			}
+			
 			Main.canvasRedraw(bounds, false);
 		}
 	}
@@ -391,7 +403,6 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 					: (sys.equals(Systems.PILOT))
 						? Slide.UP
 						: getStationRandomDir(sys);
-			Main.debug(dir.getVector());
 		}
 		
 		return dir;
@@ -689,7 +700,6 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		
 		super.dispose();
 		grid_color = null;
-		sysImg = null;
 		img = null;
 	}
 

@@ -86,6 +86,7 @@ import com.kartoflane.superluminal.ui.ErrorDialog;
 import com.kartoflane.superluminal.ui.ExportDialog;
 import com.kartoflane.superluminal.ui.GibDialog;
 import com.kartoflane.superluminal.ui.GibPropertiesWindow;
+import com.kartoflane.superluminal.ui.GlowWindow;
 import com.kartoflane.superluminal.ui.NewShipWindow;
 import com.kartoflane.superluminal.ui.PropertiesWindow;
 import com.kartoflane.superluminal.ui.ShipBrowser;
@@ -117,7 +118,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "24-3-13";
+	public final static String VERSION = "3-4-13";
 	
 		// === Important objects
 	public static Shell shell;
@@ -136,6 +137,7 @@ public class Main {
 	public static DirectoriesWindow dirWindow;
 	public static ShipBrowser browser;
 	public static ShipChoiceDialog choiceDialog;
+	public static GlowWindow glowWindow;
 	
 		// === Preferences
 		// ship explorer
@@ -280,12 +282,23 @@ public class Main {
 	public static Tooltip tooltip;
 	private static Spinner stepSpinner;
 	
+	/**
+	 * The amount that gets added to X/Y coordinates of selected item, whenever the +/- values are pressed. Modified by the stepSpinner.
+	 */
 	public static int arbitraryStep = 1;
+	
+	/**
+	 * When set to true, the program uses Properties java class to save config. When set to false, saves config by directly writing values into a file.
+	 */
 	public static final boolean propertiesSwitch = false;
+	
+	/**
+	 * Direction of shift-move dragging.
+	 */
 	public static AxisFlag dragDir = null;
 	
 	public static boolean animateGibs = false;
-	private static long timeElapsed = 0;
+	public static long timeElapsed = 0;
 	
 	// =================================================================================================== //
 	
@@ -293,11 +306,10 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO:
-	 * 	- gibs editor - animation
-	 * 		- cos nie tak z cos i sin -> przesuwaja tylko wzdluz osi
 	 * 
 	 * == MEDIUM PRIO:
-	 *  - add possibility to link glow and other images, and automatically correctly export them
+	 * 	- gibs editor - animation
+	 * 		- fix weapon mount animation
 	 * 
 	 * == LOW PRIO:
 	 * 
@@ -307,6 +319,11 @@ public class Main {
 	 * 	- added: when setting either horizontal or vertical offset, the mouse cursor will now automatically be moved to the offset
 	 * 	- added: when setting the offsets, a tooltip box appears displaying the current offset value
 	 * 	- added: when the editor encounters a crash-causing error, it'll now display a window informing you about it, and will try to save the current project as crash_save.shp in Superluminal's directory
+	 * 	- added: gib editor's window now moves around with Superluminal's main window
+	 * 	- added: gib animation (disclaimer: much guessing involved, may not be ideal) (does not include weapon mount animation - yet?)
+	 * 	- added: possibility to link glow images to interiors, on a per-system basis.
+	 * 	- fixed: issues with defaultResources list missing on Macs should be fixed
+	 * 	- fixed: an issue with ships exported on Macs not loading correctly in FTL
 	 *
 	 */
 	
@@ -341,7 +358,8 @@ public class Main {
 					+ShipIO.lineDelimiter+ShipIO.lineDelimiter+"Please find crash.log file in Superluminal's directory and post its contents in the thread at FTL forums (link in About window).");
 			box.open();
 			
-			ShipIO.saveShipProject("crash_save.shp");
+			if (Main.ship != null)
+				ShipIO.saveShipProject("crash_save.shp");
 
 			try {
 				System.setOut(new PrintStream(new FileOutputStream("crash.log")));
@@ -442,6 +460,7 @@ public class Main {
 		dirWindow = new DirectoriesWindow(shell);
 		browser = new ShipBrowser(shell);
 		choiceDialog = new ShipChoiceDialog(shell);
+		glowWindow = new GlowWindow(shell);
 		
 		createContents();
 		
@@ -476,6 +495,10 @@ public class Main {
 		
 		shell.addControlListener(new ControlAdapter() {
 			public void controlMoved(ControlEvent e) {
+				Point p = shell.getLocation();
+				gibDialog.autoReposition = true;
+				gibDialog.setLocation(p.x + gibDialog.relativePosition.x, p.y + gibDialog.relativePosition.y);
+				gibDialog.autoReposition = false;
 			}
 			
 			public void controlResized(ControlEvent e) {
@@ -524,21 +547,45 @@ public class Main {
 				// === animate gibs
 				if (tltmGib.getSelection() && animateGibs) {
 					timeElapsed += INTERVAL;
-					animateGibs = timeElapsed < 4000;
-					gibDialog.btnAnimate.setEnabled(false);
+					animateGibs = timeElapsed < 4300; // no idea why it's not 6000ms, but with this value the animation lasts ~6 seconds
 					for (FTLGib g : Main.ship.gibs) {
-						g.setLocation((int) Math.round(g.getBounds().x + g.animVel * Math.cos(g.animDir) - g.animVel * Math.sin(g.animDir)),
-								(int) Math.round(g.getBounds().y + g.animVel * Math.sin(g.animDir) + g.animVel * Math.cos(g.animDir)));
+						g.animX += g.animVel * Math.cos((g.animDir-90)*Math.PI/180);
+						g.animY += g.animVel * Math.sin((g.animDir-90)*Math.PI/180);
+						g.setLocation((int) Math.round(g.animX), (int) Math.round(g.animY));
 						g.setRotation(g.animRotation + (float) g.animAng);
+						/*
+						for (FTLMount m : Main.ship.mounts) {
+							if (m.gib==g.number) {
+								//m.animX = g.animX + Math.cos((g.animRotation-90)*Math.PI/180)*(m.animX-g.animX) - Math.sin((g.animRotation-90)*Math.PI/180)*(m.animY-g.animY);
+								//m.animY = g.animY + Math.sin((g.animRotation-90)*Math.PI/180)*(m.animX-g.animX) + Math.cos((g.animRotation-90)*Math.PI/180)*(m.animY-g.animY);
+								
+								//m.animX = g.animX + Math.cos((g.animRotation-90)*Math.PI/180)*Math.abs(m.animPos.x-(g.position.x))
+								//		- Math.sin((g.animRotation-90)*Math.PI/180)*Math.abs(m.animPos.y-(g.position.y));
+								//m.animY = g.animY + Math.sin((g.animRotation-90)*Math.PI/180)*Math.abs(m.animPos.x-(g.position.x))
+								//		+ Math.cos((g.animRotation-90)*Math.PI/180)*Math.abs(m.animPos.y-(g.position.y));
+								
+								m.animX = g.animX + m.animRel.x * Math.cos((g.animRotation-90)*Math.PI/180) - m.animRel.y * Math.sin((g.animRotation-90)*Math.PI/180);
+								m.animY = g.animY + m.animRel.y * Math.sin((g.animRotation-90)*Math.PI/180) + m.animRel.y * Math.cos((g.animRotation-90)*Math.PI/180);
+
+								m.setLocationAbsolute((int) Math.round(m.animX), (int) Math.round(m.animY));
+								m.setRotation((int) Math.round(g.animRotation + (m.isRotated() ? 90 : 0)));
+							}
+						}
+						*/
 					}
 					if (!animateGibs) {
+						timeElapsed = 0;
+						shell.setEnabled(true);
+						gibDialog.enableButtons(true);
 						for (FTLGib g : Main.ship.gibs) {
 							g.setLocationRelative(g.position.x, g.position.y);
 							g.setRotation(0);
-							shell.setEnabled(true);
-							gibDialog.btnAnimate.setEnabled(true);
-							gibDialog.enableButtons(true);
-							timeElapsed = 0;
+						}
+						for (FTLMount m : Main.ship.mounts) {
+							//m.setLocation(m.animPos.x, m.animPos.y);
+							//m.setRotation((int) Math.round(m.isRotated() ? 90 : 0));
+							//if (m.gib==0) m.setVisible(true);
+							m.setVisible(true);
 						}
 					}
 					canvas.redraw();
@@ -819,7 +866,7 @@ public class Main {
 		tltmMount.setToolTipText("Weapon Mounting Tool [R]"
 									+ShipIO.lineDelimiter+" -Click to place a weapon mount"
 									+ShipIO.lineDelimiter+" -Right-click to change the mount's rotation"
-									+ShipIO.lineDelimiter+" -Shift-click to mirror the mount along its axis"
+									+ShipIO.lineDelimiter+" -Alt-right-click to mirror the mount along its axis"
 									+ShipIO.lineDelimiter+" -Shift-right-click to change the direction in which the weapon opens"
 									+ShipIO.lineDelimiter+" (the last three also work with Selection Tool)");
 		tltmMount.setImage(toolsMap.get("mount"));
@@ -1290,10 +1337,14 @@ public class Main {
 		
 		// === Systems -> Remove System Image
 		final MenuItem mntmRemoveInterior = new MenuItem(menuSystem, SWT.NONE);
-		mntmRemoveInterior.setEnabled(false);
 		mntmRemoveInterior.setText("Remove Interior Image");
-		mntmRemoveInterior.setEnabled(true);
 		
+		new MenuItem(menuSystem, SWT.SEPARATOR);
+		
+		// === Systems -> Set Glow Images
+		final MenuItem mntmGlow = new MenuItem(menuSystem, SWT.NONE);
+		mntmGlow.setEnabled(false);
+		mntmGlow.setText("Set Glow Images...");
 		
 	// === Gib Assignment Context Menu
 
@@ -1917,7 +1968,8 @@ public class Main {
 					mntmTeleporter.setSelection(selectedRoom.getSystem() == Systems.TELEPORTER);
 					mntmTeleporter.setEnabled(!isSystemAssigned(Systems.TELEPORTER, selectedRoom));
 					// ===
-					mntmSysImage.setEnabled(!selectedRoom.getSystem().equals(Systems.EMPTY));
+					mntmSysImage.setEnabled(!selectedRoom.getSystem().equals(Systems.EMPTY) && !selectedRoom.getSystem().equals(Systems.TELEPORTER));
+					mntmGlow.setEnabled(!selectedRoom.getSystem().equals(Systems.EMPTY) && !selectedRoom.getSystem().equals(Systems.TELEPORTER));
 				}
 			}
 		});
@@ -2011,6 +2063,7 @@ public class Main {
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			} });
+		
 		mntmSysImage.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
@@ -2023,11 +2076,22 @@ public class Main {
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path) && selectedRoom != null) {
-					interiorPath = new String(path);
-					selectedRoom.setInterior(path);
+					if (e.widget==mntmSysImage) {
+						interiorPath = new String(path);
+						selectedRoom.setInterior(path);
+					} else if (e.widget==mntmGlow) {
+						if (selectedRoom.sysBox!=null) selectedRoom.sysBox.setGlowImage(path, 1);
+					}
 				}
 			}
 		});
+		
+		mntmGlow.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				glowWindow.open();
+			}
+		});
+		
 		mntmRemoveInterior.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				selectedRoom.setInterior(null);
@@ -2509,6 +2573,7 @@ public class Main {
 				
 				if (!ShipIO.isNull(path)) {
 					ShipIO.loadLayout(new File(path));
+					canvas.redraw();
 				}
 			}
 		});

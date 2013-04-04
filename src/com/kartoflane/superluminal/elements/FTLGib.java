@@ -29,6 +29,8 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	public double animAng = 0;
 	public int animDir = 0;
 	public float animRotation = 0;
+	public double animX = 0;
+	public double animY = 0;
 	
 	private Color green;
 	private RGB green_rgb = new RGB(0,255,0);
@@ -257,11 +259,10 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 
 	@Override
 	public void mouseMove(MouseEvent e) {
-		if (move && selected) {
+		if (move && selected && !Main.animateGibs) {
 			if (Main.modShift) { // dragging in one direction, decide direction
 				if (Math.pow((bounds.x + offset.x - e.x),2)+Math.pow((bounds.y + offset.y - e.y),2) >= 3 && (Main.dragDir == null || Main.dragDir==AxisFlag.BOTH)) { // to prevent picking wrong direction due to unintended mouse movement
 					float angle = Main.getAngle(bounds.x+offset.x, bounds.y+offset.y, e.x, e.y);
-					Main.debug(angle);
 					if ((angle > 315 || angle <= 45) || (angle > 135 && angle <= 225)) { // Y axis
 						Main.dragDir = AxisFlag.Y;
 					} else if ((angle > 45 && angle <= 135) || (angle > 225 && angle <= 315)) { // X axis
@@ -282,7 +283,7 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 
 	@Override
 	public void mouseDoubleClick(MouseEvent e) {
-		if (!Main.gibWindow.isVisible())
+		if (!Main.gibWindow.isVisible() && !Main.animateGibs)
 			Main.gibWindow.open();
 	}
 
@@ -290,12 +291,12 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	public void mouseHover(MouseEvent e) {}
 	
 	public void setAnimationValues() {
-		//Min + (int)(Math.random() * ((Max - Min) + 1))
-		animVel = (minVel + Math.random() * ((maxVel - minVel) + 1))*0.25;
-		animAng = (minAng + Math.random() * ((maxAng - minAng) + 1))*0.25;
+		animVel = (minVel + Math.random() * ((maxVel - minVel) + 1))*0.212;
+		animAng = (minAng + Math.random() * ((maxAng - minAng) + 1))*0.212;
 		animDir = minDir + (int)(Math.random() * ((maxDir - minDir) + 1));
 		animRotation = 0;
-		Main.debug("vel: " + animVel + ", ang: " + animAng + ", dir: " + animDir);
+		animX = bounds.x;
+		animY = bounds.y;
 	}
 	
 	@Override

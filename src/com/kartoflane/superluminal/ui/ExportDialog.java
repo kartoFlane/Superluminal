@@ -190,7 +190,7 @@ public class ExportDialog extends Dialog {
 		btnDontCheck.setToolTipText("When checked, overriden shield and cloak images will be exported." + ShipIO.lineDelimiter
 									+"Overrides are images within the default archives, that ships can" + ShipIO.lineDelimiter
 									+"reuse, so there's no need to export them.");
-		btnDontCheck.setText("Include overriden (default) images");
+		btnDontCheck.setText("Include overridden (default) images");
 		btnDontCheck.setSelection(ShipIO.dontCheck);
 		
 		final Button btnCreateFtl = new Button(composite_2, SWT.CHECK);

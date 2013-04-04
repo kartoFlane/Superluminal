@@ -27,7 +27,7 @@ public class FTLShip implements Serializable {
 	/**
 	 * The most recent designation
 	 */
-	final public static int VERSION = 10;
+	final public static int VERSION = 11;
 	/**
 	 * Ship's own designation
 	 */
@@ -102,6 +102,7 @@ public class FTLShip implements Serializable {
 	public HashMap<Systems, Boolean> startMap;
 	public HashMap<Systems, Integer> slotMap;
 	public HashMap<Systems, Slide> slotDirMap;
+	//public HashMap<Systems, FTLInterior> interiorMap;
 	
 	public FTLShip() {
 		rooms = new HashSet<FTLRoom>();
@@ -118,6 +119,7 @@ public class FTLShip implements Serializable {
 		startMap = new HashMap<Systems, Boolean>();
 		slotMap = new HashMap<Systems, Integer>();
 		slotDirMap = new HashMap<Systems, Slide>();
+		//interiorMap = new HashMap<Systems, FTLInterior>();
 		
 		minSec = 0;
 		maxSec = 0;
@@ -161,6 +163,8 @@ public class FTLShip implements Serializable {
 			
 			slotMap.put(key, -2);
 			slotDirMap.put(key, Slide.UP);
+			
+			//interiorMap.put(key, new FTLInterior());
 		}
 	}
 	
