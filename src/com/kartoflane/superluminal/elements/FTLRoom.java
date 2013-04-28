@@ -375,11 +375,14 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 									? 1
 									: -2;
 		} else if (ShipIO.shipBeingLoaded!=null || Main.ship != null) {
+			// random slot for enemy ships
+			/*
 			i = (sys.equals(Systems.MEDBAY))
 					? -2
 					: (sys.equals(Systems.PILOT))
 						? 0
 						: (int) (Math.random()*1);
+						*/
 		}
 		
 		return i;
@@ -398,11 +401,14 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 									? Slide.UP
 									: Slide.NO;
 		} else if (ShipIO.shipBeingLoaded!=null || Main.ship != null) {
+			// random direction for enemy ships
+			/*
 			dir = (sys.equals(Systems.MEDBAY))
 					? Slide.NO
 					: (sys.equals(Systems.PILOT))
 						? Slide.UP
 						: getStationRandomDir(sys);
+						*/
 		}
 		
 		return dir;

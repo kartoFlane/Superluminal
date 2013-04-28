@@ -202,6 +202,9 @@ public class DirectoriesWindow {
 		Main.dataPath = "archives" + ShipIO.pathDelimiter + "data";
 		Main.resPath = "archives" + ShipIO.pathDelimiter + "resources";
 		
+		if (Main.browser==null || ShipBrowser.shell.isDisposed())
+			Main.browser = new ShipBrowser(shell);
+		
 		ShipBrowser.clearTrees();
 		ShipIO.reloadBlueprints();
 		ShipBrowser.tree.setEnabled(true);

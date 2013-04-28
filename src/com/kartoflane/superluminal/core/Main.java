@@ -87,7 +87,7 @@ import com.kartoflane.superluminal.ui.ExportDialog;
 import com.kartoflane.superluminal.ui.GibDialog;
 import com.kartoflane.superluminal.ui.GibPropertiesWindow;
 import com.kartoflane.superluminal.ui.GlowWindow;
-import com.kartoflane.superluminal.ui.NewShipWindow;
+import com.kartoflane.superluminal.ui.NewShipDialog;
 import com.kartoflane.superluminal.ui.PropertiesWindow;
 import com.kartoflane.superluminal.ui.ShipBrowser;
 import com.kartoflane.superluminal.ui.ShipChoiceDialog;
@@ -118,7 +118,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "3-4-13";
+	public final static String VERSION = "13-4-23";
 	
 		// === Important objects
 	public static Shell shell;
@@ -140,6 +140,7 @@ public class Main {
 	public static GlowWindow glowWindow;
 	
 		// === Preferences
+	public static boolean forbidBossLoading = true;
 		// ship explorer
 	public static String dataPath = "";
 	public static String resPath = "";
@@ -164,6 +165,7 @@ public class Main {
 	public static String exportPath = "";
 		// other
 	public static String projectPath = "";
+	public static boolean shownIncludeWarning = false;
 	
 		// ===  Mouse related
 	public static Point mousePos = new Point(0,0);
@@ -180,7 +182,8 @@ public class Main {
 	public static boolean modCtrl = false;
 	
 		// === Internal
-	public static boolean debug = false;
+	public static boolean debug = true;
+	public static boolean log = false;
 	
 		// === Variables used to store a specific element out of a set (currently selected room, etc)
 	public static FTLRoom selectedRoom = null;
@@ -214,19 +217,14 @@ public class Main {
 	private static String interiorPath = "";
 	private static String ftlLoadPath = "";
 	private static String importPath = "";
-	private static File temporaryFiles = null;
-	private static boolean temporaryFilesInUse = false;
-	/**
-	 * Path of current project file, for quick saving via Ctrl+S
-	 */
+	private static String includePath = "";
+	public static File temporaryFiles = null;
+	public static boolean temporaryFilesInUse = false;
+	/** Path of current project file, for quick saving via Ctrl+S */
 	public static String currentPath = null;
-	/**
-	 * Contains room IDs currently in use.
-	 */
+	/** Contains room IDs currently in use. */
 	public static HashSet<Integer> idList = new HashSet<Integer>();
-	/**
-	 * Images (tools and systems) are loaded once and then references are held in this map for easy access.
-	 */
+	/** Images (tools and systems) are loaded once and then references are held in this map for easy access. */
 	public static HashMap<String, Image> toolsMap = new HashMap<String, Image>();
 
 	// === GUI elements' variables, for use in listeners and functions that reference them
@@ -306,8 +304,10 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO:
+	 * 	- multiple systems for the same room for enemy ships
 	 * 
 	 * == MEDIUM PRIO:
+	 * 	- port to Apache zip
 	 * 	- gibs editor - animation
 	 * 		- fix weapon mount animation
 	 * 
@@ -315,22 +315,21 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * 	- added: it is now possible to also set HORIZONTAL offset of a ship (analogous to VERTICAL) - shift-right-clicking
-	 * 	- added: when setting either horizontal or vertical offset, the mouse cursor will now automatically be moved to the offset
-	 * 	- added: when setting the offsets, a tooltip box appears displaying the current offset value
-	 * 	- added: when the editor encounters a crash-causing error, it'll now display a window informing you about it, and will try to save the current project as crash_save.shp in Superluminal's directory
-	 * 	- added: gib editor's window now moves around with Superluminal's main window
-	 * 	- added: gib animation (disclaimer: much guessing involved, may not be ideal) (does not include weapon mount animation - yet?)
-	 * 	- added: possibility to link glow images to interiors, on a per-system basis.
-	 * 	- fixed: issues with defaultResources list missing on Macs should be fixed
-	 * 	- fixed: an issue with ships exported on Macs not loading correctly in FTL
+	 * 	- added: doors can now be selected with Door Tool, so that you don't have to switch between tools to see the room the door is linked to
+	 * 	- fixed: gib animation should now work correctly and accurately (still no weapon mounts, tho)
+	 * 	- fixed: fixed gib directions being reset to previous values if you pressed "Animate" right after accepting the changes
+	 * 	- changed: split crew and augments into separate tabs
+	 * 	- added: for enemy ships, it is now possible to set min/max count for every race, without having to edit the exported files
+	 * 	- fixed: ships should now load with glow images (by looking for appropriately named .pngs)
+	 * 	- changed: system properties window now looks and behaves differently for player and enemy ships
+	 * 	- added: mod loading
 	 *
 	 */
 	
 	// =================================================================================================== //
 	
 	public static void main(String[] args) {
-		boolean enableCommandLine = true;
+		boolean enableCommandLine = false;
 		if (enableCommandLine) {
 			ArrayList<String> argsList = new ArrayList<String>();
 			for (String arg : args) {
@@ -339,7 +338,9 @@ public class Main {
 			
 			debug = argsList.contains("-debug");
 			ShipIO.IOdebug = argsList.contains("-IOdebug");
-			if (argsList.contains("-log")) {
+			log = argsList.contains("-log");
+			
+			if (log) {
 				try {
 					System.setOut(new PrintStream(new FileOutputStream("debug.log")));
 					System.setErr(new PrintStream(new FileOutputStream("debug.log")));
@@ -391,6 +392,9 @@ public class Main {
 		GRID_W = (GRID_W > GRID_W_MAX) ? GRID_W_MAX : GRID_W;
 		GRID_H = (GRID_H > GRID_H_MAX) ? GRID_H_MAX : GRID_H;
 		
+		if (!ConfigIO.configExists())
+			ConfigIO.saveConfig();
+		
 		if (propertiesSwitch) {
 			// open properties
 			Properties properties = new Properties();
@@ -419,6 +423,7 @@ public class Main {
 			loadFloor = Boolean.valueOf(properties.getProperty("loadFloor"));
 			loadShield = Boolean.valueOf(properties.getProperty("loadShield"));
 			loadSystem = Boolean.valueOf(properties.getProperty("loadSystem"));
+			forbidBossLoading = Boolean.valueOf(properties.getProperty("forbidBossLoading"));
 		} else {
 			// create config file if it doesn't exist already
 			if (!ConfigIO.configExists())
@@ -439,6 +444,8 @@ public class Main {
 			loadFloor = ConfigIO.getBoolean("loadFloor");
 			loadShield = ConfigIO.getBoolean("loadShield");
 			loadSystem = ConfigIO.getBoolean("loadSystem");
+			forbidBossLoading = ConfigIO.getBoolean("forbidBossLoading");
+			shownIncludeWarning = ConfigIO.getBoolean("shownIncludeWarning");
 		}
 		
 		appFont = new Font(Display.getCurrent(), "Monospaced", 9, SWT.NORMAL);
@@ -665,6 +672,10 @@ public class Main {
 		final MenuItem mntmArchives = new MenuItem(menu_file, SWT.NONE);
 		mntmArchives.setText("Change Archives...");
 		
+		// === File -> Include mod
+		final MenuItem mntmInclude = new MenuItem(menu_file, SWT.NONE);
+		mntmInclude.setText("Include Mod...");
+		
 		new MenuItem(menu_file, SWT.SEPARATOR);
 		
 		// === File -> Save project
@@ -840,7 +851,7 @@ public class Main {
 									+ShipIO.lineDelimiter+" -Click and hold to move the object around"
 									+ShipIO.lineDelimiter+" -For rooms, click on a corner and drag to resize the room" 
 									+ShipIO.lineDelimiter+" -Right-click to assign a system to the selected room"
-									+ShipIO.lineDelimiter+" -Double click on a room to set its' system's level and power"
+									+ShipIO.lineDelimiter+" -Double click on a room to set its system's level and power"
 									+ShipIO.lineDelimiter+" -For weapon mounts, hull and shields, press down Shift for precision mode");
 		
 		// === Container -> Tools -> Room creation
@@ -2135,7 +2146,7 @@ public class Main {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				
-				int create = new NewShipWindow(shell).open();
+				int create = new NewShipDialog(shell).open();
 				shell.setEnabled(true);
 				if (create != 0) {
 					mntmClose.notifyListeners(SWT.Selection, null);
@@ -2184,6 +2195,7 @@ public class Main {
 					mntmClose.setEnabled(true);
 					mntmImport.setEnabled(true);
 					mntmArchives.setEnabled(false);
+					mntmInclude.setEnabled(false);
 					mntmCalculateOptimalOffset.setEnabled(true);
 					
 					currentPath = null;
@@ -2231,6 +2243,7 @@ public class Main {
 							mntmClose.setEnabled(true);
 							mntmImport.setEnabled(true);
 							mntmArchives.setEnabled(false);
+							mntmInclude.setEnabled(false);
 							mntmCalculateOptimalOffset.setEnabled(true);
 							
 							if (ship.isPlayer) {
@@ -2407,6 +2420,7 @@ public class Main {
 					mntmClose.setEnabled(true);
 					mntmImport.setEnabled(true);
 					mntmArchives.setEnabled(false);
+					mntmInclude.setEnabled(false);
 					mntmCalculateOptimalOffset.setEnabled(true);
 					
 					if (ship.isPlayer) {
@@ -2540,6 +2554,7 @@ public class Main {
 					mntmClose.setEnabled(true);
 					mntmImport.setEnabled(true);
 					mntmArchives.setEnabled(false);
+					mntmInclude.setEnabled(false);
 					mntmCalculateOptimalOffset.setEnabled(true);
 					
 					mntmConToPlayer.setEnabled(!ship.isPlayer);
@@ -2586,6 +2601,41 @@ public class Main {
 						+ "Note however that the old unpacked archives used by Superluminal will be deleted.");
 				dirWindow.btnClose.setEnabled(true);
 				dirWindow.open();
+			}
+		});
+		
+		mntmInclude.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (!shownIncludeWarning) {
+					MessageBox box = new MessageBox(shell, SWT.ICON_WARNING);
+					box.setMessage("IMPORTANT INFORMATION:" + ShipIO.lineDelimiter + "Superluminal has to be restarted after a mod is included for the changes to take effect!");
+					box.open();
+					
+					shownIncludeWarning = true;
+					ConfigIO.saveConfig();
+				}
+				
+				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+				String[] filterExtensions = new String[] {"*.txt", "*.xml", "*.append", "*.png", "*.ftl"};
+				dialog.setFilterExtensions(filterExtensions);
+				dialog.setFilterPath(includePath);
+				dialog.setFileName(includePath);
+				String path = dialog.open();
+				
+				if (!ShipIO.isNull(path)) {
+					includePath = path;
+					File f = new File(includePath);
+					if (f.exists()) {		
+						if (ShipIO.includeMod(f, false)) {
+							print("Mod loaded successfully");
+						} else {
+							print("An error occured while loading mod; check debug.log for stack trace.");
+						}
+					} else {
+						print("Cannot load mod because no such file was found");
+					}
+				}
 			}
 		});
 		
@@ -2679,6 +2729,7 @@ public class Main {
 				mntmClose.setEnabled(false);
 				mntmImport.setEnabled(false);
 				mntmArchives.setEnabled(true);
+				mntmInclude.setEnabled(true);
 				mntmConToEnemy.setEnabled(false);
 				mntmConToPlayer.setEnabled(false);
 				mntmCalculateOptimalOffset.setEnabled(false);
@@ -3490,6 +3541,52 @@ public class Main {
 			System.out.println("" + msg);
 	}
 	
+	public static void unpackFTL(String path) {
+		if (!ShipIO.isNull(path)) {
+			ftlLoadPath = new String(path);
+			debug("Unpacking .ftl:", true);
+			
+			temporaryFiles = new File("sprlmnl_tmp");
+			temporaryFiles.mkdirs();
+			temporaryFilesInUse = true;
+			
+			if (temporaryFiles != null && temporaryFiles.exists()) {
+				debug("\tdeleting temporary directory... ", false);
+				ShipIO.deleteFolderContents(temporaryFiles);
+				if (temporaryFiles.exists()) ShipIO.rmdir(temporaryFiles);
+				debug("done", true);
+			}
+			
+			ZipFile zf = null;
+			try {
+				zf = new ZipFile(path);
+
+				debug("\textracting contents of .ftl package to temporary directory... ", false);
+				ShipIO.unzipFileToDirectory(zf, temporaryFiles);
+				debug("done", true);
+			} catch (IOException ex) {
+			} finally {
+				if (zf != null)
+					try {
+						zf.close();
+					} catch (IOException ex) {
+					}
+			}
+		}
+	}
+	
+	public static void deleteTemporary() {
+		if (!temporaryFilesInUse) {
+			if (temporaryFiles != null && temporaryFiles.exists()) {
+				debug("\tdeleting temporary directory... ", false);
+				ShipIO.deleteFolderContents(temporaryFiles);
+				if (temporaryFiles.exists()) ShipIO.rmdir(temporaryFiles);
+				debug("done", true);
+			}
+		} else {
+			print("Can't delete temporary files because they're still in use");
+		}
+	}
 	
 	public static void updatePainter() {
 		anchor.setLocation(ship.anchor.x, ship.anchor.y,true);

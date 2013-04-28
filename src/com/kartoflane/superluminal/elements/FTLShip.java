@@ -19,18 +19,12 @@ import com.kartoflane.superluminal.core.Main;
  */
 public class FTLShip implements Serializable {
 	private static final long serialVersionUID = 344200154077072015L;
-	/**
-	 * Size of the anchor handle;
-	 */
+	/** Size of the anchor handle*/
 	final static public int ANCHOR = 12;
 	
-	/**
-	 * The most recent designation
-	 */
-	final public static int VERSION = 11;
-	/**
-	 * Ship's own designation
-	 */
+	/** The most recent designation */
+	final public static int VERSION = 12;
+	/** Ship's own designation */
 	public int version = 0;
 	
 	public boolean isPlayer;
@@ -54,9 +48,7 @@ public class FTLShip implements Serializable {
 	public boolean hullPinned;
 	public boolean shieldPinned;
 	
-	/**
-	 *  posiition of the ship on canvas (anchor's x and y)
-	 */
+	/** Posiition of the ship on canvas (anchor's x and y) */
 	public Point anchor;
 	
 	// === FTL in-game ship information
@@ -97,6 +89,8 @@ public class FTLShip implements Serializable {
 	public LinkedList<String> droneSet;
 	public LinkedList<String> augmentSet;
 	public HashMap<String, Integer> crewMap;
+	/** Only used in enemy ships */
+	public HashMap<String, Integer> crewMaxMap;
 	public HashMap<Systems, Integer> powerMap;
 	public HashMap<Systems, Integer> levelMap;
 	public HashMap<Systems, Boolean> startMap;
@@ -114,6 +108,7 @@ public class FTLShip implements Serializable {
 		droneSet = new LinkedList<String>();
 		augmentSet = new LinkedList<String>();
 		crewMap = new HashMap<String, Integer>();
+		crewMaxMap = new HashMap<String, Integer>();
 		powerMap = new HashMap<Systems, Integer>();
 		levelMap = new HashMap<Systems, Integer>();
 		startMap = new HashMap<Systems, Boolean>();
@@ -155,6 +150,16 @@ public class FTLShip implements Serializable {
 		crewMap.put("crystal", 0);
 		crewMap.put("ghost", 0);
 		crewMap.put("random", 0);
+		
+		crewMaxMap.put("human", 0);
+		crewMaxMap.put("engi", 0);
+		crewMaxMap.put("energy", 0);
+		crewMaxMap.put("mantis", 0);
+		crewMaxMap.put("slug", 0);
+		crewMaxMap.put("rock", 0);
+		crewMaxMap.put("crystal", 0);
+		crewMaxMap.put("ghost", 0);
+		crewMaxMap.put("random", 0);
 		
 		for (Systems key : Systems.values()) {
 			levelMap.put(key, 1);

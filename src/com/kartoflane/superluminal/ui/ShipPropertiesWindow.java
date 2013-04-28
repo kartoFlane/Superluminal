@@ -91,6 +91,26 @@ public class ShipPropertiesWindow extends Dialog {
 	private Spinner spMinSec;
 	private Spinner spMaxSec;
 	private Combo augments;
+	
+	private Group grpSystems;
+	private Spinner spHumMin;
+	private Spinner spHumMax;
+	private Spinner spEngiMin;
+	private Spinner spEngiMax;
+	private Spinner spZoltanMin;
+	private Spinner spZoltanMax;
+	private Spinner spManMin;
+	private Spinner spManMax;
+	private Spinner spSlugMin;
+	private Spinner spSlugMax;
+	private Spinner spRockMin;
+	private Spinner spRockMax;
+	private Spinner spCrystalMin;
+	private Spinner spCrystalMax;
+	private Spinner spGhostMin;
+	private Spinner spGhostMax;
+	private Spinner spRandomMin;
+	private Spinner spRandomMax;
 
 	public ShipPropertiesWindow(Shell parent) {
 		super(parent, SWT.DIALOG_TRIM);
@@ -128,18 +148,35 @@ public class ShipPropertiesWindow extends Dialog {
 		
 	// power & health
 		
-		lblPilotInfo.setText(Main.ship.powerMap.get(Systems.PILOT) + " / " + Main.ship.levelMap.get(Systems.PILOT));
-		lblWeaponsInfo.setText(Main.ship.powerMap.get(Systems.WEAPONS) + " / " + Main.ship.levelMap.get(Systems.WEAPONS));
-		lblDoorsInfo.setText(Main.ship.powerMap.get(Systems.DOORS) + " / " + Main.ship.levelMap.get(Systems.DOORS));
-		lblShieldsInfo.setText(Main.ship.powerMap.get(Systems.SHIELDS) + " / " + Main.ship.levelMap.get(Systems.SHIELDS));
-		lblSensorsInfo.setText(Main.ship.powerMap.get(Systems.SENSORS) + " / " + Main.ship.levelMap.get(Systems.SENSORS));
-		lblEnginesInfo.setText(Main.ship.powerMap.get(Systems.ENGINES) + " / " + Main.ship.levelMap.get(Systems.ENGINES));
-		lblMedbayInfo.setText(Main.ship.powerMap.get(Systems.MEDBAY) + " / " + Main.ship.levelMap.get(Systems.MEDBAY));
-		lblDronesInfo.setText(Main.ship.powerMap.get(Systems.DRONES) + " / " + Main.ship.levelMap.get(Systems.DRONES));
-		lblOxygenInfo.setText(Main.ship.powerMap.get(Systems.OXYGEN) + " / " + Main.ship.levelMap.get(Systems.OXYGEN));
-		lblTeleInfo.setText(Main.ship.powerMap.get(Systems.TELEPORTER) + " / " + Main.ship.levelMap.get(Systems.TELEPORTER));
-		lblCloakInfo.setText(Main.ship.powerMap.get(Systems.CLOAKING) + " / " + Main.ship.levelMap.get(Systems.CLOAKING));
-		lblArtilleryInfo.setText(Main.ship.powerMap.get(Systems.ARTILLERY) + " / " + Main.ship.levelMap.get(Systems.ARTILLERY));
+		if (Main.ship.isPlayer) {
+			grpSystems.setText("Systems - starting levels");
+			lblWeaponsInfo.setText(""+Main.ship.levelMap.get(Systems.WEAPONS));
+			lblShieldsInfo.setText("" + Main.ship.levelMap.get(Systems.SHIELDS));
+			lblEnginesInfo.setText("" + Main.ship.levelMap.get(Systems.ENGINES));
+			lblMedbayInfo.setText("" + Main.ship.levelMap.get(Systems.MEDBAY));
+			lblDronesInfo.setText("" + Main.ship.levelMap.get(Systems.DRONES));
+			lblOxygenInfo.setText("" + Main.ship.levelMap.get(Systems.OXYGEN));
+			lblTeleInfo.setText("" + Main.ship.levelMap.get(Systems.TELEPORTER));
+			lblCloakInfo.setText("" + Main.ship.levelMap.get(Systems.CLOAKING));
+			lblArtilleryInfo.setText("" + Main.ship.levelMap.get(Systems.ARTILLERY));
+			lblSensorsInfo.setText("" + Main.ship.levelMap.get(Systems.SENSORS));
+			lblDoorsInfo.setText("" + Main.ship.levelMap.get(Systems.DOORS));
+			lblPilotInfo.setText("" + Main.ship.levelMap.get(Systems.PILOT));
+		} else {
+			grpSystems.setText("Systems - min and max levels");
+			lblWeaponsInfo.setText(Main.ship.powerMap.get(Systems.WEAPONS) + " / " + Main.ship.levelMap.get(Systems.WEAPONS));
+			lblShieldsInfo.setText(Main.ship.powerMap.get(Systems.SHIELDS) + " / " + Main.ship.levelMap.get(Systems.SHIELDS));
+			lblEnginesInfo.setText(Main.ship.powerMap.get(Systems.ENGINES) + " / " + Main.ship.levelMap.get(Systems.ENGINES));
+			lblMedbayInfo.setText(Main.ship.powerMap.get(Systems.MEDBAY) + " / " + Main.ship.levelMap.get(Systems.MEDBAY));
+			lblDronesInfo.setText(Main.ship.powerMap.get(Systems.DRONES) + " / " + Main.ship.levelMap.get(Systems.DRONES));
+			lblOxygenInfo.setText(Main.ship.powerMap.get(Systems.OXYGEN) + " / " + Main.ship.levelMap.get(Systems.OXYGEN));
+			lblTeleInfo.setText(Main.ship.powerMap.get(Systems.TELEPORTER) + " / " + Main.ship.levelMap.get(Systems.TELEPORTER));
+			lblCloakInfo.setText(Main.ship.powerMap.get(Systems.CLOAKING) + " / " + Main.ship.levelMap.get(Systems.CLOAKING));
+			lblArtilleryInfo.setText(Main.ship.powerMap.get(Systems.ARTILLERY) + " / " + Main.ship.levelMap.get(Systems.ARTILLERY));
+			lblSensorsInfo.setText(Main.ship.powerMap.get(Systems.SENSORS) + " / " + Main.ship.levelMap.get(Systems.SENSORS));
+			lblDoorsInfo.setText(Main.ship.powerMap.get(Systems.DOORS) + " / " + Main.ship.levelMap.get(Systems.DOORS));
+			lblPilotInfo.setText(Main.ship.powerMap.get(Systems.PILOT) + " / " + Main.ship.levelMap.get(Systems.PILOT));
+		}
 		
 		int i = 0, j = 0;
 		
@@ -160,29 +197,82 @@ public class ShipPropertiesWindow extends Dialog {
 		spHealth.setSelection(Main.ship.hullHealth);
 		
 	// crew
-		spMax.setSelection(Main.ship.crewMax);
 		
-		spHuman.setMaximum(Main.ship.crewMax);
-		spEngi.setMaximum(Main.ship.crewMax);
-		spZoltan.setMaximum(Main.ship.crewMax);
-		spMantis.setMaximum(Main.ship.crewMax);
-		spSlug.setMaximum(Main.ship.crewMax);
-		spRock.setMaximum(Main.ship.crewMax);
-		spCrystal.setMaximum(Main.ship.crewMax);
-		spGhost.setMaximum(Main.ship.crewMax);
-		spRandom.setMaximum(Main.ship.crewMax);
+		if (Main.ship.isPlayer) {
+			spMax.setSelection(Main.ship.crewMax);
+			
+			spHuman.setMaximum(Main.ship.crewMax);
+			spEngi.setMaximum(Main.ship.crewMax);
+			spZoltan.setMaximum(Main.ship.crewMax);
+			spMantis.setMaximum(Main.ship.crewMax);
+			spSlug.setMaximum(Main.ship.crewMax);
+			spRock.setMaximum(Main.ship.crewMax);
+			spCrystal.setMaximum(Main.ship.crewMax);
+			spGhost.setMaximum(Main.ship.crewMax);
+			spRandom.setMaximum(Main.ship.crewMax);
+			
+			spMax.setIncrement((Main.ship.isPlayer ? 8 : 1));
+			spHuman.setSelection(Main.ship.crewMap.get("human"));
+			spEngi.setSelection(Main.ship.crewMap.get("engi"));
+			spZoltan.setSelection(Main.ship.crewMap.get("energy"));
+			spMantis.setSelection(Main.ship.crewMap.get("mantis"));
+			spSlug.setSelection(Main.ship.crewMap.get("slug"));
+			spRock.setSelection(Main.ship.crewMap.get("rock"));
+			spCrystal.setSelection(Main.ship.crewMap.get("crystal"));
+			spGhost.setSelection(Main.ship.crewMap.get("ghost"));
+			spRandom.setSelection(Main.ship.crewMap.get("random"));
+		} else {
+			spHumMin.setSelection(Main.ship.crewMap.get("human"));
+			spHumMax.setSelection(Main.ship.crewMaxMap.get("human"));
+			spEngiMin.setSelection(Main.ship.crewMap.get("engi"));
+			spEngiMax.setSelection(Main.ship.crewMaxMap.get("engi"));
+			spZoltanMin.setSelection(Main.ship.crewMap.get("energy"));
+			spZoltanMax.setSelection(Main.ship.crewMaxMap.get("energy"));
+			spManMin.setSelection(Main.ship.crewMap.get("mantis"));
+			spManMax.setSelection(Main.ship.crewMaxMap.get("mantis"));
+			spSlugMin.setSelection(Main.ship.crewMap.get("slug"));
+			spSlugMax.setSelection(Main.ship.crewMaxMap.get("slug"));
+			spRockMin.setSelection(Main.ship.crewMap.get("rock"));
+			spRockMax.setSelection(Main.ship.crewMaxMap.get("rock"));
+			spCrystalMin.setSelection(Main.ship.crewMap.get("crystal"));
+			spCrystalMax.setSelection(Main.ship.crewMaxMap.get("crystal"));
+			spGhostMin.setSelection(Main.ship.crewMap.get("ghost"));
+			spGhostMax.setSelection(Main.ship.crewMaxMap.get("ghost"));
+			spRandomMin.setSelection(Main.ship.crewMap.get("random"));
+			spRandomMax.setSelection(Main.ship.crewMaxMap.get("random"));
+		}
 		
-		//spMax.setEnabled(!Main.ship.isPlayer);
-		spMax.setIncrement((Main.ship.isPlayer ? 8 : 1));
-		spHuman.setSelection(Main.ship.crewMap.get("human"));
-		spEngi.setSelection(Main.ship.crewMap.get("engi"));
-		spZoltan.setSelection(Main.ship.crewMap.get("energy"));
-		spMantis.setSelection(Main.ship.crewMap.get("mantis"));
-		spSlug.setSelection(Main.ship.crewMap.get("slug"));
-		spRock.setSelection(Main.ship.crewMap.get("rock"));
-		spCrystal.setSelection(Main.ship.crewMap.get("crystal"));
-		spGhost.setSelection(Main.ship.crewMap.get("ghost"));
-		spRandom.setSelection(Main.ship.crewMap.get("random"));
+		// toggle enemy-related spinners
+		spHumMin.setEnabled(!Main.ship.isPlayer);
+		spHumMax.setEnabled(!Main.ship.isPlayer);
+		spEngiMin.setEnabled(!Main.ship.isPlayer);
+		spEngiMax.setEnabled(!Main.ship.isPlayer);
+		spZoltanMin.setEnabled(!Main.ship.isPlayer);
+		spZoltanMax.setEnabled(!Main.ship.isPlayer);
+		spManMin.setEnabled(!Main.ship.isPlayer);
+		spManMax.setEnabled(!Main.ship.isPlayer);
+		spSlugMin.setEnabled(!Main.ship.isPlayer);
+		spSlugMax.setEnabled(!Main.ship.isPlayer);
+		spRockMin.setEnabled(!Main.ship.isPlayer);
+		spRockMax.setEnabled(!Main.ship.isPlayer);
+		spCrystalMin.setEnabled(!Main.ship.isPlayer);
+		spCrystalMax.setEnabled(!Main.ship.isPlayer);
+		spGhostMin.setEnabled(!Main.ship.isPlayer);
+		spGhostMax.setEnabled(!Main.ship.isPlayer);
+		spRandomMin.setEnabled(!Main.ship.isPlayer);
+		spRandomMax.setEnabled(!Main.ship.isPlayer);
+		
+		// toggle player-related spinners
+		spHuman.setEnabled(Main.ship.isPlayer);
+		spEngi.setEnabled(Main.ship.isPlayer);
+		spZoltan.setEnabled(Main.ship.isPlayer);
+		spMantis.setEnabled(Main.ship.isPlayer);
+		spSlug.setEnabled(Main.ship.isPlayer);
+		spRock.setEnabled(Main.ship.isPlayer);
+		spCrystal.setEnabled(Main.ship.isPlayer);
+		spGhost.setEnabled(Main.ship.isPlayer);
+		spRandom.setEnabled(Main.ship.isPlayer);
+		spMax.setEnabled(Main.ship.isPlayer);
 		
 	// weapons
 		spMissiles.setSelection(Main.ship.missiles);
@@ -339,6 +429,25 @@ search:		for (String s : presetsDr.getItems()) {
 		spCrystal.setSelection(0);
 		spGhost.setSelection(0);
 		spRandom.setSelection(0);
+
+		spHumMin.setSelection(0);
+		spHumMax.setSelection(0);
+		spEngiMin.setSelection(0);
+		spEngiMax.setSelection(0);
+		spZoltanMin.setSelection(0);
+		spZoltanMax.setSelection(0);
+		spManMin.setSelection(0);
+		spManMax.setSelection(0);
+		spSlugMin.setSelection(0);
+		spSlugMax.setSelection(0);
+		spRockMin.setSelection(0);
+		spRockMax.setSelection(0);
+		spCrystalMin.setSelection(0);
+		spCrystalMax.setSelection(0);
+		spGhostMin.setSelection(0);
+		spGhostMax.setSelection(0);
+		spRandomMin.setSelection(0);
+		spRandomMax.setSelection(0);
 		
 		spMinSec.setSelection(0);
 		spMaxSec.setSelection(0);
@@ -510,13 +619,13 @@ search:		for (String s : presetsDr.getItems()) {
 		
 	// === Properties -> Systems Overview
 		TabItem tbtmSystemsOverview = new TabItem(tabFolder, SWT.NONE);
-		tbtmSystemsOverview.setText("Systems Overview");
+		tbtmSystemsOverview.setText("Systems");
 		
 		Composite systemsC = new Composite(tabFolder, SWT.NONE);
 		tbtmSystemsOverview.setControl(systemsC);
 		systemsC.setLayout(new GridLayout(2, false));
 		
-		Group grpSystems = new Group(systemsC, SWT.NONE);
+		grpSystems = new Group(systemsC, SWT.NONE);
 		grpSystems.setFont(Main.appFont);
 		grpSystems.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		grpSystems.setText("Systems");
@@ -693,7 +802,7 @@ search:		for (String s : presetsDr.getItems()) {
 		Group grpReactor = new Group(systemsC, SWT.NONE);
 		grpReactor.setFont(Main.appFont);
 		grpReactor.setLayout(new GridLayout(3, false));
-		grpReactor.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
+		grpReactor.setLayoutData(new GridData(SWT.RIGHT, SWT.FILL, false, true, 1, 1));
 		grpReactor.setText("Reactor");
 		
 		Label lblReq = new Label(grpReactor, SWT.NONE);
@@ -705,9 +814,11 @@ search:		for (String s : presetsDr.getItems()) {
 		new Label(grpReactor, SWT.NONE);
 		
 		Label lblAllSystems = new Label(grpReactor, SWT.NONE);
-		lblAllSystems.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
+		GridData gd_lblAllSystems = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
+		gd_lblAllSystems.horizontalIndent = 20;
+		lblAllSystems.setLayoutData(gd_lblAllSystems);
 		lblAllSystems.setFont(Main.appFont);
-		lblAllSystems.setText("	 all systems:");
+		lblAllSystems.setText("all systems:");
 
 		lblReqPower = new Label(grpReactor, SWT.CENTER);
 		lblReqPower.setFont(Main.appFont);
@@ -716,9 +827,11 @@ search:		for (String s : presetsDr.getItems()) {
 		lblReqPower.setLayoutData(gd_lblReqPower);
 		
 		Label lblOnlyAvailableSystems = new Label(grpReactor, SWT.NONE);
-		lblOnlyAvailableSystems.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
+		GridData gd_lblOnlyAvailableSystems = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
+		gd_lblOnlyAvailableSystems.horizontalIndent = 20;
+		lblOnlyAvailableSystems.setLayoutData(gd_lblOnlyAvailableSystems);
 		lblOnlyAvailableSystems.setFont(Main.appFont);
-		lblOnlyAvailableSystems.setText("	 available systems:");
+		lblOnlyAvailableSystems.setText("available systems:");
 		
 		lblReqStart = new Label(grpReactor, SWT.CENTER);
 		lblReqStart.setAlignment(SWT.CENTER);
@@ -748,7 +861,7 @@ search:		for (String s : presetsDr.getItems()) {
 		gl_composite_1.horizontalSpacing = 0;
 		gl_composite_1.marginHeight = 0;
 		composite_1.setLayout(gl_composite_1);
-		composite_1.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 3, 1));
+		composite_1.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 3, 1));
 			
 			// === Reactor
 		Label lblReactorPower = new Label(composite_1, SWT.NONE);
@@ -764,9 +877,9 @@ search:		for (String s : presetsDr.getItems()) {
 		gd_spReactor.minimumWidth = 40;
 		spReactor.setLayoutData(gd_spReactor);
 
-	// === Properties -> Crew & Augments
+	// === Properties -> Crew
 		TabItem tbtmCrew = new TabItem(tabFolder, SWT.NONE);
-		tbtmCrew.setText("Crew && Augments ");
+		tbtmCrew.setText("Crew");
 		
 		Composite crewInfoC = new Composite(tabFolder, SWT.NONE);
 		tbtmCrew.setControl(crewInfoC);
@@ -774,150 +887,319 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		Group grpCrew = new Group(crewInfoC, SWT.NONE);
 		grpCrew.setFont(Main.appFont);
-		GridLayout gl_grpCrew = new GridLayout(10, false);
-		gl_grpCrew.horizontalSpacing = 4;
-		gl_grpCrew.marginWidth = 0;
-		grpCrew.setLayout(gl_grpCrew);
-		grpCrew.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 8, 1));
-		grpCrew.setText("Crew");
+		grpCrew.setLayout(new GridLayout(10, false));
+		grpCrew.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 8, 1));
+		grpCrew.setText("Crew - Player");
 		
 		Label lblCrewMax = new Label(grpCrew, SWT.NONE);
+		lblCrewMax.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblCrewMax.setFont(Main.appFont);
-		GridData gd_lblCrewMax = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
-		gd_lblCrewMax.minimumWidth = 60;
-		lblCrewMax.setLayoutData(gd_lblCrewMax);
 		lblCrewMax.setToolTipText("Only affects enemy ships.");
 		lblCrewMax.setText("Crew max:");
 		
 		spMax = new Spinner(grpCrew, SWT.BORDER);
-		spMax.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
+		spMax.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spMax.setFont(Main.appFont);
 		spMax.setMaximum(8);
 		spMax.setMinimum(0);
 		
 		Label lblHuman = new Label(grpCrew, SWT.NONE);
+		lblHuman.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblHuman.setFont(Main.appFont);
-		GridData gd_lblHuman = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
-		gd_lblHuman.minimumWidth = 50;
-		lblHuman.setLayoutData(gd_lblHuman);
 		lblHuman.setText("Human:");
 		
 		spHuman = new Spinner(grpCrew, SWT.BORDER);
-		spHuman.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
+		spHuman.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spHuman.setFont(Main.appFont);
 		spHuman.setMaximum(8);
 		
 		Label lblEngi = new Label(grpCrew, SWT.NONE);
+		lblEngi.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblEngi.setFont(Main.appFont);
-		GridData gd_lblEngi = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
-		gd_lblEngi.minimumWidth = 30;
-		lblEngi.setLayoutData(gd_lblEngi);
 		lblEngi.setText("Engi:");
 		
 		spEngi = new Spinner(grpCrew, SWT.BORDER);
-		spEngi.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
+		spEngi.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spEngi.setFont(Main.appFont);
 		spEngi.setMaximum(8);
 		
 		Label lblZoltan = new Label(grpCrew, SWT.NONE);
+		lblZoltan.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblZoltan.setFont(Main.appFont);
-		GridData gd_lblZoltan = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
-		gd_lblZoltan.minimumWidth = 40;
-		lblZoltan.setLayoutData(gd_lblZoltan);
 		lblZoltan.setText("Zoltan:");
 		
 		spZoltan = new Spinner(grpCrew, SWT.BORDER);
-		spZoltan.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
+		spZoltan.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spZoltan.setFont(Main.appFont);
 		spZoltan.setMaximum(8);
 		
 		Label lblGhost = new Label(grpCrew, SWT.NONE);
-		lblGhost.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
+		lblGhost.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblGhost.setFont(Main.appFont);
 		lblGhost.setText("Ghost:");
 		
 		spGhost = new Spinner(grpCrew, SWT.BORDER);
+		spGhost.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spGhost.setFont(Main.appFont);
 		spGhost.setMaximum(8);
-		spGhost.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
 		
 		Label lblMantis = new Label(grpCrew, SWT.NONE);
+		lblMantis.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblMantis.setFont(Main.appFont);
-		GridData gd_lblMantis = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
-		gd_lblMantis.minimumWidth = 60;
-		lblMantis.setLayoutData(gd_lblMantis);
 		lblMantis.setText("Mantis:");
 		
 		spMantis = new Spinner(grpCrew, SWT.BORDER);
-		spMantis.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
+		spMantis.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spMantis.setFont(Main.appFont);
 		spMantis.setMaximum(8);
 		
 		Label lblSlug = new Label(grpCrew, SWT.NONE);
+		lblSlug.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblSlug.setFont(Main.appFont);
-		GridData gd_lblSlug = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
-		gd_lblSlug.minimumWidth = 50;
-		lblSlug.setLayoutData(gd_lblSlug);
 		lblSlug.setText("Slug:");
 		
 		spSlug = new Spinner(grpCrew, SWT.BORDER);
-		spSlug.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
+		spSlug.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spSlug.setFont(Main.appFont);
 		spSlug.setMaximum(8);
 		
 		Label lblRock = new Label(grpCrew, SWT.NONE);
+		lblRock.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblRock.setFont(Main.appFont);
-		GridData gd_lblRock = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
-		gd_lblRock.minimumWidth = 30;
-		lblRock.setLayoutData(gd_lblRock);
 		lblRock.setText("Rock:");
 		
 		spRock = new Spinner(grpCrew, SWT.BORDER);
-		spRock.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
+		spRock.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spRock.setFont(Main.appFont);
 		spRock.setMaximum(8);
 		
 		Label lblCrystal = new Label(grpCrew, SWT.NONE);
+		lblCrystal.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblCrystal.setFont(Main.appFont);
-		GridData gd_lblCrystal = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
-		gd_lblCrystal.minimumWidth = 40;
-		lblCrystal.setLayoutData(gd_lblCrystal);
 		lblCrystal.setText("Crystal:");
 		
 		spCrystal = new Spinner(grpCrew, SWT.BORDER);
-		spCrystal.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1));
+		spCrystal.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spCrystal.setFont(Main.appFont);
 		spCrystal.setMaximum(8);
 		
 		Label lblRandom = new Label(grpCrew, SWT.NONE);
+		lblRandom.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblRandom.setFont(Main.appFont);
 		lblRandom.setToolTipText("Only works on enemy ships; defaults to humans on player ships.");
-		lblRandom.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
 		lblRandom.setText("Random:");
 		
 		spRandom = new Spinner(grpCrew, SWT.BORDER);
 		spRandom.setFont(Main.appFont);
 		spRandom.setMaximum(8);
 		spRandom.setToolTipText("Only works on enemy ships; defaults to humans on player ships.");
-		spRandom.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1));
 		
-		Group grpAugments = new Group(crewInfoC, SWT.NONE);
+		Group enemyCrewC = new Group(crewInfoC, SWT.NONE);
+		enemyCrewC.setText("Crew - Enemy");
+		enemyCrewC.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		enemyCrewC.setFont(Main.appFont);
+		GridLayout gl_enemyCrewC = new GridLayout(9, true);
+		gl_enemyCrewC.horizontalSpacing = 0;
+		enemyCrewC.setLayout(gl_enemyCrewC);
+		
+		Label lblHuman_1 = new Label(enemyCrewC, SWT.NONE);
+		lblHuman_1.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		lblHuman_1.setText("Human:");
+		lblHuman_1.setFont(Main.appFont);
+		
+		Label lblEngi_1 = new Label(enemyCrewC, SWT.NONE);
+		lblEngi_1.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		lblEngi_1.setText("Engi:");
+		lblEngi_1.setFont(Main.appFont);
+		
+		Label lblZoltan_1 = new Label(enemyCrewC, SWT.NONE);
+		lblZoltan_1.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		lblZoltan_1.setText("Zoltan:");
+		lblZoltan_1.setFont(Main.appFont);
+		
+		Label lblMantis_1 = new Label(enemyCrewC, SWT.NONE);
+		lblMantis_1.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		lblMantis_1.setText("Mantis:");
+		lblMantis_1.setFont(Main.appFont);
+		
+		Label lblSlug_1 = new Label(enemyCrewC, SWT.NONE);
+		lblSlug_1.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		lblSlug_1.setText("Slug:");
+		lblSlug_1.setFont(Main.appFont);
+		
+		Label lblRock_1 = new Label(enemyCrewC, SWT.NONE);
+		lblRock_1.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		lblRock_1.setText("Rock:");
+		lblRock_1.setFont(Main.appFont);
+		
+		Label lblCrystal_1 = new Label(enemyCrewC, SWT.NONE);
+		lblCrystal_1.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		lblCrystal_1.setText("Crystal:");
+		lblCrystal_1.setFont(Main.appFont);
+		
+		Label lblGhost_1 = new Label(enemyCrewC, SWT.NONE);
+		lblGhost_1.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		lblGhost_1.setText("Ghost:");
+		lblGhost_1.setFont(Main.appFont);
+		
+		Label lblRandom_1 = new Label(enemyCrewC, SWT.NONE);
+		lblRandom_1.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		lblRandom_1.setText("Random:");
+		lblRandom_1.setFont(Main.appFont);
+		
+		spHumMin = new Spinner(enemyCrewC, SWT.BORDER);
+		spHumMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spHumMin.setTextLimit(3);
+		spHumMin.setPageIncrement(1);
+		spHumMin.setMaximum(9);
+		spHumMin.setFont(Main.appFont);
+		
+		spEngiMin = new Spinner(enemyCrewC, SWT.BORDER);
+		spEngiMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spEngiMin.setTextLimit(3);
+		spEngiMin.setPageIncrement(1);
+		spEngiMin.setMaximum(9);
+		spEngiMin.setFont(Main.appFont);
+		
+		spZoltanMin = new Spinner(enemyCrewC, SWT.BORDER);
+		spZoltanMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spZoltanMin.setTextLimit(3);
+		spZoltanMin.setPageIncrement(1);
+		spZoltanMin.setMaximum(9);
+		spZoltanMin.setFont(Main.appFont);
+		
+		spManMin = new Spinner(enemyCrewC, SWT.BORDER);
+		spManMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spManMin.setTextLimit(3);
+		spManMin.setPageIncrement(1);
+		spManMin.setMaximum(9);
+		spManMin.setFont(Main.appFont);
+		
+		spSlugMin = new Spinner(enemyCrewC, SWT.BORDER);
+		spSlugMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spSlugMin.setTextLimit(3);
+		spSlugMin.setPageIncrement(1);
+		spSlugMin.setMaximum(9);
+		spSlugMin.setFont(Main.appFont);
+		
+		spRockMin = new Spinner(enemyCrewC, SWT.BORDER);
+		spRockMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spRockMin.setTextLimit(3);
+		spRockMin.setPageIncrement(1);
+		spRockMin.setMaximum(9);
+		spRockMin.setFont(Main.appFont);
+		
+		spCrystalMin = new Spinner(enemyCrewC, SWT.BORDER);
+		spCrystalMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spCrystalMin.setTextLimit(3);
+		spCrystalMin.setPageIncrement(1);
+		spCrystalMin.setMaximum(9);
+		spCrystalMin.setFont(Main.appFont);
+		
+		spGhostMin = new Spinner(enemyCrewC, SWT.BORDER);
+		spGhostMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spGhostMin.setTextLimit(3);
+		spGhostMin.setPageIncrement(1);
+		spGhostMin.setMaximum(9);
+		spGhostMin.setFont(Main.appFont);
+		
+		spRandomMin = new Spinner(enemyCrewC, SWT.BORDER);
+		spRandomMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spRandomMin.setTextLimit(3);
+		spRandomMin.setPageIncrement(1);
+		spRandomMin.setMaximum(9);
+		spRandomMin.setFont(Main.appFont);
+		
+		spHumMax = new Spinner(enemyCrewC, SWT.BORDER);
+		spHumMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spHumMax.setTextLimit(3);
+		spHumMax.setPageIncrement(1);
+		spHumMax.setMaximum(9);
+		spHumMax.setFont(Main.appFont);
+		
+		spEngiMax = new Spinner(enemyCrewC, SWT.BORDER);
+		spEngiMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spEngiMax.setTextLimit(3);
+		spEngiMax.setPageIncrement(1);
+		spEngiMax.setMaximum(9);
+		spEngiMax.setFont(Main.appFont);
+		
+		spZoltanMax = new Spinner(enemyCrewC, SWT.BORDER);
+		spZoltanMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spZoltanMax.setTextLimit(3);
+		spZoltanMax.setPageIncrement(1);
+		spZoltanMax.setMaximum(9);
+		spZoltanMax.setFont(Main.appFont);
+		
+		spManMax = new Spinner(enemyCrewC, SWT.BORDER);
+		spManMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spManMax.setTextLimit(3);
+		spManMax.setPageIncrement(1);
+		spManMax.setMaximum(9);
+		spManMax.setFont(Main.appFont);
+		
+		spSlugMax = new Spinner(enemyCrewC, SWT.BORDER);
+		spSlugMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spSlugMax.setTextLimit(3);
+		spSlugMax.setPageIncrement(1);
+		spSlugMax.setMaximum(9);
+		spSlugMax.setFont(Main.appFont);
+		
+		spRockMax = new Spinner(enemyCrewC, SWT.BORDER);
+		spRockMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spRockMax.setTextLimit(3);
+		spRockMax.setPageIncrement(1);
+		spRockMax.setMaximum(9);
+		spRockMax.setFont(Main.appFont);
+		
+		spCrystalMax = new Spinner(enemyCrewC, SWT.BORDER);
+		spCrystalMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spCrystalMax.setTextLimit(3);
+		spCrystalMax.setPageIncrement(1);
+		spCrystalMax.setMaximum(9);
+		spCrystalMax.setFont(Main.appFont);
+		
+		spGhostMax = new Spinner(enemyCrewC, SWT.BORDER);
+		spGhostMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spGhostMax.setTextLimit(3);
+		spGhostMax.setPageIncrement(1);
+		spGhostMax.setMaximum(9);
+		spGhostMax.setFont(Main.appFont);
+		
+		spRandomMax = new Spinner(enemyCrewC, SWT.BORDER);
+		spRandomMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spRandomMax.setTextLimit(3);
+		spRandomMax.setPageIncrement(1);
+		spRandomMax.setMaximum(9);
+		spRandomMax.setFont(Main.appFont);
+		
+	// === Properties -> Augments
+		TabItem tbtmAugments = new TabItem(tabFolder, SWT.NONE);
+		tbtmAugments.setText("Augments");
+		
+		Composite augmentsC = new Composite(tabFolder, SWT.NONE);
+		tbtmAugments.setControl(augmentsC);
+		augmentsC.setLayout(new GridLayout(1, false));
+		
+		Group grpAugments = new Group(augmentsC, SWT.NONE);
 		grpAugments.setFont(Main.appFont);
 		grpAugments.setLayout(new GridLayout(1, false));
-		grpAugments.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		grpAugments.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));
 		grpAugments.setText("Augments");
 		
 		listAugments = new List(grpAugments, SWT.BORDER);
 		listAugments.setFont(Main.appFont);
 		listAugments.setToolTipText("Double-click on an item to delete it.");
-		listAugments.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
+		GridData gd_listAugments = new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1);
+		gd_listAugments.heightHint = 65;
+		listAugments.setLayoutData(gd_listAugments);
 		
 		augments = new Combo(grpAugments, SWT.READ_ONLY);
 		augments.setFont(Main.appFont);
 		augments.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
 		augments.setBounds(0, 0, 400, 23);
 		
-	// === Weapons
+	// === Properties -> Weapons
 		TabItem tbtmWeapons = new TabItem(tabFolder, SWT.NONE);
 		tbtmWeapons.setText("Weapons");
 		
@@ -1164,16 +1446,44 @@ search:		for (String s : presetsDr.getItems()) {
 				Main.ship.maxSec = spMaxSec.getSelection();
 				
 				// crew
-				Main.ship.crewMax = spMax.getSelection();
-				Main.ship.crewMap.put("human", spHuman.getSelection());
-				Main.ship.crewMap.put("engi", spEngi.getSelection());
-				Main.ship.crewMap.put("energy", spZoltan.getSelection());
-				Main.ship.crewMap.put("mantis", spMantis.getSelection());
-				Main.ship.crewMap.put("slug", spSlug.getSelection());
-				Main.ship.crewMap.put("rock", spRock.getSelection());
-				Main.ship.crewMap.put("crystal", spCrystal.getSelection());
-				Main.ship.crewMap.put("ghost", spGhost.getSelection());
-				Main.ship.crewMap.put("random", spRandom.getSelection());
+				if (Main.ship.isPlayer) {
+					Main.ship.crewMax = spMax.getSelection();
+					Main.ship.crewMap.put("human", spHuman.getSelection());
+					Main.ship.crewMap.put("engi", spEngi.getSelection());
+					Main.ship.crewMap.put("energy", spZoltan.getSelection());
+					Main.ship.crewMap.put("mantis", spMantis.getSelection());
+					Main.ship.crewMap.put("slug", spSlug.getSelection());
+					Main.ship.crewMap.put("rock", spRock.getSelection());
+					Main.ship.crewMap.put("crystal", spCrystal.getSelection());
+					Main.ship.crewMap.put("ghost", spGhost.getSelection());
+					Main.ship.crewMap.put("random", spRandom.getSelection());
+				} else {
+					Main.ship.crewMap.put("human", spHumMin.getSelection());
+					Main.ship.crewMap.put("engi", spEngiMin.getSelection());
+					Main.ship.crewMap.put("energy", spZoltanMin.getSelection());
+					Main.ship.crewMap.put("mantis", spManMin.getSelection());
+					Main.ship.crewMap.put("slug", spSlugMin.getSelection());
+					Main.ship.crewMap.put("rock", spRockMin.getSelection());
+					Main.ship.crewMap.put("crystal", spCrystalMin.getSelection());
+					Main.ship.crewMap.put("ghost", spGhostMin.getSelection());
+					Main.ship.crewMap.put("random", spRandomMin.getSelection());
+
+					Main.ship.crewMaxMap.put("human", spHumMax.getSelection());
+					Main.ship.crewMaxMap.put("engi", spEngiMax.getSelection());
+					Main.ship.crewMaxMap.put("energy", spZoltanMax.getSelection());
+					Main.ship.crewMaxMap.put("mantis", spManMax.getSelection());
+					Main.ship.crewMaxMap.put("slug", spSlugMax.getSelection());
+					Main.ship.crewMaxMap.put("rock", spRockMax.getSelection());
+					Main.ship.crewMaxMap.put("crystal", spCrystalMax.getSelection());
+					Main.ship.crewMaxMap.put("ghost", spGhostMax.getSelection());
+					Main.ship.crewMaxMap.put("random", spRandomMax.getSelection());
+					
+					Main.ship.crewMax = 0;
+					for (String key : Main.ship.crewMap.keySet())
+						Main.ship.crewMax += Main.ship.crewMap.get(key);
+					for (String key : Main.ship.crewMaxMap.keySet())
+						Main.ship.crewMax += Main.ship.crewMaxMap.get(key);
+				}
 				
 				// health & power
 				Main.ship.reactorPower = spReactor.getSelection();
@@ -1452,12 +1762,6 @@ search:		for (String s : presetsDr.getItems()) {
 		}
 	}
 }
-
-
-
-
-
-
 
 
 

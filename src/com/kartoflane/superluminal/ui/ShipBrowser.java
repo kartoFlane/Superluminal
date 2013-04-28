@@ -207,20 +207,25 @@ public class ShipBrowser {
 	}
 	
 	public static void clearTrees() {
-		for (TreeItem trtm : trtmPlayer.getItems()) {
-			if (!trtm.isDisposed())
-				trtm.dispose();
+		if (!trtmPlayer.isDisposed()) {
+			for (TreeItem trtm : trtmPlayer.getItems())
+				if (trtm!=null && !trtm.isDisposed())
+					trtm.dispose();
+			trtmPlayer.clearAll(true);
 		}
-		trtmPlayer.clearAll(true);
-		for (TreeItem trtm : trtmEnemy.getItems()) {
-			if (!trtm.isDisposed())
-				trtm.dispose();
+		
+		if (!trtmEnemy.isDisposed()) {
+			for (TreeItem trtm : trtmEnemy.getItems())
+				if (trtm!=null && !trtm.isDisposed())
+					trtm.dispose();
+			trtmEnemy.clearAll(true);
 		}
-		trtmEnemy.clearAll(true);
-		for (TreeItem trtm : trtmOther.getItems()) {
-			if (!trtm.isDisposed())
-				trtm.dispose();
+		
+		if (!trtmOther.isDisposed()) {
+			for (TreeItem trtm : trtmOther.getItems()) 
+				if (trtm!=null && !trtm.isDisposed())
+					trtm.dispose();
+			trtmOther.clearAll(true);
 		}
-		trtmOther.clearAll(true);
 	}
 }

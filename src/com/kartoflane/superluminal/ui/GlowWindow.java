@@ -124,17 +124,21 @@ public class GlowWindow {
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false, 1, 1));
 		
 		final Button btnDel1 = new Button(composite, SWT.NONE);
+		btnDel1.setFont(Main.appFont);
 		btnDel1.setText("Clear Glow #1");
 		
 		final Button btnDel2 = new Button(composite, SWT.NONE);
+		btnDel2.setFont(Main.appFont);
 		btnDel2.setText("Clear Glow #2");
 		
 		final Button btnDel3 = new Button(composite, SWT.NONE);
+		btnDel3.setFont(Main.appFont);
 		btnDel3.setText("Clear Glow #3");
 		
 		composite.pack();
 		
 		btnClose = new Button(shell, SWT.NONE);
+		btnClose.setFont(Main.appFont);
 		GridData gd_btnClose = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_btnClose.widthHint = 80;
 		btnClose.setLayoutData(gd_btnClose);

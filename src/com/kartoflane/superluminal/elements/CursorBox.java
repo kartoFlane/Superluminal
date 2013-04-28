@@ -91,7 +91,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				e.gc.setBackground(redColor);
 			}
 			
-			if (Main.modShift) {
+			if (Main.modShift && (Main.leftMouseDown || Main.rightMouseDown)) {
 				e.gc.setAlpha(255);
 				int prevWidth = e.gc.getLineWidth();
 				e.gc.setLineWidth(3);
@@ -286,21 +286,23 @@ public class CursorBox extends PaintBox implements DraggableBox {
 		}
 		
 		if (Main.tltmDoor.getSelection() && Main.selectedDoor != null) {
+			if (Main.selectedDoor.getBounds().contains(Main.mousePos)) return;
 			// left mouse -> left ID, right mouse -> right ID
 			FTLRoom r = Main.getRoomAt(e.x, e.y);
 			if (e.button == 1) {
-				Main.selectedDoor.leftId = (r==null ? -2 : r.id); 
+				Main.selectedDoor.leftId = (r==null ? -2 : r.id);
 			} else if (e.button == 3) {
 				Main.selectedDoor.rightId = (r==null ? -2 : r.id);
 			}
 			
-			if (Main.modShift && Main.selectedDoor != null)
+			if (Main.modShift)
 				Main.canvas.redraw(Math.min(Main.mousePos.x, Main.selectedDoor.getBounds().x + Main.selectedDoor.getBounds().width/2) -5,
 						Math.min(Main.mousePos.y, Main.selectedDoor.getBounds().y + Main.selectedDoor.getBounds().height/2) -5,
 						Math.max(Main.mousePos.x, Main.selectedDoor.getBounds().x + Main.selectedDoor.getBounds().width/2) + 10,
 						Math.max(Main.mousePos.y, Main.selectedDoor.getBounds().y + Main.selectedDoor.getBounds().height/2) + 10,
 						false);
 		
+			Main.selectedDoor.deselect();
 			Main.selectedDoor = null;
 		}
 	}
@@ -308,9 +310,14 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	@Override
 	public void mouseDown(MouseEvent e) {
 		lastClick.x = e.x; lastClick.y = e.y;
-		
-		if (Main.tltmDoor.getSelection() && Main.modShift)
-			Main.selectedDoor = Main.getDoorAt(Main.mousePos.x, Main.mousePos.y);
+
+		if (Main.tltmDoor.getSelection()) {
+			if (Main.selectedDoor!=null) Main.selectedDoor.deselect();
+			if (Main.modShift) {
+				Main.selectedDoor = Main.getDoorAt(Main.mousePos.x, Main.mousePos.y);
+				if (Main.selectedDoor!=null) Main.selectedDoor.selectNoMove();
+			}
+		}
 	}
 
 	@Override
@@ -399,7 +406,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			} else if (Main.tltmDoor.getSelection()) {
 				door_canBePlaced = false;
 				
-				if (Main.modShift && Main.selectedDoor != null) {
+				if (Main.modShift && Main.selectedDoor != null && (Main.leftMouseDown || Main.rightMouseDown)) {
 					temp = Main.getRectAt(e.x, e.y);
 					if (temp != null) {
 						FTLRoom r = Main.getRoomAt(e.x, e.y);
@@ -413,8 +420,8 @@ public class CursorBox extends PaintBox implements DraggableBox {
 						Main.copyRect(temp, bounds);
 						door_canBePlaced = canPlaceDoor(temp);
 					} else {
-						bounds.width = -10;
-						bounds.height = -10;
+						bounds.width = 0;
+						bounds.height = 0;
 					}
 				}
 				

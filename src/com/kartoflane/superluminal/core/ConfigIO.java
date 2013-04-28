@@ -46,6 +46,8 @@ public class ConfigIO {
 			properties.setProperty("loadFloor", new Boolean(Main.loadFloor).toString());
 			properties.setProperty("loadShield", new Boolean(Main.loadShield).toString());
 			properties.setProperty("loadSystem", new Boolean(Main.loadSystem).toString());
+			properties.setProperty("forbidBossLoading", new Boolean(Main.forbidBossLoading).toString());
+			properties.setProperty("shownIncludeWarning", new Boolean(Main.shownIncludeWarning).toString());
 			
 			try {
 				fw = new FileWriter("superluminal.ini");
@@ -89,6 +91,8 @@ public class ConfigIO {
 				out.write("loadFloor = " + Main.loadFloor + ShipIO.lineDelimiter);
 				out.write("loadShield = " + Main.loadShield + ShipIO.lineDelimiter);
 				out.write("loadSystem = " + Main.loadSystem + ShipIO.lineDelimiter);
+				out.write("forbidBossLoading = " + Main.forbidBossLoading + ShipIO.lineDelimiter);
+				out.write("shownIncludeWarning = " + Main.shownIncludeWarning + ShipIO.lineDelimiter);
 				
 				out.close();
 			} catch (IOException e) {

@@ -55,7 +55,12 @@ import com.kartoflane.superluminal.elements.FTLShip;
 import com.kartoflane.superluminal.elements.Slide;
 import com.kartoflane.superluminal.elements.Systems;
 import com.kartoflane.superluminal.painter.Cache;
+import com.kartoflane.superluminal.ui.IncludeAskDialog;
 import com.kartoflane.superluminal.ui.ShipBrowser;
+
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.zip.*;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream.UnicodeExtraFieldPolicy;
 
 
 public class ShipIO {
@@ -655,7 +660,6 @@ scan:			while(sc.hasNext()) {
 					
 					matcher = pattern.matcher(s);
 					// load section names
-					Main.debug(s);
 					if (matcher.find()) {
 						if (declarationsOmitted < declarationCount) {
 							declarationsOmitted++;
@@ -812,6 +816,19 @@ scan:			while(sc.hasNext()) {
 																		
 																		if (fileToScan != null) {
 																			r.interiorData.interiorPath = fileToScan.getParentFile().getParentFile().getAbsolutePath() + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.interiorData.interiorPath + ".png";
+																			// attempt to load glow images
+																			File glow = null;
+																			if (!r.getSystem().equals(Systems.CLOAKING)) {
+																				for (int i=1; i<=3; i++) {
+																					glow = new File(fileToScan.getParentFile().getParentFile().getAbsolutePath() + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + matcher.group(2) + "_glow" + i + ".png");
+																					if (glow.exists())
+																						r.sysBox.setGlowImage(glow.getAbsolutePath(), i);
+																				}
+																			} else {
+																				glow = new File(fileToScan.getParentFile().getParentFile().getAbsolutePath() + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + matcher.group(2) + "_glow1" + ".png");
+																				if (glow.exists())
+																					r.sysBox.setGlowImage(glow.getAbsolutePath(), 1);
+																			}
 																		} else {
 																			r.interiorData.interiorPath = "skip.loading";
 																		}
@@ -819,6 +836,20 @@ scan:			while(sc.hasNext()) {
 																		if (!f.exists()) {
 																			r.interiorData.interiorPath = matcher.group(2);
 																			r.interiorData.interiorPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.interiorData.interiorPath + ".png";
+																			
+																			// attempt to load glow images
+																			File glow = null;
+																			if (!r.getSystem().equals(Systems.CLOAKING)) {
+																				for (int i=1; i<=3; i++) {
+																					glow = new File(Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + matcher.group(2) + "_glow" + i + ".png");
+																					if (glow.exists())
+																						r.sysBox.setGlowImage(glow.getAbsolutePath(), i);
+																				}
+																			} else {
+																				glow = new File(Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + matcher.group(2) + "_glow1" + ".png");
+																				if (glow.exists())
+																					r.sysBox.setGlowImage(glow.getAbsolutePath(), 1);
+																			}
 																		}
 																		
 																		if (Main.loadSystem) {
@@ -832,6 +863,20 @@ scan:			while(sc.hasNext()) {
 																		r.interiorData.interiorPath = "room_"+r.getSystem().toString().toLowerCase();
 																		r.interiorData.interiorPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + r.interiorData.interiorPath + ".png";
 																		r.setInterior(r.interiorData.interiorPath);
+																		
+																		// attempt to load glow images
+																		File glow = null;
+																		if (!r.getSystem().equals(Systems.CLOAKING)) {
+																			for (int i=1; i<=3; i++) {
+																				glow = new File(Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + "room_"+r.getSystem().toString().toLowerCase() + "_glow" + i + ".png");
+																				if (glow.exists())
+																					r.sysBox.setGlowImage(glow.getAbsolutePath(), i);
+																			}
+																		} else {
+																			glow = new File(Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + "room_"+r.getSystem().toString().toLowerCase() + "_glow1" + ".png");
+																			if (glow.exists())
+																				r.sysBox.setGlowImage(glow.getAbsolutePath(), 1);
+																		}
 																	}
 																}
 																
@@ -2326,18 +2371,17 @@ search: for (File f : dir.listFiles()) {
 				fw.write("\t" + "<maxPower amount=\""+Main.ship.reactorPower+"\"/>" + lineDelimiter);
 
 			// crew
-crew:			for (String key : Main.ship.crewMap.keySet()) {
-					if (Main.ship.crewMax==0) {
-						fw.write("\t" + "<crewCount amount=\"0\" max=\"0\" class=\"human\"/>");
-						fw.write(lineDelimiter);
-						break crew;
-					} else {
-						if (Main.ship.crewMap.get(key) > 0) {
+				if (Main.ship.crewMax==0) {
+					fw.write("\t" + "<crewCount amount=\"0\" max=\"0\" class=\"human\"/>");
+					fw.write(lineDelimiter);
+				} else {
+					for (String key : Main.ship.crewMap.keySet()) {
+						if (Main.ship.crewMaxMap.get(key) > 0) {
 							if (!key.equals("random")) {
-								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" max=\""+Main.ship.crewMax+"\" class=\""+key+"\"/>");
+								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" max=\""+Main.ship.crewMaxMap.get(key)+"\" class=\""+key+"\"/>");
 								fw.write(lineDelimiter);
 							} else {
-								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\"/>");
+								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" max=\""+Main.ship.crewMaxMap.get(key)+"\"/>");
 								fw.write(lineDelimiter);
 							}
 						}
@@ -2382,8 +2426,10 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 		
 		lineDelimiter = oldLineDelim;
 		
-		if (createFtl)
+		if (createFtl) {
+			//apacheZipToFTL(path, Main.ship.shipClass);
 			zipToFTL(path, Main.ship.shipClass);
+		}
 		
 		if (deleteTemp) {
 			File f = new File(path + pathDelimiter + Main.ship.blueprintName);
@@ -2411,10 +2457,31 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 		}
 	}
 
+	public static void apacheZipToFTL(String path, String fileName) {
+		try {
+			FileOutputStream fos = new FileOutputStream((path + "/" + fileName + ".ftl"));
+			ZipArchiveOutputStream zos = new ZipArchiveOutputStream(fos);
+			
+			zos.setCreateUnicodeExtraFields(UnicodeExtraFieldPolicy.NEVER);
+			
+			path = path + "/" + Main.ship.blueprintName;
+			
+			apacheZipDir(path, zos);
+			
+			zos.close();
+		} catch (FileNotFoundException e) {
+			Main.erDialog.add("Error: apache ZipToFTL - file not found.");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public static void zipToFTL(String path, String fileName) {
 		try {
 			FileOutputStream fos = new FileOutputStream((path + pathDelimiter + fileName + ".ftl"));
 			ZipOutputStream zos = new ZipOutputStream(fos);
+			
+			// TODO set encoding
 
 			path = path + pathDelimiter + Main.ship.blueprintName;
 			
@@ -2432,7 +2499,7 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 	
 	public static void loadSystemImages(File fileToScan) {
 		for (FTLRoom r : Main.ship.rooms) {
-			if (r.sysBox != null && !isNull(r.interiorData.interiorPath))
+			if (r.sysBox != null)
 				loadSystemImage(r, fileToScan);
 		}
 	}
@@ -2469,6 +2536,20 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 			if (Main.ship.version < 9) {
 				for (FTLMount m : Main.ship.mounts)
 					m.mountPoint = new Point(0,0);
+			}
+			
+			if (Main.ship.version < 12) {
+				Main.ship.crewMaxMap = new HashMap<String, Integer>();
+				
+				Main.ship.crewMaxMap.put("human", 0);
+				Main.ship.crewMaxMap.put("engi", 0);
+				Main.ship.crewMaxMap.put("energy", 0);
+				Main.ship.crewMaxMap.put("mantis", 0);
+				Main.ship.crewMaxMap.put("slug", 0);
+				Main.ship.crewMaxMap.put("rock", 0);
+				Main.ship.crewMaxMap.put("crystal", 0);
+				Main.ship.crewMaxMap.put("ghost", 0);
+				Main.ship.crewMaxMap.put("random", 0);
 			}
 
 			debug("\tloading linked ship images...");
@@ -2545,28 +2626,28 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 			debug("\tstripping unserializable data...");
 			Main.layeredPainter.setSuppressed(true);
 			Main.stripUnserializable();
-			debug("\t\tdone...");
+			debug("\t\tdone");
 			
 			Main.ship.version = FTLShip.VERSION;
 
 			debug("\tdumping ship...");
 			oos.writeObject(Main.ship);
-			debug("\t\tdone...");
+			debug("\t\tdone");
 
 			oos.close();
 
 			debug("\tloading unserializable data...");
 			Main.loadUnserializable();
-			debug("\t\tdone...");
+			debug("\t\tdone");
 
 			debug("\tloading weapon images...");
 			loadWeaponImages(Main.ship);
-			debug("\t\tdone...");
+			debug("\t\tdone");
 
 			if (Main.ship.isPlayer) {
 				debug("\tloading system images...");
 				loadSystemImages(null);
-				debug("\t\tdone...");
+				debug("\t\tdone");
 			}
 			
 			Main.layeredPainter.setSuppressed(false);
@@ -2613,6 +2694,157 @@ crew:			for (String key : Main.ship.crewMap.keySet()) {
 	
 // ========================================
 // === AUXILIARY
+	
+	/**
+	 * Includes the modFile in the editor's archives.
+	 * Assumes any .txt, .xml or .append files belong into the /data/ directory, automatically merges .append files
+	 * @param modFile
+	 */
+	public static boolean includeMod(File modFile, boolean loadingPackage) {
+		String name = modFile.getName();
+		boolean success = false;
+
+		if (name.contains(".append")) {
+			FileReader fr = null;
+			FileWriter fw = null;
+			try {
+				File base = new File(Main.dataPath + ShipIO.pathDelimiter + name.replace(".append", ""));
+				if (base.exists()) {
+					fr = new FileReader(modFile);
+					fw = new FileWriter(base, true);
+					
+					fw.write(ShipIO.lineDelimiter);
+					
+					char[] buffer = new char[1024];
+					int chars = 0;
+					while(chars!=-1) {
+						chars = fr.read(buffer);
+
+						// fw.write(buffer) writes empty indices as well; needed a way to work around it
+						for (int i=0; i<chars; i++) {
+							fw.write(buffer[i]);
+						}
+					}
+					success = true;
+				} else {
+					Main.debug("Error: include mod - no base counterpart for the .append was found. Unable to merge.");
+					success = false;
+				}
+			} catch (IOException e) {
+				Main.debug("Error: include mod - IO exception while copying .append file.");
+				success = false;
+				e.printStackTrace();
+			} finally {
+				try {
+					if (fr!=null)
+						fr.close();
+					if (fw!=null)
+						fw.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
+		} else if (name.contains(".xml")) {
+			try {
+				java.nio.file.Files.copy(Paths.get(modFile.getAbsolutePath()), Paths.get(Main.dataPath).resolve(modFile.getName()), StandardCopyOption.REPLACE_EXISTING);
+				success = true;
+			} catch (IOException e) {
+				Main.debug("Error: include mod - IO exception while copying .xml file.");
+				success = false;
+				e.printStackTrace();
+			}
+			
+		} else if (name.contains(".txt")) {
+			try {
+				java.nio.file.Files.copy(Paths.get(modFile.getAbsolutePath()), Paths.get(Main.dataPath).resolve(modFile.getName()), StandardCopyOption.REPLACE_EXISTING);
+				success = true;
+			} catch (IOException e) {
+				Main.debug("Error: include mod - IO exception while copying .txt file.");
+				success = false;
+				e.printStackTrace();
+			}
+			
+		} else if (name.contains(".png") && !loadingPackage) {
+			IncludeAskDialog dialog = new IncludeAskDialog(Main.shell);
+			dialog.open();
+			
+			int result = dialog.result;
+			String dest = Main.resPath + ShipIO.pathDelimiter + "img";
+			
+			try {
+				if (result == -1 || result == 0) {
+					// canceled, abort
+					success = true;
+				} else if (result==1) {
+					// ship-related
+					dest = dest + ShipIO.pathDelimiter + "ship";
+					java.nio.file.Files.copy(Paths.get(modFile.getAbsolutePath()), Paths.get(dest).resolve(modFile.getName()), StandardCopyOption.REPLACE_EXISTING);
+					success = true;
+				} else if (result==2) {
+					// interior-related
+					dest = dest + ShipIO.pathDelimiter + "ship" + ShipIO.pathDelimiter + "interior";
+					java.nio.file.Files.copy(Paths.get(modFile.getAbsolutePath()), Paths.get(dest).resolve(modFile.getName()), StandardCopyOption.REPLACE_EXISTING);
+					success = true;
+				} else if (result==3) {
+					// weapon-related
+					dest = dest + ShipIO.pathDelimiter + "weapons";
+					java.nio.file.Files.copy(Paths.get(modFile.getAbsolutePath()), Paths.get(dest).resolve(modFile.getName()), StandardCopyOption.REPLACE_EXISTING);
+					success = true;
+				}
+			} catch (IOException e) {
+				Main.debug("Error: include mod - IO exception while copying image.");
+				success = false;
+				e.printStackTrace();
+			}
+			
+		} else if (name.contains(".png") && loadingPackage) {
+			String path = modFile.getParent();
+			String dest = Main.resPath + ShipIO.pathDelimiter + "img";
+			try {
+				if (path.contains("weapons")) {
+					dest = dest + ShipIO.pathDelimiter + "weapons";
+					java.nio.file.Files.copy(Paths.get(modFile.getAbsolutePath()), Paths.get(dest).resolve(modFile.getName()), StandardCopyOption.REPLACE_EXISTING);
+				} else if (path.contains("interior")) {
+					dest = dest + ShipIO.pathDelimiter + "ship" + ShipIO.pathDelimiter + "interior";
+					java.nio.file.Files.copy(Paths.get(modFile.getAbsolutePath()), Paths.get(dest).resolve(modFile.getName()), StandardCopyOption.REPLACE_EXISTING);
+				} else if (path.contains("ship")) {
+					dest = dest + ShipIO.pathDelimiter + "ship";
+					java.nio.file.Files.copy(Paths.get(modFile.getAbsolutePath()), Paths.get(dest).resolve(modFile.getName()), StandardCopyOption.REPLACE_EXISTING);
+				}
+			} catch (IOException e) {
+				Main.debug("Error: include mod - IO exception while copying images from .ftl package.");
+				success = false;
+				e.printStackTrace();
+			}
+			
+			success = true;
+			
+		} else if (name.contains(".ftl")) {
+			Main.unpackFTL(modFile.getAbsolutePath());
+			Main.debug("Merging...");
+			mergeTemporary(Main.temporaryFiles);
+			Main.debug("/tdone");
+			Main.temporaryFilesInUse = false;
+			Main.deleteTemporary();
+			success = true;
+		}
+		
+		return success;
+	}
+	
+	private static void mergeTemporary(File folder) {
+		File[] files = folder.listFiles();
+		if (files != null) { //some JVMs return null for empty dirs
+			for(File f: files) {
+				if (!f.isDirectory()) {
+					includeMod(f, true);
+				} else {
+					mergeTemporary(f);
+				}
+			}
+		}
+	}
 	
 	public static void fetchShipNames() {
 		loadDeclarationsFromFile(null);
@@ -2751,9 +2983,7 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 		return name;
 	}
 
-	/**
-	 * Only to be called when NO SHIP IS OPENED, may crash otherwise.
-	 */
+	/** Only to be called when NO SHIP IS OPENED, may crash otherwise. */
 	public static void clearMaps() {
 		weaponMap.clear();
 		droneMap.clear();
@@ -2768,9 +2998,7 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 		*/
 	}
 	
-	/**
-	 * Only to be called after entries have been put into current maps.
-	 */
+	/** Only to be called after entries have been put into current maps. */
 	public static void clearOldMaps() {
 		oldWeaponMap.clear();
 		oldDroneMap.clear();
@@ -2802,6 +3030,12 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 		boolean defaultShips = true;
 
 		boolean scanDefault = fileToScan == null;
+		
+		if (scanDefault) {
+			Main.debug("Load declarations - starting scanning of own archives...", true);
+		} else {
+			Main.debug("Load declarations - starting scanning of external files...", true);
+		}
 		
 		String[] playerBlueprints = {"PLAYER_SHIP_HARD", "PLAYER_SHIP_HARD_2",
 									"PLAYER_SHIP_MANTIS", "PLAYER_SHIP_MANTIS_2",
@@ -2883,9 +3117,12 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 				Main.debug(" done", true);
 			}
 		} catch (FileNotFoundException e) {
-			Main.erDialog.add("Error: load declarations - autoBlueprints.xml file not found");
+			Main.erDialog.add("Error: load declarations - autoBlueprints.xml file not found [" + fileToScan.getAbsolutePath() + "]");
+			Main.debug("Error: load declarations - autoBlueprints.xml - file not found [" + fileToScan.getAbsolutePath() + "]", true);
+			e.printStackTrace();
 		} catch (NoSuchElementException e) {
 			Main.erDialog.add("Error: load declarations - autoBlueprints.xml - end of file reached");
+			Main.debug("Error: load declarations - autoBlueprints.xml - end of file reached", true);
 		} finally {
 			if (sc!=null)
 				sc.close();
@@ -3000,16 +3237,18 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 			
 			// removing blueprints that are problematic to load or not intended to be used at all
 			// (mostly due to scripted behaviour within the game)
-			otherBlueprintNames.remove("PLAYER_SHIP_EASY");
-			otherBlueprintNames.remove("TUTORIAL_PIRATE");
-			otherBlueprintNames.remove("PLAYER_SHIP_TUTORIAL");
-			otherBlueprintNames.remove("IMPOSSIBLE_PIRATE");
-			otherBlueprintNames.remove("DEFAULT");
-			otherBlueprintNames.remove("LONG_ELITE_MED");
-			otherBlueprintNames.remove("LONG_ELITE_HARD");
-			otherBlueprintNames.remove("BOSS_1");
-			otherBlueprintNames.remove("BOSS_2");
-			otherBlueprintNames.remove("BOSS_3");
+			otherBlueprintNames.remove("PLAYER_SHIP_EASY"); // not used, commented out
+			otherBlueprintNames.remove("TUTORIAL_PIRATE"); // first enemy ship in tutorial
+			otherBlueprintNames.remove("PLAYER_SHIP_TUTORIAL"); // player's ship in tutorial
+			otherBlueprintNames.remove("IMPOSSIBLE_PIRATE"); // second enemy ship in tutorial
+			otherBlueprintNames.remove("DEFAULT"); // default ship blueprint, labelled as "crash protection", better to not mess with it
+			otherBlueprintNames.remove("LONG_ELITE_MED"); // not used
+			otherBlueprintNames.remove("LONG_ELITE_HARD"); // not used
+			if (Main.forbidBossLoading) {
+				otherBlueprintNames.remove("BOSS_1"); // boss ship, scripted behaviour
+				otherBlueprintNames.remove("BOSS_2"); //	 --- || ---
+				otherBlueprintNames.remove("BOSS_3"); //	 --- || ---
+			}
 			
 			if (IOdebug) {
 				Main.debug("Load declarations - scanning as blueprints.xml - done", true);
@@ -3017,11 +3256,12 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 				Main.debug(" done", true);
 			}
 		} catch (FileNotFoundException e) {
-			Main.erDialog.add("Error: load declarations - blueprints.xml file not found");
-			Main.debug("Error: laod declarations - blueprints.xml - file not found", true);
+			Main.erDialog.add("Error: load declarations - blueprints.xml file not found [" + fileToScan.getAbsolutePath() + "]");
+			Main.debug("Error: load declarations - blueprints.xml - file not found [" + fileToScan.getAbsolutePath() + "]", true);
+			e.printStackTrace();
 		} catch (NoSuchElementException e) {
-			Main.erDialog.add("Error: laod declarations - blueprints.xml - end of file reached");
-			Main.debug("Error: laod declarations - blueprints.xml - end of file reached", true);
+			Main.erDialog.add("Error: load declarations - blueprints.xml - end of file reached");
+			Main.debug("Error: load declarations - blueprints.xml - end of file reached", true);
 		} finally {
 			if (sc!=null)
 				sc.close();
@@ -3049,6 +3289,7 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 		FileInputStream fis = null;
 		ZipEntry ze = null;
 		File zipDir, file = null;
+		
 		try {
 			zipDir = new File(source);
 
@@ -3077,10 +3318,53 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 			}
 		} catch(Exception e) {
 		} finally {
-			try {
-				if (fis!=null)
+			if (fis!=null) {
+				try {
 					fis.close();
-			} catch (IOException e) {
+				} catch (IOException e) {
+				}
+			}
+		}
+	}
+	
+	public static void apacheZipDir(String source, ZipArchiveOutputStream zos) {
+		FileInputStream fis = null;
+		ArchiveEntry ze = null;
+		File zipDir, file = null;
+		
+		try {
+			zipDir = new File(source);
+
+			String[] dirList = zipDir.list();
+			byte[] readBuffer = new byte[2156];
+			int bytesIn = 0;
+			
+			for(int i = 0; i < dirList.length; i++) {
+				file = new File(zipDir, dirList[i]);
+				if(file.isDirectory()) {
+					String filePath = file.getPath();
+					apacheZipDir(filePath, zos);
+					continue;
+				}
+				
+				fis = new FileInputStream(file);
+				file = new File(file.getPath().substring(file.getPath().indexOf(Main.ship.blueprintName)+Main.ship.blueprintName.length()+1));
+				ze = new ZipArchiveEntry(file.getPath());
+				zos.putArchiveEntry(ze);
+				
+				while((bytesIn = fis.read(readBuffer)) != -1) {
+					zos.write(readBuffer, 0, bytesIn);
+				}
+				
+				fis.close();
+			}
+		} catch(Exception e) {
+		} finally {
+			if (fis!=null) {
+				try {
+					fis.close();
+				} catch (IOException e) {
+				}
 			}
 		}
 	}

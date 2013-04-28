@@ -154,7 +154,8 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 					e.gc.drawImage(pin, bounds.x-15, bounds.y+9);
 			}
 			
-			if (Main.tltmPointer.getSelection() && selected) {
+			// draw the lines linking the door to rooms, if set explicitly
+			if ((Main.tltmPointer.getSelection() || Main.tltmDoor.getSelection()) && selected) {
 				e.gc.setAlpha(255);
 				e.gc.setLineWidth(3);
 				
@@ -235,6 +236,11 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 		Main.selectedDoor = this;
 		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
 		redrawIdLines();
+	}
+	
+	public void selectNoMove() {
+		select();
+		move = false;
 	}
 	
 	public void deselect() {

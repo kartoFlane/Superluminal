@@ -18,6 +18,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
 
 import com.kartoflane.superluminal.core.Main;
+import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.elements.Systems;
 
 
@@ -32,6 +33,9 @@ public class PropertiesWindow {
 	private Button btnOk;
 	private Button btnAvailable;
 	private Composite composite;
+	
+	private Label lblLevel;
+	private Label lblPower;
 
 	public PropertiesWindow(Shell parent) {
 		shell = new Shell(parent, SWT.BORDER | SWT.TITLE);
@@ -40,15 +44,15 @@ public class PropertiesWindow {
 		shell.setLocation(parent.getLocation().x+100, parent.getLocation().y+100);
 		shell.setLayout(new GridLayout(2, false));
 		
-		Label lblLevel_1 = new Label(shell, SWT.NONE);
-		lblLevel_1.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
-		lblLevel_1.setFont(Main.appFont);
-		lblLevel_1.setText("Level:");
+		lblLevel = new Label(shell, SWT.NONE);
+		lblLevel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblLevel.setFont(Main.appFont);
+		lblLevel.setText("Level:");
 		
 		textLevel = new Spinner(shell, SWT.BORDER | SWT.CENTER);
 		textLevel.setMinimum(1);
 		textLevel.setMaximum(99);
-		textLevel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
+		textLevel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, true, 1, 1));
 		textLevel.setFont(Main.appFont);
 		textLevel.setTextLimit(2);
 		
@@ -59,15 +63,15 @@ public class PropertiesWindow {
 		scaleLevel.setMinimum(1);
 		scaleLevel.setMaximum(8);
 		
-		Label lblPower = new Label(shell, SWT.NONE);
-		lblPower.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
+		lblPower = new Label(shell, SWT.NONE);
+		lblPower.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblPower.setFont(Main.appFont);
 		lblPower.setText("Power");
 		
 		textPower = new Spinner(shell, SWT.BORDER | SWT.CENTER);
 		textPower.setMinimum(1);
 		textPower.setMaximum(99);
-		textPower.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
+		textPower.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, true, 1, 1));
 		textPower.setFont(Main.appFont);
 		textPower.setTextLimit(2);
 		
@@ -78,7 +82,9 @@ public class PropertiesWindow {
 		scalePower.setMaximum(8);
 		
 		btnAvailable = new Button(shell, SWT.CHECK);
-		btnAvailable.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 3, 1));
+		GridData gd_btnAvailable = new GridData(SWT.LEFT, SWT.CENTER, true, true, 3, 1);
+		gd_btnAvailable.horizontalIndent = 5;
+		btnAvailable.setLayoutData(gd_btnAvailable);
 		btnAvailable.setFont(Main.appFont);
 		btnAvailable.setToolTipText("When set to true, this system will be available and installed at the beggining of the game.\n"
 											+"When set to false, the system will have to be bought at a store to unlock it.\n"
@@ -104,14 +110,16 @@ public class PropertiesWindow {
 		textLevel.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent arg0) {
 				scaleLevel.setSelection(textLevel.getSelection());
-				scalePower.setMaximum(scaleLevel.getSelection());
-				textPower.setMaximum(scaleLevel.getSelection());
 			}
 		});
 		
 		textPower.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent arg0) {
 				scalePower.setSelection(textPower.getSelection());
+				if (!Main.ship.isPlayer) {
+					scaleLevel.setMaximum(scalePower.getSelection());
+					textLevel.setMaximum(scalePower.getSelection());
+				}
 			}
 		});
 		
@@ -123,9 +131,13 @@ public class PropertiesWindow {
 		
 		btnOk.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				Main.ship.levelMap.put(sys, Integer.valueOf(textLevel.getText()));
-				int i = Integer.valueOf(textPower.getText());
-				Main.ship.powerMap.put(sys, ((i<=Integer.valueOf(textLevel.getText()) ? i : Integer.valueOf(textLevel.getText()))));
+				if (Main.ship.isPlayer) {
+					Main.ship.levelMap.put(sys, Integer.valueOf(textLevel.getText()));
+				} else {
+					Main.ship.levelMap.put(sys, Integer.valueOf(textPower.getText()));
+					int i = Integer.valueOf(textLevel.getText());
+					Main.ship.powerMap.put(sys, ((i<=Integer.valueOf(textPower.getText()) ? i : Integer.valueOf(textPower.getText()))));
+				}
 
 				Main.ship.startMap.put(sys, btnAvailable.getSelection());
 				Main.systemsMap.get(sys).setAvailable(btnAvailable.getSelection());
@@ -137,14 +149,16 @@ public class PropertiesWindow {
 		scaleLevel.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				textLevel.setSelection(scaleLevel.getSelection());
-				scalePower.setMaximum(scaleLevel.getSelection());
-				textPower.setMaximum(scaleLevel.getSelection());
 			}
 		});
 		
 		scalePower.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				textPower.setSelection(scalePower.getSelection());
+				if (!Main.ship.isPlayer) {
+					scaleLevel.setMaximum(scalePower.getSelection());
+					textLevel.setMaximum(scalePower.getSelection());
+				}
 			}
 		});
 		
@@ -180,32 +194,45 @@ public class PropertiesWindow {
 
 		int level = 0;
 		int power = 0;
-		if (Main.selectedRoom != null) {
-			sys = Main.selectedRoom.getSystem();
+		
+		sys = Main.selectedRoom.getSystem();
+		if (Main.ship.isPlayer) {
 			level = Main.ship.levelMap.get(sys);
-			power = Main.ship.powerMap.get(sys);
-			max = (sys.equals(Systems.PILOT) || sys.equals(Systems.OXYGEN) || sys.equals(Systems.TELEPORTER) || sys.equals(Systems.CLOAKING)
-					 || sys.equals(Systems.MEDBAY) || sys.equals(Systems.SENSORS) || sys.equals(Systems.DOORS))
-					? 3
-				: (sys.equals(Systems.WEAPONS) || sys.equals(Systems.SHIELDS) || sys.equals(Systems.ENGINES) || sys.equals(Systems.DRONES))
-					? 8
-				: (sys.equals(Systems.ARTILLERY))
-					? 4
-					: 0;
-			
-			max = (!Main.ship.isPlayer && (sys.equals(Systems.WEAPONS) || sys.equals(Systems.ENGINES) || sys.equals(Systems.SHIELDS)))
-					? 10
-					: max;
+		} else {
+			// inverted, so that in the System Properties window the first slider sets the minimum value, and not the maximum value
+			// more intuitive that way
+			level = Main.ship.powerMap.get(sys);
+			power = Main.ship.levelMap.get(sys);
 		}
 		
-		textLevel.setSelection(((level<1)?1:level));
-		textPower.setSelection(power);
-		scaleLevel.setMaximum(max);
-		scalePower.setMaximum((level<1)?1:level);
-		scaleLevel.setSelection(level);
-		scalePower.setSelection(power);
-		textLevel.setMaximum(scaleLevel.getMaximum());
-		textPower.setMaximum(scalePower.getMaximum());
+		max = (sys.equals(Systems.PILOT) || sys.equals(Systems.OXYGEN) || sys.equals(Systems.TELEPORTER) || sys.equals(Systems.CLOAKING)
+				 || sys.equals(Systems.MEDBAY) || sys.equals(Systems.SENSORS) || sys.equals(Systems.DOORS))
+				? 3
+			: (sys.equals(Systems.WEAPONS) || sys.equals(Systems.SHIELDS) || sys.equals(Systems.ENGINES) || sys.equals(Systems.DRONES))
+				? 8
+			: (sys.equals(Systems.ARTILLERY))
+				? 4
+				: 0;
+		
+		max = (!Main.ship.isPlayer && (sys.equals(Systems.WEAPONS) || sys.equals(Systems.ENGINES) || sys.equals(Systems.SHIELDS)))
+				? 10
+				: max;
+		
+		if (Main.ship.isPlayer) {
+			scaleLevel.setMaximum(max);
+			scaleLevel.setSelection(level);
+			textLevel.setMaximum(scaleLevel.getMaximum());
+			textLevel.setSelection(((level<1)?1:level));
+		} else {
+			scalePower.setMaximum(max);
+			scalePower.setSelection(power);
+			textPower.setMaximum(scalePower.getMaximum());
+			textPower.setSelection(((power<1)?1:power));
+			scaleLevel.setMaximum((power<1)?1:power);
+			scaleLevel.setSelection(level);
+			textLevel.setMaximum(scaleLevel.getMaximum());
+			textLevel.setSelection(level);
+		}
 
 		if (sys.equals(Systems.EMPTY)) {
 			btnAvailable.setSelection(true);
@@ -214,13 +241,6 @@ public class PropertiesWindow {
 			btnAvailable.setSelection(Main.systemsMap.get(sys).isAvailable());
 			btnAvailable.setEnabled(true);
 		}
-		/*
-		if (!sys.equals(Systems.EMPTY) && Main.ship.isPlayer) {
-			btnAvailable.setSelection(Main.ship.startMap.get(sys));
-			btnAvailable.setEnabled(true);
-		} else {
-			btnAvailable.setSelection(true);
-		}*/
 
 		if (!sys.equals(Systems.EMPTY) && !sys.equals(Systems.PILOT) && !sys.equals(Systems.DOORS) && !sys.equals(Systems.SENSORS)) {
 			scalePower.setEnabled(true);
@@ -233,6 +253,31 @@ public class PropertiesWindow {
 			btnOk.setEnabled(true);
 		}
 		
+		if (Main.ship.isPlayer) {
+			scalePower.setEnabled(false);
+			textPower.setEnabled(false);
+			lblLevel.setText("Starting level");
+			lblLevel.setToolTipText("The level of the system at the beggining of the game.");
+			lblPower.setText("Power");
+			lblPower.setToolTipText(null);
+			btnAvailable.setToolTipText("When unchecked, the system will not be initially available to the player," + ShipIO.lineDelimiter +"and will have to be bought to be made available.");
+			lblPower.setVisible(false);
+			textPower.setVisible(false);
+			scalePower.setVisible(false);
+			btnAvailable.setText("Available At Start");
+		} else {
+			scalePower.setEnabled(true);
+			textPower.setEnabled(true);
+			lblLevel.setText("Minimum level");
+			lblLevel.setToolTipText("Lower bound for the system's level. FTL's difficulty system picks a value" + ShipIO.lineDelimiter + "between the lower and higher bounds you specify here.");
+			lblPower.setText("Maximum level");
+			lblPower.setToolTipText("Higher bound for the system's level. FTL's difficulty system picks a value" + ShipIO.lineDelimiter + "between the lower and higher bounds you specify here.");
+			btnAvailable.setToolTipText("When unchecked, the system will only sometimes be available to the ship." + ShipIO.lineDelimiter + "Whether it appears or not is decided by FTL's difficulty system.");
+			lblPower.setVisible(true);
+			textPower.setVisible(true);
+			scalePower.setVisible(true);
+			btnAvailable.setText("Always Available");
+		}
 		
 		Display display = shell.getParent().getDisplay();
 		while (!shell.isVisible()) {

@@ -229,7 +229,7 @@ public class GibPropertiesWindow {
 	}
 	
 	public void escape() {
-		if (gib != null) {
+		if (gib != null && shell.isVisible()) {
 			gib.minDir = oldDir.x;
 			gib.maxDir = oldDir.y;
 		}
