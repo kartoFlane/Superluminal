@@ -577,18 +577,20 @@ ship:			while(sc.hasNext()) {
 									pattern = Pattern.compile("(<crewCount amount\\s*?=\\s*?\")(.*?)(\"\\s*?max\\s*?=\\s*?\")(.*?)(\"\\s*?class\\s*?=\\s*?\")(.*?)\".*?");
 									matcher = pattern.matcher(s);
 									if (matcher.find()) {
-										shipBeingLoaded.crewMax = Integer.valueOf(matcher.group(4));
 										shipBeingLoaded.crewMap.put(matcher.group(6), Integer.valueOf(matcher.group(2)));
+										shipBeingLoaded.crewMaxMap.put(matcher.group(6), Integer.valueOf(matcher.group(4)));
 									} else {
 										pattern = Pattern.compile("(<crewCount amount\\s*?=\\s*?\")(.*?)(\"\\s*?class\\s*?=\\s*?\")(.*?)\".*?");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
 											shipBeingLoaded.crewMap.put(matcher.group(4), Integer.valueOf(matcher.group(2)));
+											shipBeingLoaded.crewMaxMap.put(matcher.group(4), Integer.valueOf(matcher.group(2)));
 										} else {
 											pattern = Pattern.compile("(<crewCount amount\\s*?=\\s*?\")(.*?)\".*?");
 											matcher = pattern.matcher(s);
 											if (matcher.find()) {
 												shipBeingLoaded.crewMap.put("random", Integer.valueOf(matcher.group(2)));
+												shipBeingLoaded.crewMaxMap.put("random", Integer.valueOf(matcher.group(2)));
 											}
 										}
 									}
@@ -1554,8 +1556,12 @@ scan:			while(sc.hasNext()) {
 		File f = null;
 		// === Hull
 		if (mod.equals("hull")) {
-			if (isNull(Main.ship.imageName))
+			if (isNull(Main.ship.imageName)) {
 				Main.ship.imageName = path.substring(path.lastIndexOf(pathDelimiter)+1, path.lastIndexOf("."));
+				if (Main.ship.imageName.contains("_base"))
+					Main.ship.imageName = Main.ship.imageName.substring(0, Main.ship.imageName.indexOf("_base"));
+					//Main.ship.imageName = Main.ship.imageName.replace("_base", "");
+			}
 			
 			Main.ship.imagePath = path;
 			f = new File(Main.ship.imagePath);
@@ -2293,9 +2299,9 @@ search: for (File f : dir.listFiles()) {
 
 			// overrides 
 				if (!isNull(Main.ship.shieldOverride))
-					fw.write("\t"+"<shieldImage>"+Main.ship.shieldOverride.substring(Main.ship.shieldOverride.lastIndexOf(ShipIO.pathDelimiter)+1, Main.ship.shieldOverride.lastIndexOf("_"))+"</shieldImage>" + lineDelimiter);
+					fw.write("\t"+"<shieldImage>"+Main.ship.shieldOverride/*.substring(Main.ship.shieldOverride.lastIndexOf(ShipIO.pathDelimiter)+1, Main.ship.shieldOverride.lastIndexOf("_"))*/+"</shieldImage>" + lineDelimiter);
 				if (!isNull(Main.ship.cloakOverride))
-					fw.write("\t"+"<cloakImage>"+Main.ship.cloakOverride.substring(Main.ship.cloakOverride.lastIndexOf(ShipIO.pathDelimiter)+1, Main.ship.cloakOverride.lastIndexOf("_"))+"</cloakImage>" + lineDelimiter);
+					fw.write("\t"+"<cloakImage>"+Main.ship.cloakOverride/*.substring(Main.ship.cloakOverride.lastIndexOf(ShipIO.pathDelimiter)+1, Main.ship.cloakOverride.lastIndexOf("_"))*/+"</cloakImage>" + lineDelimiter);
 				
 				fw.write("</shipBlueprint>");
 				
@@ -3300,14 +3306,14 @@ seek:					while(sc.hasNext() && !s.contains("</blueprintList>")) {
 			for(int i = 0; i < dirList.length; i++) {
 				file = new File(zipDir, dirList[i]);
 				if(file.isDirectory()) {
-					String filePath = file.getPath();
+					String filePath = file.getPath().replace("\\", "/");
 					zipDir(filePath, zos);
 					continue;
 				}
 				
 				fis = new FileInputStream(file);
-				file = new File(file.getPath().substring(file.getPath().indexOf(Main.ship.blueprintName)+Main.ship.blueprintName.length()+1));
-				ze = new ZipEntry(file.getPath());
+				file = new File(file.getPath().substring(file.getPath().indexOf(Main.ship.blueprintName)+Main.ship.blueprintName.length()+1).replace("\\", "/"));
+				ze = new ZipEntry(file.getPath().replace("\\", "/"));
 				zos.putNextEntry(ze);
 				
 				while((bytesIn = fis.read(readBuffer)) != -1) {

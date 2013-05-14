@@ -211,11 +211,11 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 				int d = Math.min(bounds.width, bounds.height)*1/2;
 				e.gc.fillArc(bounds.x+bounds.width/2-d/2,
 						bounds.y+bounds.height/2-d/2,
-						d, d, Math.min(minDir, maxDir)+90, maxDir-minDir);
+						d, d, Math.min(minDir, maxDir)+90, (maxDir-minDir));
 				e.gc.setAlpha(128);
 				e.gc.drawArc(bounds.x+bounds.width/2-d/2,
 						bounds.y+bounds.height/2-d/2,
-						d, d, Math.min(minDir, maxDir)+90, maxDir-minDir);
+						d, d, Math.min(minDir, maxDir)+90, (maxDir-minDir));
 			}
 			
 			e.gc.setLineWidth(prevLine);
@@ -293,7 +293,7 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	public void setAnimationValues() {
 		animVel = (minVel + Math.random() * ((maxVel - minVel)))*0.4;
 		animAng = (minAng + Math.random() * (maxAng - minAng))*0.212;
-		animDir = Math.min(minDir, maxDir) + (int)(Math.random() * ((maxDir - minDir) + 1));
+		animDir = -Math.min(minDir, maxDir) - (int)(Math.random() * ((maxDir - minDir) + 1));
 		animRotation = 0;
 		animX = bounds.x;
 		animY = bounds.y;

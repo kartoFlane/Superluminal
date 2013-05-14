@@ -1,5 +1,8 @@
 package com.kartoflane.superluminal.ui;
 
+import java.io.File;
+import java.nio.file.Paths;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -7,11 +10,13 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 
 import com.kartoflane.superluminal.core.Main;
+import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.elements.Systems;
 
 import org.eclipse.swt.widgets.Composite;
@@ -42,12 +47,21 @@ public class GlowWindow {
 		Main.shell.setEnabled(false);
 
 		if (Main.selectedRoom != null && Main.selectedRoom.sysBox != null) {
-			if (Main.selectedRoom.interiorData.glowPath1 != null)
+			if (Main.selectedRoom.interiorData.glowPath1 != null) {
 				glowText1.setText(Main.selectedRoom.interiorData.glowPath1);
-			if (Main.selectedRoom.interiorData.glowPath2 != null)
+			} else {
+				glowText1.setText("");
+			}
+			if (Main.selectedRoom.interiorData.glowPath2 != null) {
 				glowText2.setText(Main.selectedRoom.interiorData.glowPath2);
-			if (Main.selectedRoom.interiorData.glowPath3 != null)
+			} else {
+				glowText2.setText("");
+			}
+			if (Main.selectedRoom.interiorData.glowPath3 != null) {
 				glowText3.setText(Main.selectedRoom.interiorData.glowPath3);
+			} else {
+				glowText3.setText("");
+			}
 
 			btnBrowse1.setEnabled(true);
 			btnBrowse2.setEnabled(!Main.selectedRoom.sysBox.getSystemName().equals(Systems.CLOAKING));
@@ -182,41 +196,40 @@ public class GlowWindow {
 					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
 					String[] filterExtensions = new String[] {"*.png"};
 					dialog.setFilterExtensions(filterExtensions);
+					dialog.setFilterPath(Main.interiorPath);
+					dialog.setFileName(Main.interiorPath);
 					
 					String path = null;
 					
 					if (e.widget == btnBrowse1) {
 						dialog.setFilterPath(Main.selectedRoom.sysBox.interiorData.glowPath1);
 						dialog.setFileName(Main.selectedRoom.sysBox.interiorData.glowPath1);
-						
-						path = dialog.open();
-						
-						if (path != null) {
-							Main.selectedRoom.sysBox.setGlowImage(path, 1);
-							glowText1.setText(Main.selectedRoom.sysBox.interiorData.glowPath1);
-						}
-					}
-					if (e.widget == btnBrowse2) {
+					} else if (e.widget == btnBrowse2) {
 						dialog.setFilterPath(Main.selectedRoom.sysBox.interiorData.glowPath2);
 						dialog.setFileName(Main.selectedRoom.sysBox.interiorData.glowPath2);
-
-						path = dialog.open();
-						
-						if (path != null) {
-							Main.selectedRoom.sysBox.setGlowImage(path, 2);
-							glowText2.setText(Main.selectedRoom.sysBox.interiorData.glowPath2);
-						}
-					}
-					if (e.widget == btnBrowse3) {
+					} else if (e.widget == btnBrowse3) {
 						dialog.setFilterPath(Main.selectedRoom.sysBox.interiorData.glowPath3);
 						dialog.setFileName(Main.selectedRoom.sysBox.interiorData.glowPath3);
-
-						path = dialog.open();
-						
-						if (path != null) {
+					}
+					
+					path = dialog.open();
+					
+					if (path != null && new File(path).exists()) {
+						Main.interiorPath = path;
+						if (e.widget==btnBrowse1) {
+							Main.selectedRoom.sysBox.setGlowImage(path, 1);
+							glowText1.setText(Main.selectedRoom.sysBox.interiorData.glowPath1);
+						} else if (e.widget==btnBrowse2) {
+							Main.selectedRoom.sysBox.setGlowImage(path, 2);
+							glowText2.setText(Main.selectedRoom.sysBox.interiorData.glowPath2);
+						} else if (e.widget==btnBrowse3) {
 							Main.selectedRoom.sysBox.setGlowImage(path, 3);
 							glowText3.setText(Main.selectedRoom.sysBox.interiorData.glowPath3);
 						}
+					} else {
+						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.open();
 					}
 				}
 			}

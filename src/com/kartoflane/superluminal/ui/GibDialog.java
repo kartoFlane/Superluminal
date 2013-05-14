@@ -187,6 +187,7 @@ public class GibDialog {
 				String[] filterExtensions = new String[] {"*.png"};
 				dialog.setFilterExtensions(filterExtensions);
 				dialog.setFilterPath(dialog_path);
+				dialog.setFileName(dialog_path);
 				String path = dialog.open();
 				
 				if (!ShipIO.isNull(path)) {

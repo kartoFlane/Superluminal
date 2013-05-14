@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -118,7 +119,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-4-23";
+	public final static String VERSION = "13-5-14";
 	
 		// === Important objects
 	public static Shell shell;
@@ -214,7 +215,7 @@ public class Main {
 		// === Miscellaneous
 	public static Rectangle[] corners = new Rectangle[4];
 	private static String lastMsg = "";
-	private static String interiorPath = "";
+	public static String interiorPath = "";
 	private static String ftlLoadPath = "";
 	private static String importPath = "";
 	private static String includePath = "";
@@ -303,26 +304,22 @@ public class Main {
 	/*
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
-	 * == IMMEDIATE PRIO:
-	 * 	- multiple systems for the same room for enemy ships
+	 * == IMMEDIATE PRIO: (bug fixes)
+	 * 	- Linux:
+	 * 		- missing defaultList on Linux
 	 * 
-	 * == MEDIUM PRIO:
-	 * 	- port to Apache zip
+	 * == MEDIUM PRIO: (new features)
+	 * 	- multiple systems for the same room for enemy ships
 	 * 	- gibs editor - animation
 	 * 		- fix weapon mount animation
+	 * 	- finally get around to implementing ctrl-z?
+	 * 	- warning when trying to close unsaved project?
 	 * 
-	 * == LOW PRIO:
+	 * == LOW PRIO: (optional tweaks)
+	 * 	- port to Apache zip
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * 	- added: doors can now be selected with Door Tool, so that you don't have to switch between tools to see the room the door is linked to
-	 * 	- fixed: gib animation should now work correctly and accurately (still no weapon mounts, tho)
-	 * 	- fixed: fixed gib directions being reset to previous values if you pressed "Animate" right after accepting the changes
-	 * 	- changed: split crew and augments into separate tabs
-	 * 	- added: for enemy ships, it is now possible to set min/max count for every race, without having to edit the exported files
-	 * 	- fixed: ships should now load with glow images (by looking for appropriately named .pngs)
-	 * 	- changed: system properties window now looks and behaves differently for player and enemy ships
-	 * 	- added: mod loading
 	 *
 	 */
 	
@@ -501,6 +498,7 @@ public class Main {
 		shell.open();
 		
 		shell.addControlListener(new ControlAdapter() {
+			@Override
 			public void controlMoved(ControlEvent e) {
 				Point p = shell.getLocation();
 				gibDialog.autoReposition = true;
@@ -508,6 +506,7 @@ public class Main {
 				gibDialog.autoReposition = false;
 			}
 			
+			@Override
 			public void controlResized(ControlEvent e) {
 				GRID_W = ((int) ((canvasBg.getBounds().width))/35);
 				GRID_H = ((int) ((canvasBg.getBounds().height))/35);
@@ -1503,8 +1502,12 @@ public class Main {
 				dialog.setFileName(ship.miniPath);
 				String path = dialog.open();
 				
-				if (!ShipIO.isNull(path)) {
+				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					Main.ship.miniPath = path;
+				} else {
+					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+					box.open();
 				}
 				updateButtonImg();
 				canvas.setFocus();
@@ -1520,11 +1523,15 @@ public class Main {
 				dialog.setFileName(ship.floorPath);
 				String path = dialog.open();
 				
-				if (!ShipIO.isNull(path)) {
+				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					Main.ship.floorPath = path;
 					
 					ShipIO.loadImage(path, "floor");
 					canvas.redraw();
+				} else {
+					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+					box.open();
 				}
 				updateButtonImg();
 				canvas.setFocus();
@@ -1540,7 +1547,7 @@ public class Main {
 				dialog.setFileName(ship.cloakPath);
 				String path = dialog.open();
 				
-				if (!ShipIO.isNull(path)) {
+				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					if (ShipIO.isDefaultResource(new File(path)))
 						Main.ship.cloakOverride = path;
 					
@@ -1549,6 +1556,10 @@ public class Main {
 					
 					ShipIO.loadImage(path, "cloak");
 					canvas.redraw();
+				} else {
+					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+					box.open();
 				}
 				updateButtonImg();
 				canvas.setFocus();
@@ -1566,7 +1577,7 @@ public class Main {
 				String path = dialog.open();
 				Main.ship.shieldOverride = null;
 				
-				if (!ShipIO.isNull(path)) {
+				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					if (ShipIO.isDefaultResource(new File(path)))
 						Main.ship.shieldOverride = path;
 					
@@ -1586,6 +1597,10 @@ public class Main {
 					updateButtonImg();
 					
 					canvas.redraw();
+				} else {
+					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+					box.open();
 				}
 				canvas.setFocus();
 			}
@@ -1601,11 +1616,15 @@ public class Main {
 				String path = dialog.open();
 				
 				
-				if (!ShipIO.isNull(path)) {
+				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					Main.ship.imagePath = path;
 					
 					ShipIO.loadImage(path, "hull");
 					canvas.redraw();
+				} else {
+					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+					box.open();
 				}
 				updateButtonImg();
 				canvas.setFocus();
@@ -1732,24 +1751,28 @@ public class Main {
 	// === SHELL
 		
 		shell.getDisplay().addFilter(SWT.KeyUp, new Listener() {
+			@Override
 			public void handleEvent(Event e) {
 				if (e.keyCode == SWT.SHIFT) {
 					modShift = false;
 					dragDir = null;
 				}
-				if (e.keyCode == SWT.ALT)
+				if (e.keyCode == SWT.ALT || e.stateMask == SWT.ALT) {
 					modAlt = false;
+				}
 				if (e.keyCode == SWT.CTRL)
 					modCtrl = false;
 			}
 		});
 		
 		shell.getDisplay().addFilter(SWT.KeyDown, new Listener() {
+			@Override
 			public void handleEvent(Event e) {
 				if (e.keyCode == SWT.SHIFT)
 					modShift = true;
-				if (e.keyCode == SWT.ALT)
+				if (e.keyCode == SWT.ALT || e.stateMask == SWT.ALT) {
 					modAlt = true;
+				}
 				if (e.keyCode == SWT.CTRL) {
 					modCtrl = true;
 					
@@ -1980,7 +2003,8 @@ public class Main {
 					mntmTeleporter.setEnabled(!isSystemAssigned(Systems.TELEPORTER, selectedRoom));
 					// ===
 					mntmSysImage.setEnabled(!selectedRoom.getSystem().equals(Systems.EMPTY) && !selectedRoom.getSystem().equals(Systems.TELEPORTER));
-					mntmGlow.setEnabled(!selectedRoom.getSystem().equals(Systems.EMPTY) && !selectedRoom.getSystem().equals(Systems.TELEPORTER));
+					mntmGlow.setEnabled(selectedRoom.getSystem().equals(Systems.PILOT) || selectedRoom.getSystem().equals(Systems.SHIELDS)
+							|| selectedRoom.getSystem().equals(Systems.WEAPONS) || selectedRoom.getSystem().equals(Systems.CLOAKING) || selectedRoom.getSystem().equals(Systems.ENGINES));
 				}
 			}
 		});
@@ -2086,13 +2110,17 @@ public class Main {
 
 				String path = dialog.open();
 				
-				if (!ShipIO.isNull(path) && selectedRoom != null) {
+				if (!ShipIO.isNull(path) && selectedRoom != null && new File(path).exists()) {
 					if (e.widget==mntmSysImage) {
 						interiorPath = new String(path);
 						selectedRoom.setInterior(path);
 					} else if (e.widget==mntmGlow) {
 						if (selectedRoom.sysBox!=null) selectedRoom.sysBox.setGlowImage(path, 1);
 					}
+				} else {
+					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+					box.open();
 				}
 			}
 		});
@@ -2182,11 +2210,9 @@ public class Main {
 					
 					if (!ship.isPlayer) {
 						ship.shieldPath = resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship" + ShipIO.pathDelimiter + "enemy_shields.png";
-						ShipIO.loadImage(ship.shieldPath, "shields");
-						shieldEllipse.x = GRID_W*35/2-100;
-						shieldEllipse.y = GRID_H*35/2-100;
-						shieldEllipse.width = 200;
-						shieldEllipse.height = 200;
+						//ShipIO.loadImage(ship.shieldPath, "shields");
+						shieldBox.setSize(200, 200);
+						shieldBox.setLocation(anchor.getLocation().x, anchor.getLocation().y);
 					}
 					
 					mntmSaveShip.setEnabled(true);
@@ -2301,7 +2327,7 @@ public class Main {
 				
 				String path = dialog.open();
 				
-				if (!ShipIO.isNull(path)) {
+				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					ftlLoadPath = new String(path);
 					debug("Load ship from .ftl:", true);
 					
@@ -2392,6 +2418,10 @@ public class Main {
 					}
 					
 					temporaryFilesInUse = false;
+				} else {
+					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+					box.open();
 				}
 
 				if (ship != null) {
@@ -2586,9 +2616,13 @@ public class Main {
 				dialog.setFileName(importPath);
 				String path = dialog.open();
 				
-				if (!ShipIO.isNull(path)) {
+				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					ShipIO.loadLayout(new File(path));
 					canvas.redraw();
+				} else {
+					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+					box.open();
 				}
 			}
 		});
@@ -2623,7 +2657,7 @@ public class Main {
 				dialog.setFileName(includePath);
 				String path = dialog.open();
 				
-				if (!ShipIO.isNull(path)) {
+				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					includePath = path;
 					File f = new File(includePath);
 					if (f.exists()) {		
@@ -2635,6 +2669,10 @@ public class Main {
 					} else {
 						print("Cannot load mod because no such file was found");
 					}
+				} else {
+					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+					box.open();
 				}
 			}
 		});
@@ -2763,22 +2801,36 @@ public class Main {
 				if (ship == null || ship.rooms.size() == 0) return;
 				
 				Point size = ship.computeShipSize();
-				// ~18 is max X size, 12 is max Y size
-				final int X_MAX = 16;
-				final int Y_MAX = 11;
-
-				size.x /=35;
-				size.y /=35;
 				
-				ship.offset.x = Math.max((X_MAX - size.x)/2, 0);
-				ship.offset.y = Math.max((Y_MAX - size.y)/2, 0);
-				
-				size = ship.findLowBounds();
-				int x = size.x - ship.offset.x * 35;
-				int y = size.y - ship.offset.y * 35;
-				anchor.setLocation(x, y, false);
-				Main.ship.anchor.x = x;
-				Main.ship.anchor.y = y;
+				if (ship.isPlayer) {
+					// ~18 is max X size, 12 is max Y size
+					final int X_MAX = 16;
+					final int Y_MAX = 11;
+	
+					size.x /=35;
+					size.y /=35;
+					
+					ship.offset.x = Math.max((X_MAX - size.x)/2, 0);
+					ship.offset.y = Math.max((Y_MAX - size.y)/2, 0);
+					
+					size = ship.findLowBounds();
+					int x = size.x - ship.offset.x * 35;
+					int y = size.y - ship.offset.y * 35;
+					anchor.setLocation(x, y, false);
+					Main.ship.anchor.x = x;
+					Main.ship.anchor.y = y;
+				} else {
+					// enemy window is 376 x 504, 55px top margin
+					//final int WIDTH = 376;
+					final int HEIGHT = 504;
+					final int TOP_MARGIN = 55;
+					
+					ship.offset.x = 0;
+					ship.offset.y = 0;
+					
+					ship.horizontal = 0;
+					ship.vertical = (HEIGHT/2 - size.y/2 - (int)(TOP_MARGIN*1.5));
+				}
 				
 				canvas.redraw();
 			}
@@ -3542,7 +3594,7 @@ public class Main {
 	}
 	
 	public static void unpackFTL(String path) {
-		if (!ShipIO.isNull(path)) {
+		if (!ShipIO.isNull(path) && new File(path).exists()) {
 			ftlLoadPath = new String(path);
 			debug("Unpacking .ftl:", true);
 			
@@ -3572,6 +3624,10 @@ public class Main {
 					} catch (IOException ex) {
 					}
 			}
+		} else {
+			MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+			box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+			box.open();
 		}
 	}
 	

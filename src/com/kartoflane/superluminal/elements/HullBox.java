@@ -153,16 +153,16 @@ public class HullBox extends ImageBox implements DraggableBox {
 		}
 		move = false;
 		Main.cursor.setVisible(true);
-		if (!Main.canvas.getBounds().contains(bounds.x+bounds.width-35, bounds.y+bounds.height-35) 
-				&& !Main.canvas.getBounds().contains(bounds.x+35, bounds.y+35)) {
+		if (Main.canvas.getBounds().contains(bounds.x+bounds.width-35, bounds.y+bounds.height-35) || Main.canvas.getBounds().contains(bounds.x+35, bounds.y+35)
+				|| Main.canvas.getBounds().contains(bounds.x+35, bounds.y+bounds.height-35) || Main.canvas.getBounds().contains(bounds.x+bounds.width-35, bounds.y+35)) {
+			orig.x = bounds.x;
+			orig.y = bounds.y;
+		} else {
 			Point p = new Point(bounds.x, bounds.y);
 			bounds.x = orig.x;
 			bounds.y = orig.y;
 			Main.canvas.redraw(p.x, p.y, bounds.width, bounds.height, false);
 			Main.canvasRedraw(bounds, false);
-		} else {
-			orig.x = bounds.x;
-			orig.y = bounds.y;
 		}
 	}
 

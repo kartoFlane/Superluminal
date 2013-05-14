@@ -165,15 +165,15 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 		resize = false;
 		Main.cursor.setVisible(true);
 		
-		if (!Main.canvas.getBounds().contains(bounds.x+bounds.width-35, bounds.y+bounds.height-35) 
-				&& !Main.canvas.getBounds().contains(bounds.x+35, bounds.y+35)) {
+		if (Main.canvas.getBounds().contains(bounds.x+bounds.width-35, bounds.y+bounds.height-35) || Main.canvas.getBounds().contains(bounds.x+35, bounds.y+35)
+				|| Main.canvas.getBounds().contains(bounds.x+35, bounds.y+bounds.height-35) || Main.canvas.getBounds().contains(bounds.x+bounds.width-35, bounds.y+35)) {
+			orig.x = bounds.x;
+			orig.y = bounds.y;
+		} else {
 			Point p = new Point(bounds.x, bounds.y);
 			setLocation(orig.x, orig.y);
 			Main.canvas.redraw(p.x, p.y, bounds.width, bounds.height, false);
 			Main.canvasRedraw(bounds, false);
-		} else {
-			orig.x = bounds.x;
-			orig.y = bounds.y;
 		}
 	}
 
