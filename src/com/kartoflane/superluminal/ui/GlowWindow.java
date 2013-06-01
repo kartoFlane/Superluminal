@@ -227,9 +227,11 @@ public class GlowWindow {
 							glowText3.setText(Main.selectedRoom.sysBox.interiorData.glowPath3);
 						}
 					} else {
-						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-						box.open();
+						if (path != null) {
+							MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+							box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+							box.open();
+						}
 					}
 				}
 			}

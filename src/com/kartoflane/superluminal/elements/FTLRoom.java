@@ -51,6 +51,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		slotColor = null;
 		if (sysBox != null) {
 			img = interiorData.interiorPath;
+			interiorData = sysBox.interiorData;
 		}
 		sysBox = null;
 		//Cache.checkInImageAbsolute(this, img);
@@ -63,7 +64,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		slotColor = Cache.checkOutColor(this, slot_rgb);
 		sysBox = Main.systemsMap.get(sys);
 		if (sysBox!=null) {
-			interiorData = sysBox.interiorData;
+			sysBox.interiorData = interiorData;
 			interiorData.interiorPath = img;
 		}
 		//sysImg = Cache.checkOutImageAbsolute(this, img);

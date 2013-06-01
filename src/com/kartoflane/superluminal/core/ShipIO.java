@@ -2007,9 +2007,9 @@ search: for (File f : dir.listFiles()) {
 								java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath3), Paths.get(tempDest + "_glow3.png"), StandardCopyOption.REPLACE_EXISTING);
 						}
 					} catch (FileNotFoundException e) {
-						debug("Warning: export - one of the glow images for " + source.getName() + " was not found.");
+						Main.erDialog.add("Warning: export - one of the glow images for " + source.getName() + " was not found.");
 					} catch (NoSuchFileException e) {
-						debug("Warning: export - one of the glow images for " + source.getName() + " was not found.");
+						Main.erDialog.add("Warning: export - one of the glow images for " + source.getName() + " was not found.");
 					}
 				}
 				progress += d;
@@ -2028,6 +2028,8 @@ search: for (File f : dir.listFiles()) {
 	
 		// gibs
 		try {
+			double d = 10/Main.ship.gibs.size();
+			double progress = 0;
 			for (FTLGib g : Main.ship.gibs) {
 				source = new File(g.getPath());
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_gib" + g.number + ".png");
@@ -2035,6 +2037,8 @@ search: for (File f : dir.listFiles()) {
 					destination.mkdirs();
 					java.nio.file.Files.copy(Paths.get(g.getPath()), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				}
+				progress += d;
+				exp.progressBar.setSelection(60 + (int) progress);
 			}
 		} catch (IOException e) {
 			Main.erDialog.add("Error: export - gibs images - general IO error - details logged in debug.log");
@@ -2121,6 +2125,7 @@ search: for (File f : dir.listFiles()) {
 			}
 			fw = null;
 		}
+		exp.progressBar.setSelection(80);
 			
 		// ====================
 		// === Write layout.xml
@@ -2274,22 +2279,22 @@ search: for (File f : dir.listFiles()) {
 				fw.write("\t" + "<maxPower amount=\""+Main.ship.reactorPower+"\"/>" + lineDelimiter);
 				
 			// crew
+				boolean auto = true;
 				for (String key : Main.ship.crewMap.keySet()) {
-					if (Main.ship.crewMax==0) {
-						fw.write("\t" + "<crewCount amount=\"0\" class=\"human\"/>");
-						fw.write(lineDelimiter);
-						break;
-					} else {
-						if (Main.ship.crewMap.get(key) > 0) {
-							if (!key.equals("random")) {
-								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" class=\""+key+"\"/>");
-								fw.write(lineDelimiter);
-							} else {
-								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\"/>");
-								fw.write(lineDelimiter);
-							}
+					if (Main.ship.crewMap.get(key) > 0) {
+						auto = false;
+						if (!key.equals("random")) {
+							fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" class=\""+key+"\"/>");
+							fw.write(lineDelimiter);
+						} else {
+							fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\"/>");
+							fw.write(lineDelimiter);
 						}
 					}
+				}
+				if (auto) {
+					fw.write("\t" + "<crewCount amount=\"0\" class=\"human\"/>");
+					fw.write(lineDelimiter);
 				}
 
 			// augments
@@ -2377,21 +2382,22 @@ search: for (File f : dir.listFiles()) {
 				fw.write("\t" + "<maxPower amount=\""+Main.ship.reactorPower+"\"/>" + lineDelimiter);
 
 			// crew
-				if (Main.ship.crewMax==0) {
-					fw.write("\t" + "<crewCount amount=\"0\" max=\"0\" class=\"human\"/>");
-					fw.write(lineDelimiter);
-				} else {
-					for (String key : Main.ship.crewMap.keySet()) {
-						if (Main.ship.crewMaxMap.get(key) > 0) {
-							if (!key.equals("random")) {
-								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" max=\""+Main.ship.crewMaxMap.get(key)+"\" class=\""+key+"\"/>");
-								fw.write(lineDelimiter);
-							} else {
-								fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" max=\""+Main.ship.crewMaxMap.get(key)+"\"/>");
-								fw.write(lineDelimiter);
-							}
+				boolean auto = true;
+				for (String key : Main.ship.crewMap.keySet()) {
+					if (Main.ship.crewMaxMap.get(key) > 0) {
+						auto = false;
+						if (!key.equals("random")) {
+							fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" max=\""+Main.ship.crewMaxMap.get(key)+"\" class=\""+key+"\"/>");
+							fw.write(lineDelimiter);
+						} else {
+							fw.write("\t" + "<crewCount amount=\""+Main.ship.crewMap.get(key)+"\" max=\""+Main.ship.crewMaxMap.get(key)+"\"/>");
+							fw.write(lineDelimiter);
 						}
 					}
+				}
+				if (auto) {
+					fw.write("\t" + "<crewCount amount=\"0\" max=\"0\" class=\"human\"/>");
+					fw.write(lineDelimiter);
 				}
 				
 				if (Main.isSystemAssigned(Systems.TELEPORTER))
@@ -2410,6 +2416,7 @@ search: for (File f : dir.listFiles()) {
 				
 				fw.write("</shipBlueprint>");
 			}
+			exp.progressBar.setSelection(90);
 			
 			fw.close();
 		} catch (FileNotFoundException e) {
@@ -2426,6 +2433,7 @@ search: for (File f : dir.listFiles()) {
 			}
 			fw = null;
 		}
+		exp.progressBar.setSelection(100);
 		
 		exp.shell.dispose();
 		exp = null;

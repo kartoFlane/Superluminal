@@ -272,7 +272,7 @@ public class ShipPropertiesWindow extends Dialog {
 		spCrystal.setEnabled(Main.ship.isPlayer);
 		spGhost.setEnabled(Main.ship.isPlayer);
 		spRandom.setEnabled(Main.ship.isPlayer);
-		spMax.setEnabled(Main.ship.isPlayer);
+		//spMax.setEnabled(Main.ship.isPlayer);
 		
 	// weapons
 		spMissiles.setSelection(Main.ship.missiles);
@@ -894,10 +894,11 @@ search:		for (String s : presetsDr.getItems()) {
 		Label lblCrewMax = new Label(grpCrew, SWT.NONE);
 		lblCrewMax.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblCrewMax.setFont(Main.appFont);
-		lblCrewMax.setToolTipText("Only affects enemy ships.");
+		lblCrewMax.setToolTipText("Crew cap cannot be changed.");
 		lblCrewMax.setText("Crew max:");
 		
 		spMax = new Spinner(grpCrew, SWT.BORDER);
+		spMax.setEnabled(false);
 		spMax.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spMax.setFont(Main.appFont);
 		spMax.setMaximum(8);
@@ -1049,6 +1050,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spHumMin = new Spinner(enemyCrewC, SWT.BORDER);
 		spHumMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spHumMin.setToolTipText("Min");
 		spHumMin.setTextLimit(3);
 		spHumMin.setPageIncrement(1);
 		spHumMin.setMaximum(9);
@@ -1056,6 +1058,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spEngiMin = new Spinner(enemyCrewC, SWT.BORDER);
 		spEngiMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spEngiMin.setToolTipText("Min");
 		spEngiMin.setTextLimit(3);
 		spEngiMin.setPageIncrement(1);
 		spEngiMin.setMaximum(9);
@@ -1063,6 +1066,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spZoltanMin = new Spinner(enemyCrewC, SWT.BORDER);
 		spZoltanMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spZoltanMin.setToolTipText("Min");
 		spZoltanMin.setTextLimit(3);
 		spZoltanMin.setPageIncrement(1);
 		spZoltanMin.setMaximum(9);
@@ -1070,6 +1074,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spManMin = new Spinner(enemyCrewC, SWT.BORDER);
 		spManMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spManMin.setToolTipText("Min");
 		spManMin.setTextLimit(3);
 		spManMin.setPageIncrement(1);
 		spManMin.setMaximum(9);
@@ -1077,6 +1082,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spSlugMin = new Spinner(enemyCrewC, SWT.BORDER);
 		spSlugMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spSlugMin.setToolTipText("Min");
 		spSlugMin.setTextLimit(3);
 		spSlugMin.setPageIncrement(1);
 		spSlugMin.setMaximum(9);
@@ -1084,6 +1090,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spRockMin = new Spinner(enemyCrewC, SWT.BORDER);
 		spRockMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spRockMin.setToolTipText("Min");
 		spRockMin.setTextLimit(3);
 		spRockMin.setPageIncrement(1);
 		spRockMin.setMaximum(9);
@@ -1091,6 +1098,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spCrystalMin = new Spinner(enemyCrewC, SWT.BORDER);
 		spCrystalMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spCrystalMin.setToolTipText("Min");
 		spCrystalMin.setTextLimit(3);
 		spCrystalMin.setPageIncrement(1);
 		spCrystalMin.setMaximum(9);
@@ -1098,6 +1106,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spGhostMin = new Spinner(enemyCrewC, SWT.BORDER);
 		spGhostMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spGhostMin.setToolTipText("Min");
 		spGhostMin.setTextLimit(3);
 		spGhostMin.setPageIncrement(1);
 		spGhostMin.setMaximum(9);
@@ -1105,6 +1114,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spRandomMin = new Spinner(enemyCrewC, SWT.BORDER);
 		spRandomMin.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spRandomMin.setToolTipText("Min");
 		spRandomMin.setTextLimit(3);
 		spRandomMin.setPageIncrement(1);
 		spRandomMin.setMaximum(9);
@@ -1112,6 +1122,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spHumMax = new Spinner(enemyCrewC, SWT.BORDER);
 		spHumMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spHumMax.setToolTipText("Max");
 		spHumMax.setTextLimit(3);
 		spHumMax.setPageIncrement(1);
 		spHumMax.setMaximum(9);
@@ -1119,6 +1130,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spEngiMax = new Spinner(enemyCrewC, SWT.BORDER);
 		spEngiMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spEngiMax.setToolTipText("Max");
 		spEngiMax.setTextLimit(3);
 		spEngiMax.setPageIncrement(1);
 		spEngiMax.setMaximum(9);
@@ -1126,6 +1138,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spZoltanMax = new Spinner(enemyCrewC, SWT.BORDER);
 		spZoltanMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spZoltanMax.setToolTipText("Max");
 		spZoltanMax.setTextLimit(3);
 		spZoltanMax.setPageIncrement(1);
 		spZoltanMax.setMaximum(9);
@@ -1133,6 +1146,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spManMax = new Spinner(enemyCrewC, SWT.BORDER);
 		spManMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spManMax.setToolTipText("Max");
 		spManMax.setTextLimit(3);
 		spManMax.setPageIncrement(1);
 		spManMax.setMaximum(9);
@@ -1140,6 +1154,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spSlugMax = new Spinner(enemyCrewC, SWT.BORDER);
 		spSlugMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spSlugMax.setToolTipText("Max");
 		spSlugMax.setTextLimit(3);
 		spSlugMax.setPageIncrement(1);
 		spSlugMax.setMaximum(9);
@@ -1147,6 +1162,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spRockMax = new Spinner(enemyCrewC, SWT.BORDER);
 		spRockMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spRockMax.setToolTipText("Max");
 		spRockMax.setTextLimit(3);
 		spRockMax.setPageIncrement(1);
 		spRockMax.setMaximum(9);
@@ -1154,6 +1170,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spCrystalMax = new Spinner(enemyCrewC, SWT.BORDER);
 		spCrystalMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spCrystalMax.setToolTipText("Max");
 		spCrystalMax.setTextLimit(3);
 		spCrystalMax.setPageIncrement(1);
 		spCrystalMax.setMaximum(9);
@@ -1161,6 +1178,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spGhostMax = new Spinner(enemyCrewC, SWT.BORDER);
 		spGhostMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spGhostMax.setToolTipText("Max");
 		spGhostMax.setTextLimit(3);
 		spGhostMax.setPageIncrement(1);
 		spGhostMax.setMaximum(9);
@@ -1168,6 +1186,7 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		spRandomMax = new Spinner(enemyCrewC, SWT.BORDER);
 		spRandomMax.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		spRandomMax.setToolTipText("Max");
 		spRandomMax.setTextLimit(3);
 		spRandomMax.setPageIncrement(1);
 		spRandomMax.setMaximum(9);

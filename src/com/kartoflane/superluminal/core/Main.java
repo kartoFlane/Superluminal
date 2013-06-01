@@ -119,7 +119,7 @@ public class Main {
 	public final static int REACTOR_MAX_ENEMY = 32;
 	
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-5-14";
+	public final static String VERSION = "13-6-1";
 	
 		// === Important objects
 	public static Shell shell;
@@ -306,7 +306,7 @@ public class Main {
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
 	 * 	- Linux:
-	 * 		- missing defaultList on Linux
+	 * 		- missing defaultList on Linux - ??
 	 * 
 	 * == MEDIUM PRIO: (new features)
 	 * 	- multiple systems for the same room for enemy ships
@@ -1505,9 +1505,11 @@ public class Main {
 				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					Main.ship.miniPath = path;
 				} else {
-					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-					box.open();
+					if (path != null) {
+						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.open();
+					}
 				}
 				updateButtonImg();
 				canvas.setFocus();
@@ -1529,9 +1531,11 @@ public class Main {
 					ShipIO.loadImage(path, "floor");
 					canvas.redraw();
 				} else {
-					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-					box.open();
+					if (path != null) {
+						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.open();
+					}
 				}
 				updateButtonImg();
 				canvas.setFocus();
@@ -1557,9 +1561,11 @@ public class Main {
 					ShipIO.loadImage(path, "cloak");
 					canvas.redraw();
 				} else {
-					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-					box.open();
+					if (path != null) {
+						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.open();
+					}
 				}
 				updateButtonImg();
 				canvas.setFocus();
@@ -1598,9 +1604,11 @@ public class Main {
 					
 					canvas.redraw();
 				} else {
-					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-					box.open();
+					if (path != null) {
+						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.open();
+					}
 				}
 				canvas.setFocus();
 			}
@@ -1622,9 +1630,11 @@ public class Main {
 					ShipIO.loadImage(path, "hull");
 					canvas.redraw();
 				} else {
-					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-					box.open();
+					if (path != null) {
+						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.open();
+					}
 				}
 				updateButtonImg();
 				canvas.setFocus();
@@ -2118,9 +2128,11 @@ public class Main {
 						if (selectedRoom.sysBox!=null) selectedRoom.sysBox.setGlowImage(path, 1);
 					}
 				} else {
-					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-					box.open();
+					if (path != null) {
+						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.open();
+					}
 				}
 			}
 		});
@@ -2419,9 +2431,11 @@ public class Main {
 					
 					temporaryFilesInUse = false;
 				} else {
-					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-					box.open();
+					if (path != null) {
+						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.open();
+					}
 				}
 
 				if (ship != null) {
@@ -2620,9 +2634,11 @@ public class Main {
 					ShipIO.loadLayout(new File(path));
 					canvas.redraw();
 				} else {
-					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-					box.open();
+					if (path != null) {
+						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.open();
+					}
 				}
 			}
 		});
@@ -2670,9 +2686,11 @@ public class Main {
 						print("Cannot load mod because no such file was found");
 					}
 				} else {
-					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-					box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-					box.open();
+					if (path != null) {
+						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+						box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.open();
+					}
 				}
 			}
 		});
@@ -3625,9 +3643,11 @@ public class Main {
 					}
 			}
 		} else {
-			MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-			box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
-			box.open();
+			if (path != null) {
+				MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+				box.setMessage(""+Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+				box.open();
+			}
 		}
 	}
 	
