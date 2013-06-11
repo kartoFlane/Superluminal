@@ -181,9 +181,11 @@ public class ExportDialog extends Dialog {
 		Composite composite_2 = new Composite(composite, SWT.NONE);
 		composite_2.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		GridLayout gl_composite_2 = new GridLayout(2, false);
-		gl_composite_2.marginBottom = -5;
+		gl_composite_2.marginHeight = 0;
+		gl_composite_2.marginTop = 10;
 		composite_2.setLayout(gl_composite_2);
-		
+
+		/*
 		final Button btnDontCheck = new Button(composite_2, SWT.CHECK);
 		btnDontCheck.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		btnDontCheck.setFont(Main.appFont);
@@ -192,6 +194,7 @@ public class ExportDialog extends Dialog {
 									+"reuse, so there's no need to export them.");
 		btnDontCheck.setText("Include overridden (default) images");
 		btnDontCheck.setSelection(ShipIO.dontCheck);
+		*/
 		
 		final Button btnCreateFtl = new Button(composite_2, SWT.CHECK);
 		btnCreateFtl.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
@@ -280,12 +283,14 @@ public class ExportDialog extends Dialog {
 			}
 		});
 		
+		/*
 		btnDontCheck.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				ShipIO.dontCheck = btnDontCheck.getSelection();
 			}
 		});
+		*/
 		
 		shell.pack();
 		

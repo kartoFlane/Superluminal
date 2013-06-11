@@ -79,13 +79,11 @@ public class MouseInputAdapter implements MouseListener, MouseMoveListener, Mous
 				if (Main.selectedMount != null) Main.selectedMount.deselect();
 				Main.selectedMount = null;
 			}
-			if (!Main.hullBox.move && Main.hullSelected) {
+			if (!Main.hullBox.move && Main.hullBox.isSelected()) {
 				Main.hullBox.deselect();
-				Main.hullSelected = false;
 			}
-			if (!Main.shieldBox.move && Main.shieldSelected) {
+			if (!Main.shieldBox.move && Main.shieldBox.isSelected()) {
 				Main.shieldBox.deselect();
-				Main.shieldSelected = false;
 			}
 			
 			Main.updateSelectedPosText();

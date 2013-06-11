@@ -35,6 +35,7 @@ public class GibPropertiesWindow {
 	private Scale scMaxDir;
 	
 	private Point oldDir = new Point(0,0);
+	private Label lblTip;
 
 	public GibPropertiesWindow(Shell parent) {
 		shell = new Shell(parent, SWT.BORDER | SWT.TITLE);
@@ -103,7 +104,10 @@ public class GibPropertiesWindow {
 		Group grpDirection = new Group(shell, SWT.NONE);
 		grpDirection.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 3, 1));
 		grpDirection.setText("Direction");
-		grpDirection.setLayout(new GridLayout(2, false));
+		GridLayout gl_grpDirection = new GridLayout(2, false);
+		gl_grpDirection.horizontalSpacing = 0;
+		gl_grpDirection.marginWidth = 0;
+		grpDirection.setLayout(gl_grpDirection);
 		grpDirection.setFont(Main.appFont);
 		
 		Label lblDirMin = new Label(grpDirection, SWT.NONE);
@@ -122,10 +126,17 @@ public class GibPropertiesWindow {
 		lblDirMax.setFont(Main.appFont);
 		
 		scMaxDir = new Scale(grpDirection, SWT.NONE);
+		scMaxDir.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		scMaxDir.setMaximum(720);
 		scMaxDir.setSelection(360);
 		scMaxDir.setFont(Main.appFont);
 		scMaxDir.setToolTipText("0");
+		
+		lblTip = new Label(shell, SWT.WRAP);
+		GridData gd_lblTip = new GridData(SWT.FILL, SWT.CENTER, true, false, 3, 1);
+		gd_lblTip.widthHint = 211;
+		lblTip.setLayoutData(gd_lblTip);
+		lblTip.setText("You can use Ctrl+Arrow keys to precisely control the sliders");
 		
 		composite = new Composite(shell, SWT.NONE);
 		composite.setLayout(new GridLayout(2, false));
@@ -226,6 +237,10 @@ public class GibPropertiesWindow {
 		scMaxDir.setToolTipText(""+gib.maxDir);
 		
 		Main.gibDialog.list.setEnabled(false);
+	}
+	
+	public Shell getShell() {
+		return shell;
 	}
 	
 	public void escape() {

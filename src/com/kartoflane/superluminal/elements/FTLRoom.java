@@ -16,6 +16,7 @@ import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ColorBox;
 import com.kartoflane.superluminal.painter.LayeredPainter;
+import com.kartoflane.superluminal.painter.PaintBox;
 
 /**
  * Class representing a single room in a ship.
@@ -50,7 +51,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		Cache.checkInColor(this, slot_rgb);
 		slotColor = null;
 		if (sysBox != null) {
-			img = interiorData.interiorPath;
+			if (interiorData != null)
+				img = interiorData.interiorPath;
 			interiorData = sysBox.interiorData;
 		}
 		sysBox = null;
@@ -65,7 +67,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		sysBox = Main.systemsMap.get(sys);
 		if (sysBox!=null) {
 			sysBox.interiorData = interiorData;
-			interiorData.interiorPath = img;
+			if (interiorData != null)
+				interiorData.interiorPath = img;
 		}
 		//sysImg = Cache.checkOutImageAbsolute(this, img);
 		super.loadUnserializable();
@@ -82,6 +85,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		origin = new Rectangle(x, y, w, h);
 		offset = new Point(0,0);
 		setBorderColor(new RGB(0, 0, 0));
+		setBorderThickness(2);
+		setBorderMode(PaintBox.BORDER_INSIDE);
 		this.setLocation(x, y);
 		this.setSize(w, h);
 		this.id = -1;
@@ -449,16 +454,17 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
 			if (sysBox != null)
 				sysBox.setAlpha(Main.btnCloaked.getSelection() ? 255/3 : 255);
-			super.paintControl(e);
-			
+
 			int prevAlpha = e.gc.getAlpha();
 			int prevWidth = e.gc.getLineWidth();
 			Color prevBg = e.gc.getForeground();
+			super.paintControl(e);
 			
 			e.gc.setAlpha(alpha);
 			e.gc.setLineWidth(1);
 			e.gc.setForeground(grid_color);
 			
+			// inner grid
 			for (int i=1; i < bounds.width/35; i++)
 				e.gc.drawLine(bounds.x + i*35, bounds.y, bounds.x + i*35, bounds.y+bounds.height);
 			for (int i=1; i < bounds.height/35; i++)
@@ -483,7 +489,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 				if (isPinned())
 					e.gc.drawImage(pin, bounds.x+10, bounds.y+3);
 			}
-			if (Main.ship != null && Main.ship.slotMap.keySet().contains(sys) && Main.ship.slotMap.get(getSystem()) != -2) {
+			// working stations
+			if (Main.ship != null && Main.ship.slotMap.keySet().contains(sys) && Main.ship.slotMap.get(getSystem()) != -2 && Main.showStations) {
 				e.gc.setAlpha(Main.btnCloaked.getSelection() ? 80 : 160);
 				e.gc.setBackground(slotColor);
 				
@@ -559,17 +566,29 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			Main.sysDialog.open();
 	}
 	
+	public void updateColor() {
+		if (sysBox == null || sysBox.isAvailable()) {
+			if (selected) {
+				setColor(new RGB(170, 170, 255));
+			} else {
+				setColor(new RGB(230, 225, 220));
+			}
+		} else if (sysBox != null && !sysBox.isAvailable()) {
+			if (selected) {
+				setColor(new RGB(180, 100, 220));
+			} else {
+				setColor(new RGB(220, 100, 100));
+			}
+		}
+	}
+	
 	public void select() {
 		if (Main.selectedRoom != null)
 			Main.selectedRoom.deselect();
 		selected = true;
 		move = !isPinned();
 		setBorderColor(new RGB(0, 0, 255));
-		if (sysBox == null || sysBox.isAvailable()) {
-			setColor(new RGB(170, 170, 255));
-		} else if (sysBox != null && !sysBox.isAvailable()) {
-			setColor(new RGB(180, 100, 220));
-		}
+		updateColor();
 		Main.selectedRoom = this;
 		Main.updateCorners(this);
 		Main.canvasRedraw(bounds, false);
@@ -579,11 +598,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		selected = false;
 		move = false;
 		setBorderColor(new RGB(0, 0, 0));
-		if (sysBox == null || sysBox.isAvailable()) {
-			setColor(new RGB(230, 225, 220));
-		} else if (sysBox != null && !sysBox.isAvailable()) {
-			setColor(new RGB(220, 100, 100));
-		}
+		updateColor();
 		Main.selectedRoom = null;
 		Main.canvas.redraw(bounds.x-2, bounds.y-2, bounds.width+4, bounds.height+4, false);
 	}

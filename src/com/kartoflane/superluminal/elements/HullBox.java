@@ -73,8 +73,8 @@ public class HullBox extends ImageBox implements DraggableBox {
 		if (path != null)
 			cloakImage = Cache.checkOutImageAbsolute(this, path);
 	}
-		
-	
+
+
 	public void setLocation(int x, int y) {
 		Rectangle oldBounds = Main.cloneRect(bounds);
 		bounds.x = x;
@@ -114,8 +114,8 @@ public class HullBox extends ImageBox implements DraggableBox {
 	
 	@Override
 	public void paintControl(PaintEvent e) {
+		int prevAlpha = e.gc.getAlpha();
 		if (!Main.tltmGib.getSelection()) {
-			int prevAlpha = e.gc.getAlpha();
 			Color prevBg = e.gc.getBackground();
 			
 			paintBorder(e);
@@ -123,7 +123,7 @@ public class HullBox extends ImageBox implements DraggableBox {
 			if (borderColor != null)
 				e.gc.setBackground(borderColor);
 			
-			e.gc.setAlpha(Main.btnCloaked.getSelection() ? alpha/3 : alpha);
+			e.gc.setAlpha(Main.btnCloaked.getSelection() ? 0 : alpha); // alpha/3
 			if (image != null && Main.showHull)
 				e.gc.drawImage(image, 0, 0, image.getBounds().width, image.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
 			if (floorImage != null && Main.showFloor)
@@ -133,16 +133,20 @@ public class HullBox extends ImageBox implements DraggableBox {
 				e.gc.drawImage(cloakImage, 0, 0, cloakImage.getBounds().width, cloakImage.getBounds().height, bounds.x - 10, bounds.y - 10, bounds.width + 20, bounds.height + 20);
 			}
 			
-			if (Main.hullSelected && isPinned())
+			if (selected && isPinned())
 				e.gc.drawImage(pin, bounds.x+5, bounds.y+5);
 			
 			e.gc.setAlpha(alpha/255 * 32);
-			if (Main.hullSelected)
+			if (selected)
 				e.gc.fillRectangle(bounds);
-	
-			e.gc.setAlpha(prevAlpha);
+
 			e.gc.setBackground(prevBg);
+		} else {
+			e.gc.setAlpha(alpha/3);
+			if (image != null)
+				e.gc.drawImage(image, 0, 0, image.getBounds().width, image.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
 		}
+		e.gc.setAlpha(prevAlpha);
 	}
 	
 	@Override
@@ -179,7 +183,7 @@ public class HullBox extends ImageBox implements DraggableBox {
 				deselect();
 				Main.shieldBox.mouseDown(e);
 			}
-		} else if (Main.hullSelected) {
+		} else if (selected) {
 			deselect();
 		}
 	}
@@ -222,7 +226,7 @@ public class HullBox extends ImageBox implements DraggableBox {
 	public void mouseDoubleClick(MouseEvent e) {}
 
 	public void select() {
-		Main.hullSelected = true;
+		selected = true;
 		move = true;
 		setBorderColor(new RGB(0,0,255));
 		
@@ -230,7 +234,7 @@ public class HullBox extends ImageBox implements DraggableBox {
 	}
 	
 	public void deselect() {
-		Main.hullSelected = false;
+		selected = false;
 		move = false;
 		setBorderColor(null);
 		

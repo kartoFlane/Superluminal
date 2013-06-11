@@ -71,11 +71,13 @@ public class Anchor extends PaintBox implements DraggableBox {
 	public void paintControl(PaintEvent e) {
 		Color prevFgColor = e.gc.getForeground();
 		
-		e.gc.setForeground(xLine);
+		/*
 		if (Main.tltmGib.getSelection()) {
+			e.gc.setForeground(xLine);
 			e.gc.drawLine(Main.hullBox.getBounds().x, Main.hullBox.getBounds().y, Main.hullBox.getBounds().x, Main.GRID_H*35);
 			e.gc.drawLine(Main.hullBox.getBounds().x, Main.hullBox.getBounds().y, Main.GRID_W*35, Main.hullBox.getBounds().y);
 		}
+		*/
 		
 		if (Main.showAnchor && !Main.tltmGib.getSelection()) {
 			super.paintControl(e);

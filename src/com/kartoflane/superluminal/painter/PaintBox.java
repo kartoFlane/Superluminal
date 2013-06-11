@@ -15,12 +15,17 @@ public class PaintBox implements Serializable {
 	
 	public static final int BORDER_RECTANGLE = 0;
 	public static final int BORDER_OVAL = 1;
+	public static final int BORDER_OUTSIDE = 0;
+	public static final int BORDER_INSIDE = 1;
+	/** Default mode */
+	public static final int BORDER_CENTER = 2;
 
 	protected Rectangle bounds = new Rectangle(0,0,0,0);
 	protected Color borderColor = null;
 	protected RGB border_rgb = null;
 	protected int borderThickness = 3;
-	protected int borderShape = 0;
+	protected int borderMode = BORDER_CENTER;
+	protected int borderShape = BORDER_RECTANGLE;
 	protected boolean visible = true;
 	protected boolean drawBorder = true;
 	protected boolean selected = false;
@@ -60,6 +65,10 @@ public class PaintBox implements Serializable {
 		return pinned;
 	}
 	
+	public boolean isSelected() {
+		return selected;
+	}
+	
 	public void setAlpha(int newAlpha) {
 		alpha = newAlpha;
 	}
@@ -88,6 +97,14 @@ public class PaintBox implements Serializable {
 	
 	public int getBorderThickness() {
 		return borderThickness;
+	}
+	
+	public void setBorderMode(int m) {
+		borderMode = m;
+	}
+	
+	public int getBorderMode() {
+		return borderMode;
 	}
 
 	public void setLocation(int x, int y) {
@@ -151,7 +168,13 @@ public class PaintBox implements Serializable {
 			e.gc.setAlpha(alpha);
 			
 			if (borderShape == PaintBox.BORDER_RECTANGLE) {
-				e.gc.drawRectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+				if (borderMode == PaintBox.BORDER_INSIDE) {
+					e.gc.drawRectangle(bounds.x-1 + borderThickness, bounds.y-1 + borderThickness, bounds.width-borderThickness, bounds.height-borderThickness);
+				} else if (borderMode == PaintBox.BORDER_OUTSIDE) {
+					e.gc.drawRectangle(bounds.x-borderThickness/2, bounds.y-borderThickness/2, (bounds.width-1)+borderThickness, (bounds.height-1)+borderThickness);
+				} else {
+					e.gc.drawRectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+				}
 			} else if (borderShape == PaintBox.BORDER_OVAL) {
 				e.gc.drawOval(bounds.x, bounds.y, bounds.width, bounds.height);
 			}

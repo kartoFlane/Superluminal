@@ -73,7 +73,6 @@ public class ShipChoiceDialog {
 			}
 		}
 
-		Main.shell.setEnabled(true);
 		return (exit) ? null : result;
 	}
 	
@@ -113,7 +112,7 @@ public class ShipChoiceDialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				shell.setVisible(false);
-				Main.shell.setEnabled(true);
+				//Main.shell.setEnabled(true);
 				Main.shell.setActive();
 				exit = true;
 			}
@@ -140,7 +139,7 @@ public class ShipChoiceDialog {
 				}
 				shell.setVisible(false);
 				initialized = false;
-				Main.shell.setEnabled(true);
+				//Main.shell.setEnabled(true);
 				Main.shell.setActive();
 			}
 		});

@@ -3,7 +3,17 @@ package com.kartoflane.superluminal.ui;
 import java.io.File;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
@@ -11,18 +21,10 @@ import com.kartoflane.superluminal.core.ConfigIO;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.elements.ExportProgress;
-
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.widgets.Button;
-
 import com.kurosaru.ftl.archive.datLib;
 
 public class DirectoriesWindow {
-	public static Shell shell;
+	public Shell shell;
 	FileDialog dialog;
 	private Text textData;
 	private Text textResources;
@@ -35,6 +37,7 @@ public class DirectoriesWindow {
 	public Label label;
 	public Button btnClose;
 	
+	public boolean loaded = false;
 	public double exportProgressIncrement;
 	
 	public ExportProgress exp = null;
@@ -50,8 +53,6 @@ public class DirectoriesWindow {
 			textData.setText(Main.dataPath);
 		if (!ShipIO.isNull(Main.resPath))
 			textResources.setText(Main.resPath);
-
-		btnClose.setEnabled(false);
 		
 		shell.pack();
 	}
@@ -166,9 +167,23 @@ public class DirectoriesWindow {
 		btnClose.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				if (!loaded) {
+					MessageBox box = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK);
+					box.setText("Information");
+					box.setMessage("Superluminal cannot function without .dat archives.\n"
+							+"If you wish to make use of the editor, you'll have to unpack them.\nYou can open this window again using File > Change Archives...");
+					box.open();
+				}
 				shell.setVisible(false);
 				Main.shell.setEnabled(true);
 				Main.shell.setActive();
+			}
+		});
+		
+		shell.addListener(SWT.Close, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				btnClose.notifyListeners(SWT.Selection, null);
 			}
 		});
 	}
@@ -176,6 +191,9 @@ public class DirectoriesWindow {
 	private void load() {
 		exp = new ExportProgress();
 		exp.open(shell);
+		Rectangle bounds = shell.getBounds();
+		exp.shell.setLocation(bounds.x+bounds.width/2-80,
+				  bounds.y+bounds.height/3-30);
 		exp.setText("Unpacking...");
 		
 		File f = new File("archives");
@@ -211,9 +229,16 @@ public class DirectoriesWindow {
 		ConfigIO.saveConfig();
 		
 		label.setText("Loaded.");
+
+		loaded = true;
 		
 		exp.dispose();
 		exp = null;
+		
+		Main.enableMenus(true);
+		if (Main.showTips) {
+			Main.tipWindow.open();
+		}
 		
 		shell.setVisible(false);
 		Main.shell.setEnabled(true);

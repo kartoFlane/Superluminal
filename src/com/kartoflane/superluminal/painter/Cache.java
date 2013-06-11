@@ -41,6 +41,11 @@ public class Cache {
 			cachedImageCustomersMap.put(path, customers);
 		}
 
+		if (customer == null) {
+			Main.debug("Error - customer is null.");
+			throw new NullPointerException("Customer is null.");
+		}
+		
 		// See if it was already loaded.
 		image = cachedImagesMap.get(path);
 		if (image != null && image.isDisposed()) {
@@ -48,19 +53,23 @@ public class Cache {
 			customers.clear();            // They couldn't be using it anyway.
 			image = null;
 		}
-		if (image == null) {
-			try {
-				InputStream stream = customer.getClass().getResourceAsStream(path);
-				image = new Image(Display.getCurrent(), stream);
-				cachedImagesMap.put(path, image);
-			} catch (IllegalArgumentException e) {
-				//Main.erDialog.add(String.format("%s: Warning - loading \"%s\": resource not found.", customer.getClass().getSimpleName(), path));
-				Main.debug(String.format("%s: Warning - loading \"%s\": resource not found.", customer.getClass().getSimpleName(), path));
-			} catch (SWTException e) {
-				Main.erDialog.add(String.format("%s: Error loading \"%s\": resource contains invalid data.", customer.getClass().getSimpleName(), path));
+		if (path != null) {
+			if (image == null) {
+				try {
+					InputStream stream = customer.getClass().getResourceAsStream(path);
+					image = new Image(Display.getCurrent(), stream);
+					cachedImagesMap.put(path, image);
+				} catch (IllegalArgumentException e) {
+					//Main.erDialog.add(String.format("%s: Warning - loading \"%s\": resource not found.", customer.getClass().getSimpleName(), path));
+					Main.debug(String.format("%s: Warning - loading \"%s\": resource not found.", customer.getClass().getSimpleName(), path));
+				} catch (SWTException e) {
+					Main.erDialog.add(String.format("%s: Error loading \"%s\": resource contains invalid data.", customer.getClass().getSimpleName(), path));
+				}
 			}
+			customers.add(customer);
+		} else {
+			Main.debug(String.format("Cache: warning - tried to check out image with null path (customer: %s).", customer.getClass().getSimpleName()));
 		}
-		customers.add(customer);
 		return image;
 	}
 	

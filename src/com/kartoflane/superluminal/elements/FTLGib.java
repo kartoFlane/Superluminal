@@ -57,6 +57,13 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 		super.loadUnserializable();
 		image = Cache.checkOutImageAbsolute(this, path);
 		green = Cache.checkOutColor(this, green_rgb);
+		
+		if (image == null) {
+			dispose();
+			Main.ship.gibs.remove(this);
+			Main.gibDialog.letters.remove(ID);
+			Main.gibDialog.refreshList();
+		}
 	}
 	
 	public FTLGib() {

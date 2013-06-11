@@ -107,10 +107,12 @@ public class SystemBox extends ImageBox implements Serializable {
 		if (interior != null)
 			Cache.checkInImageAbsolute(this, interiorData.interiorPath);
 		interior = null;
-		interiorData.interiorPath = null;
-		interiorData.glowPath1 = null;
-		interiorData.glowPath2 = null;
-		interiorData.glowPath3 = null;
+		if (interiorData != null) {
+			interiorData.interiorPath = null;
+			interiorData.glowPath1 = null;
+			interiorData.glowPath2 = null;
+			interiorData.glowPath3 = null;
+		}
 	}
 	
 	public void dispose() {

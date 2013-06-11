@@ -99,6 +99,8 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		}
 		if (path == null) {
 			this.path = "/img/weapon.png";
+			mountPoint.x = 2; // default values for mountPoint
+			mountPoint.y = 36;
 			image = Cache.checkOutImage(this, this.path);
 		} else {
 			this.path = path;
@@ -108,7 +110,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	
 	public void setImage(String path) {
 		setImage(path, true);
-		setSize(image.getBounds().width, image.getBounds().height);
+		setSize(rotate ? image.getBounds().height : image.getBounds().width, rotate ? image.getBounds().width : image.getBounds().height);
 		frameW = 0;
 	}
 	

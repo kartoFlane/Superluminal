@@ -1,31 +1,31 @@
 package com.kartoflane.superluminal.ui;
 
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.TraverseEvent;
+import org.eclipse.swt.events.TraverseListener;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Spinner;
-import org.eclipse.swt.widgets.List;
-import org.eclipse.swt.widgets.Combo;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.MouseAdapter;
-import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.TraverseEvent;
-import org.eclipse.swt.events.TraverseListener;
+import org.eclipse.swt.widgets.Text;
 
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
@@ -43,7 +43,6 @@ public class ShipPropertiesWindow extends Dialog {
 	private Text textDesc;
 	private Spinner spHealth;
 	private Spinner spReactor;
-	private Spinner spMax;
 	private Spinner spHuman;
 	private Spinner spEngi;
 	private Spinner spZoltan;
@@ -87,7 +86,6 @@ public class ShipPropertiesWindow extends Dialog {
 	private Spinner spMissiles;
 	private Spinner spDrones;
 	private Spinner spGhost;
-	private Spinner spRandom;
 	private Spinner spMinSec;
 	private Spinner spMaxSec;
 	private Combo augments;
@@ -199,19 +197,15 @@ public class ShipPropertiesWindow extends Dialog {
 	// crew
 		
 		if (Main.ship.isPlayer) {
-			spMax.setSelection(Main.ship.crewMax);
+			spHuman.setMaximum(8);
+			spEngi.setMaximum(8);
+			spZoltan.setMaximum(8);
+			spMantis.setMaximum(8);
+			spSlug.setMaximum(8);
+			spRock.setMaximum(8);
+			spCrystal.setMaximum(8);
+			spGhost.setMaximum(8);
 			
-			spHuman.setMaximum(Main.ship.crewMax);
-			spEngi.setMaximum(Main.ship.crewMax);
-			spZoltan.setMaximum(Main.ship.crewMax);
-			spMantis.setMaximum(Main.ship.crewMax);
-			spSlug.setMaximum(Main.ship.crewMax);
-			spRock.setMaximum(Main.ship.crewMax);
-			spCrystal.setMaximum(Main.ship.crewMax);
-			spGhost.setMaximum(Main.ship.crewMax);
-			spRandom.setMaximum(Main.ship.crewMax);
-			
-			spMax.setIncrement((Main.ship.isPlayer ? 8 : 1));
 			spHuman.setSelection(Main.ship.crewMap.get("human"));
 			spEngi.setSelection(Main.ship.crewMap.get("engi"));
 			spZoltan.setSelection(Main.ship.crewMap.get("energy"));
@@ -220,7 +214,6 @@ public class ShipPropertiesWindow extends Dialog {
 			spRock.setSelection(Main.ship.crewMap.get("rock"));
 			spCrystal.setSelection(Main.ship.crewMap.get("crystal"));
 			spGhost.setSelection(Main.ship.crewMap.get("ghost"));
-			spRandom.setSelection(Main.ship.crewMap.get("random"));
 		} else {
 			spHumMin.setSelection(Main.ship.crewMap.get("human"));
 			spHumMax.setSelection(Main.ship.crewMaxMap.get("human"));
@@ -271,7 +264,6 @@ public class ShipPropertiesWindow extends Dialog {
 		spRock.setEnabled(Main.ship.isPlayer);
 		spCrystal.setEnabled(Main.ship.isPlayer);
 		spGhost.setEnabled(Main.ship.isPlayer);
-		spRandom.setEnabled(Main.ship.isPlayer);
 		//spMax.setEnabled(Main.ship.isPlayer);
 		
 	// weapons
@@ -428,7 +420,6 @@ search:		for (String s : presetsDr.getItems()) {
 		spRock.setSelection(0);
 		spCrystal.setSelection(0);
 		spGhost.setSelection(0);
-		spRandom.setSelection(0);
 
 		spHumMin.setSelection(0);
 		spHumMax.setSelection(0);
@@ -577,6 +568,7 @@ search:		for (String s : presetsDr.getItems()) {
 		textDesc.setFont(Main.appFont);
 		GridData gd_textDesc = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 5);
 		gd_textDesc.widthHint = 200;
+		textDesc.setToolTipText("Should be generally ~4 lines of text, more will go outside of text box in-game.");
 		textDesc.setLayoutData(gd_textDesc);
 		
 		Label lblMissiles = new Label(shipInfoC, SWT.NONE);
@@ -887,22 +879,9 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		Group grpCrew = new Group(crewInfoC, SWT.NONE);
 		grpCrew.setFont(Main.appFont);
-		grpCrew.setLayout(new GridLayout(10, false));
+		grpCrew.setLayout(new GridLayout(8, false));
 		grpCrew.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 8, 1));
 		grpCrew.setText("Crew - Player");
-		
-		Label lblCrewMax = new Label(grpCrew, SWT.NONE);
-		lblCrewMax.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		lblCrewMax.setFont(Main.appFont);
-		lblCrewMax.setToolTipText("Crew cap cannot be changed.");
-		lblCrewMax.setText("Crew max:");
-		
-		spMax = new Spinner(grpCrew, SWT.BORDER);
-		spMax.setEnabled(false);
-		spMax.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
-		spMax.setFont(Main.appFont);
-		spMax.setMaximum(8);
-		spMax.setMinimum(0);
 		
 		Label lblHuman = new Label(grpCrew, SWT.NONE);
 		lblHuman.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -983,17 +962,6 @@ search:		for (String s : presetsDr.getItems()) {
 		spCrystal.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1));
 		spCrystal.setFont(Main.appFont);
 		spCrystal.setMaximum(8);
-		
-		Label lblRandom = new Label(grpCrew, SWT.NONE);
-		lblRandom.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		lblRandom.setFont(Main.appFont);
-		lblRandom.setToolTipText("Only works on enemy ships; defaults to humans on player ships.");
-		lblRandom.setText("Random:");
-		
-		spRandom = new Spinner(grpCrew, SWT.BORDER);
-		spRandom.setFont(Main.appFont);
-		spRandom.setMaximum(8);
-		spRandom.setToolTipText("Only works on enemy ships; defaults to humans on player ships.");
 		
 		Group enemyCrewC = new Group(crewInfoC, SWT.NONE);
 		enemyCrewC.setText("Crew - Enemy");
@@ -1466,7 +1434,6 @@ search:		for (String s : presetsDr.getItems()) {
 				
 				// crew
 				if (Main.ship.isPlayer) {
-					Main.ship.crewMax = spMax.getSelection();
 					Main.ship.crewMap.put("human", spHuman.getSelection());
 					Main.ship.crewMap.put("engi", spEngi.getSelection());
 					Main.ship.crewMap.put("energy", spZoltan.getSelection());
@@ -1475,7 +1442,6 @@ search:		for (String s : presetsDr.getItems()) {
 					Main.ship.crewMap.put("rock", spRock.getSelection());
 					Main.ship.crewMap.put("crystal", spCrystal.getSelection());
 					Main.ship.crewMap.put("ghost", spGhost.getSelection());
-					Main.ship.crewMap.put("random", spRandom.getSelection());
 				} else {
 					Main.ship.crewMap.put("human", spHumMin.getSelection());
 					Main.ship.crewMap.put("engi", spEngiMin.getSelection());
@@ -1485,7 +1451,6 @@ search:		for (String s : presetsDr.getItems()) {
 					Main.ship.crewMap.put("rock", spRockMin.getSelection());
 					Main.ship.crewMap.put("crystal", spCrystalMin.getSelection());
 					Main.ship.crewMap.put("ghost", spGhostMin.getSelection());
-					Main.ship.crewMap.put("random", spRandomMin.getSelection());
 
 					Main.ship.crewMaxMap.put("human", spHumMax.getSelection());
 					Main.ship.crewMaxMap.put("engi", spEngiMax.getSelection());
@@ -1495,13 +1460,6 @@ search:		for (String s : presetsDr.getItems()) {
 					Main.ship.crewMaxMap.put("rock", spRockMax.getSelection());
 					Main.ship.crewMaxMap.put("crystal", spCrystalMax.getSelection());
 					Main.ship.crewMaxMap.put("ghost", spGhostMax.getSelection());
-					Main.ship.crewMaxMap.put("random", spRandomMax.getSelection());
-					
-					Main.ship.crewMax = 0;
-					for (String key : Main.ship.crewMap.keySet())
-						Main.ship.crewMax += Main.ship.crewMap.get(key);
-					for (String key : Main.ship.crewMaxMap.keySet())
-						Main.ship.crewMax += Main.ship.crewMaxMap.get(key);
 				}
 				
 				// health & power
@@ -1521,6 +1479,7 @@ search:		for (String s : presetsDr.getItems()) {
 				Main.ship.droneCount = spMaxDrones.getSelection();
 				
 				Main.ship.weaponSet.clear();
+				
 				if (Main.ship.weaponsBySet) {
 					Main.ship.weaponSet.add(presets.getText());
 				} else {
@@ -1600,20 +1559,6 @@ search:		for (String s : presetsDr.getItems()) {
 			}
 		});
 		
-		spMax.addModifyListener(new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				spHuman.setMaximum(spMax.getSelection());
-				spEngi.setMaximum(spMax.getSelection());
-				spZoltan.setMaximum(spMax.getSelection());
-				spMantis.setMaximum(spMax.getSelection());
-				spSlug.setMaximum(spMax.getSelection());
-				spRock.setMaximum(spMax.getSelection());
-				spCrystal.setMaximum(spMax.getSelection());
-				spGhost.setMaximum(spMax.getSelection());
-				spRandom.setMaximum(spMax.getSelection());
-			}
-		});
-		
 		spMinSec.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				spMaxSec.setMinimum(spMinSec.getSelection());
@@ -1628,9 +1573,9 @@ search:		for (String s : presetsDr.getItems()) {
 		
 		ModifyListener listener = (new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
-				int sum = spRandom.getSelection() + spMantis.getSelection() + spHuman.getSelection() + spSlug.getSelection() + spEngi.getSelection()
+				int sum = spMantis.getSelection() + spHuman.getSelection() + spSlug.getSelection() + spEngi.getSelection()
 						+ spRock.getSelection() + spCrystal.getSelection() + spZoltan.getSelection() + spGhost.getSelection();
-				int newMax = spMax.getSelection() - sum;
+				int newMax = 8 - sum;
 				
 				spHuman.setMaximum(spHuman.getSelection()+newMax);
 				spEngi.setMaximum(spEngi.getSelection()+newMax);
@@ -1640,23 +1585,21 @@ search:		for (String s : presetsDr.getItems()) {
 				spRock.setMaximum(spRock.getSelection()+newMax);
 				spCrystal.setMaximum(spCrystal.getSelection()+newMax);
 				spGhost.setMaximum(spGhost.getSelection()+newMax);
-				spRandom.setMaximum(spRandom.getSelection()+newMax);
 			}
 		});
 
-		spMantis.addModifyListener(listener);
-		spHuman.addModifyListener(listener);
-		spSlug.addModifyListener(listener);
+		spGhost.addModifyListener(listener);
 		spZoltan.addModifyListener(listener);
 		spEngi.addModifyListener(listener);
+		spHuman.addModifyListener(listener);
+		spMantis.addModifyListener(listener);
+		spSlug.addModifyListener(listener);
 		spRock.addModifyListener(listener);
 		spCrystal.addModifyListener(listener);
-		spGhost.addModifyListener(listener);
-		spRandom.addModifyListener(listener);
 
 		listAugments.addMouseListener(new MouseAdapter() {
 			public void mouseDoubleClick(MouseEvent e) {
-				if (listAugments.getItemCount() != 0)
+				if (listAugments.getItemCount() != 0 && listAugments.getSelection().length != 0)
 					listAugments.remove(listAugments.getSelection()[0]);
 				augments.setEnabled(listAugments.getItemCount()!=3);
 			}
@@ -1664,7 +1607,7 @@ search:		for (String s : presetsDr.getItems()) {
 
 		listWeapons.addMouseListener(new MouseAdapter() {
 			public void mouseDoubleClick(MouseEvent e) {
-				if (listWeapons.getItemCount() != 0)
+				if (listWeapons.getItemCount() != 0 && listWeapons.getSelection().length != 0)
 					listWeapons.remove(listWeapons.getSelection()[0]);
 				weapons.setEnabled(listWeapons.getItemCount()!=spSlots.getSelection());
 			}
@@ -1672,7 +1615,7 @@ search:		for (String s : presetsDr.getItems()) {
 
 		listDrones.addMouseListener(new MouseAdapter() {
 			public void mouseDoubleClick(MouseEvent e) {
-				if (listDrones.getItemCount() != 0)
+				if (listDrones.getItemCount() != 0 && listDrones.getSelection().length != 0)
 					listDrones.remove(listDrones.getSelection()[0]);
 				drones.setEnabled(listDrones.getItemCount()!=spSlotsDr.getSelection());
 			}

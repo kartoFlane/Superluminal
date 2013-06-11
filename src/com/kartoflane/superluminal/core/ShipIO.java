@@ -55,6 +55,7 @@ import com.kartoflane.superluminal.elements.FTLShip;
 import com.kartoflane.superluminal.elements.Slide;
 import com.kartoflane.superluminal.elements.Systems;
 import com.kartoflane.superluminal.painter.Cache;
+import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.ui.IncludeAskDialog;
 import com.kartoflane.superluminal.ui.ShipBrowser;
 
@@ -95,6 +96,7 @@ public class ShipIO {
 	
 	public static boolean createFtl = false;
 	public static boolean deleteTemp = false;
+	@Deprecated
 	public static boolean dontCheck = false;
 	
 	public static boolean ignoreNextTag = false;
@@ -207,7 +209,7 @@ public class ShipIO {
 			fr = new FileReader(fileToScan);
 			sc = new Scanner(fr);
 			sc.useDelimiter(Pattern.compile(lineDelimiter));
-			//<shipBlueprint name="PLAYER_SHIP_HARD_2"
+			
 			pattern = Pattern.compile("<shipBlueprint\\s*name\\s*=\\s*\"(" + blueprint + ")\".*?");
 			
 			while (sc.hasNext()) {
@@ -605,12 +607,14 @@ ship:			while(sc.hasNext()) {
 									pattern = Pattern.compile("(<shieldImage>)(.*?)(</shieldImage>)");
 									matcher = pattern.matcher(s);
 									if (matcher.find()) {
-										shipBeingLoaded.shieldOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_shields1.png";
+										//shipBeingLoaded.shieldOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_shields1.png";
+										shipBeingLoaded.shieldPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_shields1.png";
 									}
 									pattern = Pattern.compile("(<cloakImage>)(.*?)(</cloakImage>)");
 									matcher = pattern.matcher(s);
 									if (matcher.find()) {
-										shipBeingLoaded.cloakOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_cloak.png";
+										//shipBeingLoaded.cloakOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_cloak.png";
+										shipBeingLoaded.cloakPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_cloak.png";
 									}
 									
 									// TODO boarding AI ?
@@ -1023,12 +1027,14 @@ scan:			while(sc.hasNext()) {
 										pattern = Pattern.compile("(<shieldImage>)(.*?)(</shieldImage>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
-											shipBeingLoaded.shieldOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_shields1.png";
+											//shipBeingLoaded.shieldOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_shields1.png";
+											shipBeingLoaded.shieldPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_shields1.png";
 										}
 										pattern = Pattern.compile("(<cloakImage>)(.*?)(</cloakImage>)");
 										matcher = pattern.matcher(s);
 										if (matcher.find()) {
-											shipBeingLoaded.cloakOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_cloak.png";
+											//shipBeingLoaded.cloakOverride = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_cloak.png";
+											shipBeingLoaded.cloakPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + matcher.group(2) + "_cloak.png";
 										}
 									}
 								}
@@ -1473,7 +1479,7 @@ scan:			while(sc.hasNext()) {
 				}
 				// load shield
 				if (Main.loadShield) {
-					if (isNull(ship.shieldOverride) && !isNull(ship.shieldPath)) {
+					if (!isNull(ship.shieldPath)) {
 						f = new File(ship.shieldPath);
 						if (f.exists()) {
 							Main.shieldBox.setImage(ship.shieldPath, true);
@@ -1481,32 +1487,16 @@ scan:			while(sc.hasNext()) {
 							Main.erDialog.add("Warning: load ship images - shield image not found. (" + ship.shieldPath + ")");
 							ship.shieldPath = null;
 						}
-					} else if (!isNull(ship.shieldPath)) {
-						f = new File(ship.shieldOverride);
-						if (f.exists()) {
-							Main.shieldBox.setImage(ship.shieldOverride, true);
-						} else {
-							Main.erDialog.add("Warning: load ship images - shield override image not found. (" + ship.shieldOverride + ")");
-							ship.shieldOverride = null;
-						}
 					}
 				}
 				// load cloak
-				if (isNull(ship.cloakOverride) && !isNull(ship.cloakPath)) {
+				if (!isNull(ship.cloakPath)) {
 					f = new File(ship.cloakPath);
 					if (f.exists()) {
 						Main.hullBox.setCloakImage(ship.cloakPath);
 					} else {
 						Main.erDialog.add("Warning: load ship images - cloak image not found. (" + ship.cloakPath + ")");
 						ship.cloakPath = null;
-					}
-				} else if (!isNull(ship.cloakPath)) {
-					f = new File(ship.cloakOverride);
-					if (f.exists()) {
-						Main.hullBox.setCloakImage(ship.cloakOverride);
-					} else {
-						Main.erDialog.add("Warning: load ship images - cloak override image not found. (" + ship.cloakOverride + ")");
-						ship.cloakOverride = null;
 					}
 				}
 				// load gibs
@@ -1721,6 +1711,10 @@ scan:			while(sc.hasNext()) {
 		String path = null;
 		FTLItem wpn = null;
 		int index = -1;
+
+		for (FTLMount m : Main.ship.mounts) {
+			m.setImage(null);
+		}
 		
 		if (!ship.weaponsBySet) {
 			for (String blue : ship.weaponSet) {
@@ -1760,65 +1754,6 @@ scan:			while(sc.hasNext()) {
 // =============
 // === EXPORTING
 // =============
-	
-	/**
-	 * Checks if the specified file exists in specified directory or its subdirectories.<br>
-	 * WARNING: this method only checks the files' names, not contents.
-	 * Since scanning the entire directory proved to be kinda inefficient, I just dumped the <br>
-	 * default filenames to a .txt, and now the export function scans that file for matching entries (isDefaultResources method)
-	 * 
-	 * @param dir Directory in which the search is to be performed.
-	 * @param file File the method is to look for.
-	 * @return True is the file exists in the directory or any of its subdirectories, false otherwise.
-	 */
-	public static boolean searchDirForFile(File dir, File file) {
-		boolean result = false;
-search: for (File f : dir.listFiles()) {
-			if (f.isDirectory()) {
-				result = searchDirForFile(f, file);
-			} else if (f.getName().endsWith(".png")){
-				result = f.getName().equals(file.getName());
-			}
-			if (result) break search;
-		}
-		return result;
-	}
-	
-	/**
-	 * Scans the defaultResources.txt file for entries matching the file's name.
-	 * @param file The file whose name the list is to be scanned for.
-	 * @return True if there's a matching filename on the list
-	 */
-	public static boolean isDefaultResource(File file) {
-		boolean result = false;
-		FileReader fr;
-		Scanner sc = null;
-		String s;
-		
-		if (!file.exists()) {
-			Main.erDialog.print("Error: isDefaultResource - tried to check a file that doesn't exist.");
-			return false;
-		}
-		
-		try {
-			fr = new FileReader("defaultResources.txt");
-			sc = new Scanner(fr);
-			sc.useDelimiter(Pattern.compile(lineDelimiter));
-			
-			while(sc.hasNext()) {
-				s = sc.next();
-				result = s.equals(file.getName());
-				if (result) break;
-			}
-			
-			sc.close();
-		} catch (FileNotFoundException e) {
-			Main.erDialog.print("Error: isDefaultResource - default resources list not found in the package.");
-		} finally {
-			sc = null;
-		}
-		return result;
-	}
 	
 	public static void deleteFolderContents(File folder) {
 		File[] files = folder.listFiles();
@@ -1861,7 +1796,7 @@ search: for (File f : dir.listFiles()) {
 		try {
 			source = new File(Main.ship.imagePath);
 			destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_base.png");
-			if (/*(dontCheck || !isDefaultResource(source)) && */source.exists()) { // no way to set up hull override, got to export it even if it is a default resource.
+			if (source.exists()) {
 				destination.mkdirs();
 				java.nio.file.Files.copy(Paths.get(Main.ship.imagePath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			} else if (!source.exists()) {
@@ -1883,12 +1818,10 @@ search: for (File f : dir.listFiles()) {
 			try {
 				source = new File(Main.ship.shieldPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_shields1.png");
-				if (/*(dontCheck || !isDefaultResource(source)) && */source.exists()) {
+				if (source.exists()) {
 					destination.mkdirs();
-					if (isNull(Main.ship.shieldOverride)) {
+					if (!isNull(Main.ship.shieldPath)) {
 						java.nio.file.Files.copy(Paths.get(Main.ship.shieldPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-					} else {
-						java.nio.file.Files.copy(Paths.get(Main.ship.shieldOverride), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 					}
 				} else if (!source.exists()) {
 					Main.erDialog.add("Error: export - shield image not found.");
@@ -1910,7 +1843,7 @@ search: for (File f : dir.listFiles()) {
 			try {
 				source = new File(Main.ship.floorPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_floor.png");
-				if (/*(dontCheck || !isDefaultResource(source)) && */source.exists()) { // no way to set up floor override, got to export it even if it is a default resource.
+				if (source.exists()) {
 					destination.mkdirs();
 					java.nio.file.Files.copy(Paths.get(Main.ship.floorPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				} else if (!source.exists()) {
@@ -1933,12 +1866,10 @@ search: for (File f : dir.listFiles()) {
 			try {
 				source = new File(Main.ship.cloakPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_cloak.png");
-				if (/*(dontCheck || !isDefaultResource(source)) && */source.exists()) {
+				if (source.exists()) {
 					destination.mkdirs();
-					if (isNull(Main.ship.cloakOverride)) {
+					if (!isNull(Main.ship.cloakPath)) {
 						java.nio.file.Files.copy(Paths.get(Main.ship.cloakPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-					} else {
-						java.nio.file.Files.copy(Paths.get(Main.ship.cloakOverride), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 					}
 				} else if (!source.exists()) {
 					Main.erDialog.add("Error: export - cloak image not found.");
@@ -1960,7 +1891,7 @@ search: for (File f : dir.listFiles()) {
 			try {
 				source = new File(Main.ship.miniPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "customizeUI" + pathDelimiter + "miniship_" + Main.ship.imageName + ".png");
-				if (/*(dontCheck || !isDefaultResource(source)) && */source.exists()) { // no way to set up miniship override, got to export it even if it is a default resource.
+				if (source.exists()) {
 					destination.mkdirs();
 					java.nio.file.Files.copy(Paths.get(Main.ship.miniPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				} else if (!source.exists()) {
@@ -1979,71 +1910,75 @@ search: for (File f : dir.listFiles()) {
 		exp.progressBar.setSelection(50);
 		
 		// interior images
-		try {
-			double d = 10/Main.ship.rooms.size();
-			double progress = 0;
-			String img;
-			for (FTLRoom r : Main.ship.rooms) {
-				if (!r.getSystem().equals(Systems.EMPTY) && !r.getSystem().equals(Systems.TELEPORTER) && r.sysBox != null && !isNull(r.interiorData.interiorPath)) {
-					img = r.interiorData.interiorPath.substring(r.interiorData.interiorPath.lastIndexOf(pathDelimiter));
-					source = new File(r.interiorData.interiorPath);
-					destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + img);
-					//destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + Main.ship.imageName + "_room_" + r.getSystem().toString().toLowerCase() + ".png");
-				
-					destination.mkdirs();
-					java.nio.file.Files.copy(Paths.get(r.interiorData.interiorPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-					String tempDest = destination.getAbsolutePath().replace(".png", "");
+		if (Main.ship.rooms.size() > 0) {
+			try {
+				double d = 10/Main.ship.rooms.size();
+				double progress = 0;
+				String img;
+				for (FTLRoom r : Main.ship.rooms) {
+					if (!r.getSystem().equals(Systems.EMPTY) && !r.getSystem().equals(Systems.TELEPORTER) && r.sysBox != null && !isNull(r.interiorData.interiorPath)) {
+						img = r.interiorData.interiorPath.substring(r.interiorData.interiorPath.lastIndexOf(pathDelimiter));
+						source = new File(r.interiorData.interiorPath);
+						destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + img);
+						//destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + Main.ship.imageName + "_room_" + r.getSystem().toString().toLowerCase() + ".png");
 					
-					try {
-						if (r.sysBox.getSystemName().equals(Systems.CLOAKING)) {
-							if (!isNull(r.interiorData.glowPath1))
-								java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath1), Paths.get(tempDest + "_glow.png"), StandardCopyOption.REPLACE_EXISTING);
-						} else {
-							if (!isNull(r.interiorData.glowPath1))
-								java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath1), Paths.get(tempDest + "_glow1.png"), StandardCopyOption.REPLACE_EXISTING);
-							if (!isNull(r.interiorData.glowPath2))
-								java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath2), Paths.get(tempDest + "_glow2.png"), StandardCopyOption.REPLACE_EXISTING);
-							if (!isNull(r.interiorData.glowPath3))
-								java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath3), Paths.get(tempDest + "_glow3.png"), StandardCopyOption.REPLACE_EXISTING);
+						destination.mkdirs();
+						java.nio.file.Files.copy(Paths.get(r.interiorData.interiorPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+						String tempDest = destination.getAbsolutePath().replace(".png", "");
+						
+						try {
+							if (r.sysBox.getSystemName().equals(Systems.CLOAKING)) {
+								if (!isNull(r.interiorData.glowPath1))
+									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath1), Paths.get(tempDest + "_glow.png"), StandardCopyOption.REPLACE_EXISTING);
+							} else {
+								if (!isNull(r.interiorData.glowPath1))
+									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath1), Paths.get(tempDest + "_glow1.png"), StandardCopyOption.REPLACE_EXISTING);
+								if (!isNull(r.interiorData.glowPath2))
+									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath2), Paths.get(tempDest + "_glow2.png"), StandardCopyOption.REPLACE_EXISTING);
+								if (!isNull(r.interiorData.glowPath3))
+									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath3), Paths.get(tempDest + "_glow3.png"), StandardCopyOption.REPLACE_EXISTING);
+							}
+						} catch (FileNotFoundException e) {
+							Main.erDialog.add("Warning: export - one of the glow images for " + source.getName() + " was not found.");
+						} catch (NoSuchFileException e) {
+							Main.erDialog.add("Warning: export - one of the glow images for " + source.getName() + " was not found.");
 						}
-					} catch (FileNotFoundException e) {
-						Main.erDialog.add("Warning: export - one of the glow images for " + source.getName() + " was not found.");
-					} catch (NoSuchFileException e) {
-						Main.erDialog.add("Warning: export - one of the glow images for " + source.getName() + " was not found.");
 					}
+					progress += d;
+					exp.progressBar.setSelection(50 + (int) progress);
 				}
-				progress += d;
-				exp.progressBar.setSelection(50 + (int) progress);
+			} catch (FileNotFoundException e) {
+				Main.erDialog.add("Error: export - one of room interior images was not found.");
+			} catch (IOException e) {
+				Main.erDialog.add("Error: export - interior images - general IO error - details logged in debug.log");
+				e.printStackTrace();
+				System.out.println("");
+			} catch (NullPointerException e) {
+				Main.erDialog.add("Error: export - one of system interior images has not been set up.");
 			}
-		} catch (FileNotFoundException e) {
-			Main.erDialog.add("Error: export - one of room interior images was not found.");
-		} catch (IOException e) {
-			Main.erDialog.add("Error: export - interior images - general IO error - details logged in debug.log");
-			e.printStackTrace();
-			System.out.println("");
-		} catch (NullPointerException e) {
-			Main.erDialog.add("Error: export - one of system interior images has not been set up.");
 		}
 		exp.progressBar.setSelection(60);
 	
 		// gibs
-		try {
-			double d = 10/Main.ship.gibs.size();
-			double progress = 0;
-			for (FTLGib g : Main.ship.gibs) {
-				source = new File(g.getPath());
-				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_gib" + g.number + ".png");
-				if (source.exists()/* && (dontCheck || !isDefaultResource(source))*/) {
-					destination.mkdirs();
-					java.nio.file.Files.copy(Paths.get(g.getPath()), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		if (Main.ship.gibs.size() > 0) {
+			try {
+				double d = 10/Main.ship.gibs.size();
+				double progress = 0;
+				for (FTLGib g : Main.ship.gibs) {
+					source = new File(g.getPath());
+					destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_gib" + g.number + ".png");
+					if (source.exists()/* && (dontCheck || !isDefaultResource(source))*/) {
+						destination.mkdirs();
+						java.nio.file.Files.copy(Paths.get(g.getPath()), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+					}
+					progress += d;
+					exp.progressBar.setSelection(60 + (int) progress);
 				}
-				progress += d;
-				exp.progressBar.setSelection(60 + (int) progress);
+			} catch (IOException e) {
+				Main.erDialog.add("Error: export - gibs images - general IO error - details logged in debug.log");
+				e.printStackTrace();
+				System.out.println("");
 			}
-		} catch (IOException e) {
-			Main.erDialog.add("Error: export - gibs images - general IO error - details logged in debug.log");
-			e.printStackTrace();
-			System.out.println("");
 		}
 		exp.progressBar.setSelection(70);
 		
@@ -2303,10 +2238,12 @@ search: for (File f : dir.listFiles()) {
 				}
 
 			// overrides 
+				/*
 				if (!isNull(Main.ship.shieldOverride))
-					fw.write("\t"+"<shieldImage>"+Main.ship.shieldOverride/*.substring(Main.ship.shieldOverride.lastIndexOf(ShipIO.pathDelimiter)+1, Main.ship.shieldOverride.lastIndexOf("_"))*/+"</shieldImage>" + lineDelimiter);
+					fw.write("\t"+"<shieldImage>"+Main.ship.shieldOverride+"</shieldImage>" + lineDelimiter);
 				if (!isNull(Main.ship.cloakOverride))
-					fw.write("\t"+"<cloakImage>"+Main.ship.cloakOverride/*.substring(Main.ship.cloakOverride.lastIndexOf(ShipIO.pathDelimiter)+1, Main.ship.cloakOverride.lastIndexOf("_"))*/+"</cloakImage>" + lineDelimiter);
+					fw.write("\t"+"<cloakImage>"+Main.ship.cloakOverride+"</cloakImage>" + lineDelimiter);
+				*/
 				
 				fw.write("</shipBlueprint>");
 				
@@ -2409,10 +2346,12 @@ search: for (File f : dir.listFiles()) {
 				}
 				
 			// overrides
+				/*
 				if (!isNull(Main.ship.shieldOverride))
 					fw.write("\t"+"<shieldImage>"+Main.ship.shieldOverride.substring(Main.ship.shieldOverride.lastIndexOf(ShipIO.pathDelimiter)+1, Main.ship.shieldOverride.lastIndexOf("_"))+"</shieldImage>" + lineDelimiter);
 				if (!isNull(Main.ship.cloakOverride))
 					fw.write("\t"+"<cloakImage>"+Main.ship.cloakOverride.substring(Main.ship.cloakOverride.lastIndexOf(ShipIO.pathDelimiter)+1, Main.ship.cloakOverride.lastIndexOf("_"))+"</cloakImage>" + lineDelimiter);
+				*/
 				
 				fw.write("</shipBlueprint>");
 			}
@@ -2519,7 +2458,7 @@ search: for (File f : dir.listFiles()) {
 	}
 	
 	public static void loadSystemImage(FTLRoom r, File fileToScan) {
-		if (r.sysBox != null) {
+		if (r.sysBox != null && r.interiorData != null) {
 			if (isNull(r.interiorData.interiorPath) && !r.getSystem().equals(Systems.TELEPORTER) && !r.getSystem().equals(Systems.EMPTY)) { // load default graphics (teleporter doesn't have default graphic)
 				r.interiorData.interiorPath = Main.resPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + "room_" + r.getSystem().toString().toLowerCase() + ".png";
 			}
@@ -2563,7 +2502,13 @@ search: for (File f : dir.listFiles()) {
 				Main.ship.crewMaxMap.put("rock", 0);
 				Main.ship.crewMaxMap.put("crystal", 0);
 				Main.ship.crewMaxMap.put("ghost", 0);
-				Main.ship.crewMaxMap.put("random", 0);
+			}
+			
+			if (Main.ship.version < 13) {
+				for (FTLRoom r : Main.ship.rooms) {
+					r.setBorderThickness(2);
+					r.setBorderMode(PaintBox.BORDER_INSIDE);
+				}
 			}
 
 			debug("\tloading linked ship images...");
@@ -2619,8 +2564,7 @@ search: for (File f : dir.listFiles()) {
 		} catch (EOFException e) {
 			Main.erDialog.add("Error: load ship project - end of file reached - file is corrupted, probably due to an error during its saving.");
 		} catch (IOException e) {
-			if (Main.debug)
-				e.printStackTrace();
+			e.printStackTrace();
 		} finally {
 			try {
 				if (ois != null)

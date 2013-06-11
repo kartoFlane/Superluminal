@@ -34,7 +34,7 @@ public class GibDialog {
 	private Button btnMoveDown;
 	private Button btnAddGib;
 	private Button btnDeleteGib;
-	private Button btnHideGib;
+	public Button btnHideGib;
 	public HashSet<String> letters = new HashSet<String>();
 	public Button btnAnimate;
 	public boolean animating = false;

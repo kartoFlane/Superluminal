@@ -23,7 +23,7 @@ public class FTLShip implements Serializable {
 	final static public int ANCHOR = 12;
 	
 	/** The most recent designation */
-	final public static int VERSION = 12;
+	final public static int VERSION = 13;
 	/** Ship's own designation */
 	public int version = 0;
 	
@@ -37,15 +37,17 @@ public class FTLShip implements Serializable {
 	public List<FTLGib> gibs;
 	
 	// === Images
-		// hull
 	public String imagePath;
 	public String shieldPath;
 	public String floorPath;
 	public String cloakPath;
-		// miniship
 	public String miniPath;
-	
+
+	/** Use Main.hullBox.isPinned() instead */
+	@Deprecated
 	public boolean hullPinned;
+	/** Use Main.shieldBox.isPinned() instead */
+	@Deprecated
 	public boolean shieldPinned;
 	
 	/** Posiition of the ship on canvas (anchor's x and y) */
@@ -73,10 +75,16 @@ public class FTLShip implements Serializable {
 	// === player specific
 	public int weaponCount = 0;
 	public int droneCount = 0;
+	/** Override functionality was removed completely */
+	@Deprecated
 	public String cloakOverride;
+	/** Override functionality was removed completely */
+	@Deprecated
 	public String shieldOverride;
 	
 	// === enemy specific
+	/** Kept for compatibility with earlier projects */
+	@Deprecated
 	public int crewMax = 8;
 	public int minSec = 0;
 	public int maxSec = 0;
@@ -149,7 +157,6 @@ public class FTLShip implements Serializable {
 		crewMap.put("rock", 0);
 		crewMap.put("crystal", 0);
 		crewMap.put("ghost", 0);
-		crewMap.put("random", 0);
 		
 		crewMaxMap.put("human", 0);
 		crewMaxMap.put("engi", 0);
@@ -159,7 +166,6 @@ public class FTLShip implements Serializable {
 		crewMaxMap.put("rock", 0);
 		crewMaxMap.put("crystal", 0);
 		crewMaxMap.put("ghost", 0);
-		crewMaxMap.put("random", 0);
 		
 		for (Systems key : Systems.values()) {
 			levelMap.put(key, 1);

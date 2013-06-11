@@ -109,7 +109,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	
 	@Override
 	protected void paintBorder(PaintEvent e) {
-		if (borderColor != null && Main.shieldSelected && !Main.tltmGib.getSelection()) {
+		if (borderColor != null && selected && !Main.tltmGib.getSelection()) {
 			Color prevColor = e.gc.getForeground();
 			int prevLineWidth = e.gc.getLineWidth();
 			
@@ -129,7 +129,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 			int prevAlpha = e.gc.getAlpha();
 			Color prevBg = e.gc.getBackground();
 			
-			if (Main.shieldSelected) {
+			if (selected) {
 				e.gc.setAlpha(32);
 				e.gc.setBackground(borderColor);
 				e.gc.fillRectangle(bounds);
@@ -146,7 +146,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 			}
 			paintBorder(e);
 			
-			if (Main.shieldSelected && isPinned())
+			if (selected && isPinned())
 				e.gc.drawImage(pin, bounds.x+5, bounds.y+5);
 			
 			e.gc.setAlpha(prevAlpha);
@@ -197,7 +197,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 				}
 			}
 			Main.cursor.setVisible(false);
-		} else if (Main.shieldSelected) {
+		} else if (selected) {
 			deselect();
 		}
 	}
@@ -255,7 +255,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	public void mouseDoubleClick(MouseEvent e) {}
 
 	public void select() {
-		Main.shieldSelected = true;
+		selected = true;
 		move = true;
 		resize = !Main.ship.isPlayer;
 		setBorderColor(new RGB(0,0,255));
@@ -264,7 +264,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	}
 	
 	public void deselect() {
-		Main.shieldSelected = false;
+		selected = false;
 		move = false;
 		resize = false;
 		setBorderColor(null);

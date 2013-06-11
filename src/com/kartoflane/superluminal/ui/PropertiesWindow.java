@@ -142,7 +142,11 @@ public class PropertiesWindow {
 				Main.ship.startMap.put(sys, btnAvailable.getSelection());
 				Main.systemsMap.get(sys).setAvailable(btnAvailable.getSelection());
 				
+				Main.selectedRoom.updateColor();
+				Main.canvasRedraw(Main.selectedRoom.getBounds(), true);
+				
 				shell.setVisible(false);
+				
 			}
 		});
 		

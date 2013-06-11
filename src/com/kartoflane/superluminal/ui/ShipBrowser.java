@@ -5,24 +5,25 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.layout.GridData;
-import com.kartoflane.superluminal.core.ConfigIO;
+
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.elements.FTLShip;
-import org.eclipse.swt.events.MouseAdapter;
-import org.eclipse.swt.events.MouseEvent;
 
 
 public class ShipBrowser {
@@ -107,7 +108,7 @@ public class ShipBrowser {
 		gd_btnCancel.minimumWidth = 80;
 		btnCancel.setLayoutData(gd_btnCancel);
 		btnCancel.setFont(Main.appFont);
-		btnCancel.setText("Cancel");
+		btnCancel.setText("Close");
 		
 		shell.pack();
 		
@@ -182,20 +183,20 @@ public class ShipBrowser {
 					} else {
 						shell.setEnabled(false);
 						Main.choiceDialog.setChoices(blueList, unpacked_blueprints);
+						Rectangle bounds = shell.getBounds();
+						Main.choiceDialog.shell.setLocation(bounds.x + bounds.width/2 - Main.choiceDialog.shell.getBounds().width/2,
+								bounds.y + bounds.height/3 - Main.choiceDialog.shell.getBounds().height/2);
 						String blueprint = Main.choiceDialog.open();
 
 						shell.setEnabled(true);
-						Main.mntmClose.notifyListeners(SWT.Selection, null);
-						ShipIO.loadShip(blueprint, unpacked_blueprints, Main.choiceDialog.declaration);
+						if (blueprint != null) {
+							Main.mntmClose.notifyListeners(SWT.Selection, null);
+							ShipIO.loadShip(blueprint, unpacked_blueprints, Main.choiceDialog.declaration);
+						}
 					}
 				} else {
 					Main.erDialog.print("Error: load ship - no ship declarations found. No data was loaded. This shouldn't ever happen.");
 				}
-				//ShipIO.loadShip(selectedShip, null, -1);
-
-				Main.shell.setEnabled(true);
-				ConfigIO.saveConfig();
-				shell.dispose();
 			}
 		});
 	}

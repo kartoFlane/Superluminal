@@ -43,11 +43,12 @@ public class ConfigIO {
 			properties.setProperty("resPath", Main.resPath);
 			properties.setProperty("removeDoor", new Boolean(Main.removeDoor).toString());
 			properties.setProperty("arbitraryPosOverride", new Boolean(Main.arbitraryPosOverride).toString());
-			properties.setProperty("loadFloor", new Boolean(Main.loadFloor).toString());
-			properties.setProperty("loadShield", new Boolean(Main.loadShield).toString());
-			properties.setProperty("loadSystem", new Boolean(Main.loadSystem).toString());
+			//properties.setProperty("loadFloor", new Boolean(Main.loadFloor).toString());
+			//properties.setProperty("loadShield", new Boolean(Main.loadShield).toString());
+			//properties.setProperty("loadSystem", new Boolean(Main.loadSystem).toString());
 			properties.setProperty("forbidBossLoading", new Boolean(Main.forbidBossLoading).toString());
 			properties.setProperty("shownIncludeWarning", new Boolean(Main.shownIncludeWarning).toString());
+			properties.setProperty("showTips", new Boolean(Main.showTips).toString());
 			
 			try {
 				fw = new FileWriter("superluminal.ini");
@@ -88,11 +89,12 @@ public class ConfigIO {
 				//out.write("showHull = " + Main.showHull + ShipIO.lineDelimiter);
 				//out.write("showFloor = " + Main.showFloor + ShipIO.lineDelimiter);
 				//out.write("showShield = " + Main.showShield + ShipIO.lineDelimiter);
-				out.write("loadFloor = " + Main.loadFloor + ShipIO.lineDelimiter);
-				out.write("loadShield = " + Main.loadShield + ShipIO.lineDelimiter);
-				out.write("loadSystem = " + Main.loadSystem + ShipIO.lineDelimiter);
+				//out.write("loadFloor = " + Main.loadFloor + ShipIO.lineDelimiter);
+				//out.write("loadShield = " + Main.loadShield + ShipIO.lineDelimiter);
+				//out.write("loadSystem = " + Main.loadSystem + ShipIO.lineDelimiter);
 				out.write("forbidBossLoading = " + Main.forbidBossLoading + ShipIO.lineDelimiter);
 				out.write("shownIncludeWarning = " + Main.shownIncludeWarning + ShipIO.lineDelimiter);
+				out.write("showTips = " + Main.showTips + ShipIO.lineDelimiter);
 				
 				out.close();
 			} catch (IOException e) {
