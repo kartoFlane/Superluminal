@@ -144,8 +144,11 @@ public class Anchor extends PaintBox implements DraggableBox {
 	@Override
 	public void registerUp(int undoable) {
 		if (undoable == Undoable.MOVE && ume != null && ume instanceof UndoableMoveEdit) {
+			// the shift-drag functionality is implemented in mouseMove listener, which would result in a flood of undoableEdit calls...
+			// no way to differentiate between undoable MOVE and SHIP_OFFSET at mouse click listeners, gotta check it here 
 			if (offsetEdit.x != Main.ship.offset.x || offsetEdit.y != Main.ship.offset.y) {
 				ume = new UndoableOffsetEdit(this);
+				// luckily the AbstractUndoableEdit framework is pretty flexible...
 				((UndoableOffsetEdit) ume).setOldOffset(offsetEdit.x, offsetEdit.y);
 				((UndoableOffsetEdit) ume).setCurrentOffset(Main.ship.offset.x, Main.ship.offset.y);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));

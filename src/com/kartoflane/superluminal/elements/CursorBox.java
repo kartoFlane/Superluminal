@@ -14,6 +14,7 @@ import com.kartoflane.superluminal.painter.LayeredPainter;
 import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.undo.Undoable;
 import com.kartoflane.superluminal.undo.UndoableDirectionEdit;
+import com.kartoflane.superluminal.undo.UndoableSlotEdit;
 
 
 @SuppressWarnings("serial")
@@ -170,9 +171,12 @@ public class CursorBox extends PaintBox implements DraggableBox {
 
 	@Override
 	public void registerDown(int undoable) {
-		if (undoable == Undoable.DIRECTION) {
-			if (undoListener != null) {
+		if (undoListener != null) {
+			if (undoable == Undoable.DIRECTION) {
 				ume = new UndoableDirectionEdit(slot_sys);
+				undoListener.undoableEditHappened(new UndoableEditEvent(Main.getRoomWithSystem(slot_sys).sysBox, ume));
+			} else if (undoable == Undoable.SLOT) {
+				ume = new UndoableSlotEdit(Main.getRoomWithSystem(slot_sys).sysBox);
 				undoListener.undoableEditHappened(new UndoableEditEvent(Main.getRoomWithSystem(slot_sys).sysBox, ume));
 			}
 		}
@@ -180,11 +184,19 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	
 	@Override
 	public void registerUp(int undoable) {
-		if (undoable == Undoable.DIRECTION && ume != null && ume instanceof UndoableDirectionEdit) {
-			Slide temp = ((UndoableDirectionEdit) ume).getOldSlide();
-			if (temp != Main.ship.slotDirMap.get(slot_sys)) {
-				((UndoableDirectionEdit) ume).setCurrentSlide(Main.ship.slotDirMap.get(slot_sys));
-				Main.undoManager.addEdit(ume);
+		if (ume != null) {
+			if (undoable == Undoable.DIRECTION && ume instanceof UndoableDirectionEdit) {
+				Slide temp = ((UndoableDirectionEdit) ume).getOldSlide();
+				if (temp != Main.ship.slotDirMap.get(slot_sys)) {
+					((UndoableDirectionEdit) ume).setCurrentSlide(Main.ship.slotDirMap.get(slot_sys));
+					Main.undoManager.addEdit(ume);
+				}
+			} else if (undoable == Undoable.SLOT) {
+				int temp = ((UndoableSlotEdit) ume).getOldValue();
+				if (temp != Main.ship.slotMap.get(slot_sys)) {
+					((UndoableSlotEdit) ume).setCurrentValue(Main.ship.slotMap.get(slot_sys));
+					Main.undoManager.addEdit(ume);
+				}
 			}
 		}
 	}
@@ -262,9 +274,11 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					}
 				} else {
 					if (slot_canBePlaced) {
+						registerDown(Undoable.SLOT);
 						Main.ship.slotMap.put(slot_sys, Main.getStationFromRect(Main.getRectAt(e.x,e.y)));
 						Main.getRoomWithSystem(slot_sys).slot = Main.ship.slotMap.get(slot_sys);
 						
+						registerUp(Undoable.SLOT);
 						Main.canvasRedraw(Main.getRoomWithSystem(slot_sys).getBounds(), false);
 					}
 				}

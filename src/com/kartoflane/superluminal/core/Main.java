@@ -343,15 +343,15 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
-	 * - room assign system undo
 	 * - door linking undo
 	 * - delete undo
-	 * - system station slot assign
+	 * - gib layering reorder undo
+	 * - 
 	 * 
 	 * undo checklist:
 	 * hull - done
 	 * shield - done
-	 * rooms - move done, resize done,
+	 * rooms - move done, resize done, system assign undo
 	 * doors - move done,
 	 * mounts - done
 	 * gibs - move done,
@@ -574,7 +574,7 @@ public class Main {
 
 		createContents();
 		
-		undoManager.setLimit(200);
+		//undoManager.setLimit(200);
 
 		shell.setFont(appFont);
 

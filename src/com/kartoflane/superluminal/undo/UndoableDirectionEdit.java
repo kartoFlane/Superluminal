@@ -54,7 +54,7 @@ public class UndoableDirectionEdit extends AbstractUndoableEdit {
 		if (box instanceof FTLMount) {
 			return "change " + box.getClass().getSimpleName() + " direction";
 		} else if (box instanceof SystemBox) {
-			return "change " + ((SystemBox) box).getSystemName() + " station direction";
+			return "change " + ((SystemBox) box).getSystemName().toString().toLowerCase() + " station direction";
 		}
 		return "(invalid directionEdit)";
 	}
