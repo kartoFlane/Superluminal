@@ -220,7 +220,7 @@ public class FTLShip implements Serializable {
 		}
 		for (FTLDoor d : doors) {
 			p = d.getLocation();
-			d.setLocationAbsolute(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y);
+			d.setLocationAbsolute(p.x + newAnchor.x - anchor.x, p.y + newAnchor.y - anchor.y+15); // (+15 <- fix for calculateOptimalOffset while anchor is in top left corner moving doors 1 grid up)
 		}
 		if (Main.ship != null) {
 			p = Main.hullBox.getLocation();

@@ -2,6 +2,8 @@ package com.kartoflane.superluminal.elements;
 import java.awt.AWTException;
 import java.awt.Robot;
 
+import javax.swing.event.UndoableEditEvent;
+
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
@@ -10,6 +12,9 @@ import org.eclipse.swt.graphics.Rectangle;
 
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.PaintBox;
+import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableMoveEdit;
+import com.kartoflane.superluminal.undo.UndoableOffsetEdit;
 
 
 @SuppressWarnings("serial")
@@ -24,6 +29,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 	public boolean moveAnchor;
 	public boolean moveVertical;
 	private boolean initialClick = false;
+	private Point offsetEdit = new Point(0,0);
 
 	public Anchor() {
 		super();
@@ -121,13 +127,48 @@ public class Anchor extends PaintBox implements DraggableBox {
 			e.gc.setLineWidth(prevWidth);
 		}
 	}
+	
+	@Override
+	public void registerDown(int undoable) {
+		if (undoable == Undoable.MOVE) {
+			if (undoListener != null) {
+				ume = new UndoableMoveEdit(this);
+				((UndoableMoveEdit) ume).setOldPos((box.x==FTLShip.ANCHOR ? 0 : box.x+FTLShip.ANCHOR), (box.y==FTLShip.ANCHOR ? 0 : box.y+FTLShip.ANCHOR));
+				offsetEdit.x = Main.ship.offset.x;
+				offsetEdit.y = Main.ship.offset.y;
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			}
+		}
+	}
+	
+	@Override
+	public void registerUp(int undoable) {
+		if (undoable == Undoable.MOVE && ume != null && ume instanceof UndoableMoveEdit) {
+			if (offsetEdit.x != Main.ship.offset.x || offsetEdit.y != Main.ship.offset.y) {
+				ume = new UndoableOffsetEdit(this);
+				((UndoableOffsetEdit) ume).setOldOffset(offsetEdit.x, offsetEdit.y);
+				((UndoableOffsetEdit) ume).setCurrentOffset(Main.ship.offset.x, Main.ship.offset.y);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+				Main.addEdit(ume);
+			} else {
+				Point pt = ((UndoableMoveEdit) ume).getOldPos();
+				if (pt.x != (box.x==FTLShip.ANCHOR ? 0 : box.x+FTLShip.ANCHOR) || pt.y != (box.y==FTLShip.ANCHOR ? 0 : box.y+FTLShip.ANCHOR)) {
+					((UndoableMoveEdit) ume).setCurrentPos((box.x==FTLShip.ANCHOR ? 0 : box.x+FTLShip.ANCHOR), (box.y==FTLShip.ANCHOR ? 0 : box.y+FTLShip.ANCHOR));
+					Main.addEdit(ume);
+				}
+			}
+		}
+	}
 
 	@Override
 	public void mouseUp(MouseEvent e) {
-		moveAnchor = false;
-		moveVertical = false;
-		Main.cursor.setVisible(true);
-		Main.canvasRedraw(box, false);
+		if (moveAnchor) {
+			registerUp(Undoable.MOVE);
+			moveAnchor = false;
+			moveVertical = false;
+			Main.cursor.setVisible(true);
+			Main.canvasRedraw(box, false);
+		}
 	}
 
 	@Override
@@ -143,6 +184,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 					mouseDoubleClick(e);
 				}
 			}
+			registerDown(Undoable.MOVE);
 			Main.canvasRedraw(box, false);
 		}
 	}

@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.event.UndoableEditEvent;
+
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
@@ -17,6 +19,9 @@ import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ColorBox;
 import com.kartoflane.superluminal.painter.LayeredPainter;
 import com.kartoflane.superluminal.painter.PaintBox;
+import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableResizeEdit;
+import com.kartoflane.superluminal.undo.UndoableSystemEdit;
 
 /**
  * Class representing a single room in a ship.
@@ -506,6 +511,40 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			e.gc.setAlpha(prevAlpha);
 		}
 	}
+
+	@Override
+	public void registerUp(int undoable) {
+		super.registerUp(undoable);
+		if (ume != null) {
+			if (undoable == Undoable.RESIZE) {
+				Rectangle rect = ((UndoableResizeEdit) ume).getOldBounds();
+				if (rect.x != bounds.x || rect.y != bounds.y || rect.width != bounds.width || rect.height != bounds.height) {
+					((UndoableResizeEdit) ume).setCurrentBounds(bounds);
+					Main.addEdit(ume);
+				}
+			} else if (undoable == Undoable.ASSIGN_SYSTEM) {
+				Systems temp = ((UndoableSystemEdit) ume).getOldValue();
+				if (!temp.equals(sys)) {
+					((UndoableSystemEdit) ume).setCurrentValue(sys);
+					Main.addEdit(ume);
+				}
+			}
+		}
+	}
+	
+	@Override
+	public void registerDown (int undoable) {
+		super.registerDown(undoable);
+		if (undoListener != null) {
+			if (undoable == Undoable.RESIZE) {
+				ume = new UndoableResizeEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			} else if (undoable == Undoable.ASSIGN_SYSTEM) {
+				ume = new UndoableSystemEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			}
+		}
+	}
 	
 	@Override
 	public void mouseDown(MouseEvent e) {
@@ -527,20 +566,35 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		} else if (e.button == 3) {
 			move = false;
 		}
+		
+		if (resize) {
+			registerDown(Undoable.RESIZE);
+		} else if (move) {
+			registerDown(Undoable.MOVE);
+		}
 	}
 	
 	@Override
 	public void mouseUp(MouseEvent e) {
 		Main.cursor.setVisible(true);
-		if (move)
+		if (resize) {
+			registerUp(Undoable.RESIZE);
+		} else if (move) {
+			registerUp(Undoable.MOVE);
+		}
+		
+		if (move) {
 			Main.cursor.setLocation(bounds.x, bounds.y);
+		}
 		if (e.button == 1) {
 			if (resize)
 				bounds = Main.fixRect(bounds);
 			move = false;
 			resize = false;
-			if (!bounds.contains(e.x, e.y) && selected);
+			/*
+			if (!bounds.contains(e.x, e.y) && selected)
 				//deselect();
+			*/
 		} else if (e.button == 3) {
 			if (bounds.contains(e.x, e.y) && selected) {
 				Main.menuSystem.setVisible(true);

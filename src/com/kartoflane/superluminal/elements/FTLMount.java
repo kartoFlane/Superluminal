@@ -2,6 +2,8 @@ package com.kartoflane.superluminal.elements;
 
 import java.io.Serializable;
 
+import javax.swing.event.UndoableEditEvent;
+
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
@@ -15,6 +17,10 @@ import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ImageBox;
 import com.kartoflane.superluminal.painter.LayeredPainter;
+import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableDirectionEdit;
+import com.kartoflane.superluminal.undo.UndoableMirrorEdit;
+import com.kartoflane.superluminal.undo.UndoableRotateEdit;
 
 /**
  * Weapon mount class.
@@ -247,7 +253,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		}
 	}
 	
-	private void redrawLoc(Slide slideOld) {
+	public void redrawLoc(Slide slideOld) {
 		redrawLoc(bounds.x, bounds.y);
 		
 		if (slideOld.equals(Slide.NO)) {
@@ -450,11 +456,50 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		ship.mounts.add(this);
 		Main.layeredPainter.add(this, LayeredPainter.MOUNT);
 	}
+	
+	@Override
+	public void registerDown(int undoable) {
+		if (undoable == Undoable.DIRECTION) {
+			if (undoListener != null) {
+				ume = new UndoableDirectionEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			}
+		} else if (undoable == Undoable.ROTATE) {
+			if (undoListener != null) {
+				ume = new UndoableRotateEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			}
+		} else if (undoable == Undoable.FACING) {
+			if (undoListener != null) {
+				Main.debug("mirr");
+				ume = new UndoableMirrorEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			}
+		} else {
+			super.registerDown(undoable);
+		}
+	}
+	
+	@Override
+	public void registerUp(int undoable) {
+		if (undoable == Undoable.DIRECTION && ume != null && ume instanceof UndoableDirectionEdit) {
+			Slide temp = ((UndoableDirectionEdit) ume).getOldSlide();
+			if (temp != slide) {
+				((UndoableDirectionEdit) ume).setCurrentSlide(slide);
+				Main.addEdit(ume);
+			}
+		} else if ((undoable == Undoable.ROTATE || undoable == Undoable.FACING) && ume != null) {
+			Main.addEdit(ume);
+		} else {
+			super.registerUp(undoable);
+		}
+	}
 
 	@Override
 	public void mouseUp(MouseEvent e) {
 		Main.cursor.setVisible(true);
 		if (move) {
+			registerUp(Undoable.MOVE);
 			Main.copyRect(bounds, Main.cursor.getBounds());
 		}
 		
@@ -472,6 +517,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	public void mouseDown(MouseEvent e) {
 		if (Main.tltmPointer.getSelection()) {
 			if (bounds.contains(e.x, e.y)) {
+				registerDown(Undoable.MOVE);
 				select();
 				offset.x = e.x - (Main.hullBox.getBounds().x + pos.x);
 				offset.y = e.y - (Main.hullBox.getBounds().y + pos.y);
@@ -485,6 +531,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 			} else if (e.button == 3) {
 				if (Main.modShift) {
 					Slide slideOld = slide;
+					registerDown(Undoable.DIRECTION);
 					slide = ((slide.equals(Slide.UP))
 								? (Slide.RIGHT)
 								: (slide.equals(Slide.RIGHT))
@@ -496,12 +543,17 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 											: (slide.equals(Slide.NO))
 												? (Slide.UP)
 												: slide);
-					
+
+					registerUp(Undoable.DIRECTION);
 					redrawLoc(slideOld);
 				} else if (Main.modAlt) {
+					registerDown(Undoable.FACING);
 					setMirrored(!mirror);
+					registerUp(Undoable.FACING);
 				} else {
+					registerDown(Undoable.ROTATE);
 					setRotated(!rotate);
+					registerUp(Undoable.ROTATE);
 				}
 			}
 		} else if (Main.tltmGib.getSelection() && bounds.contains(e.x, e.y)) {
@@ -536,7 +588,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 			if (Main.modCtrl) { // precision mode
 				setLocation((Main.dragDir==AxisFlag.Y) ? bounds.x+bounds.width/2 : orig.x + bounds.width/2 - (orig.x + offset.x - e.x)/10,
 						(Main.dragDir==AxisFlag.X) ? bounds.y+bounds.height/2 : orig.y + bounds.height/2 - (orig.y + offset.y - e.y)/10);
-			} else { // normal dragging
+			} else { // normal dragging, dragging in one direction
 				setLocation((Main.dragDir==AxisFlag.Y) ? bounds.x+bounds.width/2 : e.x - offset.x,
 						(Main.dragDir==AxisFlag.X) ? bounds.y+bounds.height/2 : e.y - offset.y);
 			}

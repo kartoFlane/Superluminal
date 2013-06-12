@@ -13,6 +13,7 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.LayeredPainter;
 import com.kartoflane.superluminal.painter.PaintBox;
+import com.kartoflane.superluminal.undo.Undoable;
 
 
 /**
@@ -199,6 +200,8 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 
 	@Override
 	public void mouseUp(MouseEvent e) {
+		if (move && !isPinned())
+			registerUp(Undoable.MOVE);
 		move = false;
 		Main.cursor.setVisible(true);
 	}
@@ -206,6 +209,7 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 	@Override
 	public void mouseDown(MouseEvent e) {
 		if (bounds.contains(e.x, e.y) && e.button == 1) {
+			registerDown(Undoable.MOVE);
 			if (Main.selectedDoor != null) Main.selectedDoor.deselect();
 			select();
 		} else {
@@ -217,7 +221,7 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 	@Override
 	public void mouseMove(MouseEvent e) {
 		if (move && !isPinned())
-			setLocation(e.x,e.y);
+			setLocation(e.x, e.y);
 	}
 
 	@Override

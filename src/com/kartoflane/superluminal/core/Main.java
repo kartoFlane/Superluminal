@@ -16,6 +16,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.zip.ZipFile;
 
+import javax.swing.event.UndoableEditListener;
+import javax.swing.undo.AbstractUndoableEdit;
+import javax.swing.undo.UndoManager;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
@@ -95,6 +99,8 @@ import com.kartoflane.superluminal.ui.ShipBrowser;
 import com.kartoflane.superluminal.ui.ShipChoiceDialog;
 import com.kartoflane.superluminal.ui.ShipPropertiesWindow;
 import com.kartoflane.superluminal.ui.TipWindow;
+import com.kartoflane.superluminal.undo.UEListener;
+import com.kartoflane.superluminal.undo.Undoable;
 
 public class Main {
 	// === CONSTANTS
@@ -306,7 +312,7 @@ public class Main {
 
 	public static boolean animateGibs = false;
 	public static long timeElapsed = 0;
-	
+
 	private static MenuItem mntmView;
 	private static MenuItem mntmEdit;
 	private static MenuItem mntmNewShip;
@@ -320,16 +326,40 @@ public class Main {
 	private static MenuItem mntmSaveShipAs;
 	private static MenuItem mntmExport;
 
+	// Undo Manager
+	public static MenuItem mntmUndo;
+	public static MenuItem mntmRedo;
+	public static UndoableEditListener ueListener = new UEListener();
+	public static boolean savedSinceAction = true;
+	/** Values: SWT.YES, SWT.NO, SWT.CANCEL */
+	public static int askSaveChoice = 0;
+	public static boolean askedChoice = false;
+
+	public static UndoManager undoManager = new UndoManager();
+
 	// =================================================================================================== //
 
 	/*
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
+	 * - room assign system undo
+	 * - door linking undo
+	 * - delete undo
+	 * - system station slot assign
+	 * 
+	 * undo checklist:
+	 * hull - done
+	 * shield - done
+	 * rooms - move done, resize done,
+	 * doors - move done,
+	 * mounts - done
+	 * gibs - move done,
+	 * stations - dir done,
 	 * 
 	 * == MEDIUM PRIO: (new features)
 	 * - multiple systems for the same room for enemy ships
-	 * - fix (ie. implement) weapon mount animation?
+	 * - fix (ie. implement...) weapon mount animation?
 	 * - finally get around to implementing ctrl-z?
 	 * - warning when trying to close unsaved project?
 	 * 
@@ -358,7 +388,9 @@ public class Main {
 	 * - ~ "Import Room Layout" moved from File to Edit menu
 	 * - + selection is now cleared when switching between tools
 	 * - f when loading a project, gibs that failed to load their images (for example if the files couldn't be found) will now be removed, instead of crashing the editor
-	 *
+	 * - f calculate optimal offset now moves the anchor, should it end up outside of the editable area after the operation
+	 * - + The editor now warns you when you try to close an unsaved project
+	 * - + FUCKING FINALLY implemented undo/redo functionality
 	 */
 
 	// =================================================================================================== //
@@ -541,11 +573,13 @@ public class Main {
 		tipWindow.setLocation(shell.getLocation().x + 300, shell.getLocation().y + 200);
 
 		createContents();
+		
+		undoManager.setLimit(200);
 
 		shell.setFont(appFont);
 
 		shell.setEnabled(true);
-		
+
 		if (ShipIO.isNull(dataPath) || ShipIO.isNull(resPath) || !(new File("archives")).exists()) {
 			dataPath = null;
 			resPath = null;
@@ -600,7 +634,24 @@ public class Main {
 		shell.addListener(SWT.Close, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
+				if (!askedChoice) {
+					askSaveChoice();
+					switch (askSaveChoice) {
+						case SWT.YES:
+							mntmSaveShip.notifyListeners(SWT.Selection, null);
+							break;
+
+						case SWT.NO:
+							break;
+
+						case SWT.CANCEL:
+							event.doit = false;
+							askedChoice = false;
+							return;
+					}
+				}
 				mntmClose.notifyListeners(SWT.Selection, null);
+				askedChoice = false;
 			}
 		});
 
@@ -779,6 +830,18 @@ public class Main {
 		mntmEdit.setText("Edit");
 		Menu menu_edit = new Menu(mntmEdit);
 		mntmEdit.setMenu(menu_edit);
+
+		// === Edit -> Undo
+		mntmUndo = new MenuItem(menu_edit, SWT.NONE);
+		mntmUndo.setText("Undo \tCtrl+Z");
+		mntmUndo.setEnabled(false);
+
+		// === Edit -> Redo
+		mntmRedo = new MenuItem(menu_edit, SWT.NONE);
+		mntmRedo.setText("Redo \tCtrl+Y");
+		mntmRedo.setEnabled(false);
+
+		new MenuItem(menu_edit, SWT.SEPARATOR);
 
 		// === Edit -> Automatic door clean
 		MenuItem mntmRemoveDoors = new MenuItem(menu_edit, SWT.CHECK);
@@ -1650,8 +1713,8 @@ public class Main {
 				String path = dialog.open();
 
 				if (!ShipIO.isNull(path) && new File(path).exists()) {
-					//if (ShipIO.isDefaultResource(new File(path)))
-					//	Main.ship.cloakOverride = path;
+					// if (ShipIO.isDefaultResource(new File(path)))
+					// Main.ship.cloakOverride = path;
 
 					Main.ship.cloakPath = path;
 					btnCloaked.setEnabled(!tltmGib.getSelection());
@@ -1681,8 +1744,8 @@ public class Main {
 				String path = dialog.open();
 
 				if (!ShipIO.isNull(path) && new File(path).exists()) {
-					//if (ShipIO.isDefaultResource(new File(path)))
-					//	Main.ship.shieldOverride = path;
+					// if (ShipIO.isDefaultResource(new File(path)))
+					// Main.ship.shieldOverride = path;
 
 					Main.ship.shieldPath = path;
 
@@ -1979,6 +2042,12 @@ public class Main {
 					} else if (e.stateMask == SWT.CTRL && e.keyCode == 'e' && mntmExport.getEnabled()) {
 						mntmExport.notifyListeners(SWT.Selection, null);
 
+						// === undo / redo functions
+					} else if (e.stateMask == SWT.CTRL && e.keyCode == 'z' && mntmUndo.isEnabled()) {
+						mntmUndo.notifyListeners(SWT.Selection, null);
+					} else if (e.stateMask == SWT.CTRL && e.keyCode == 'y' && mntmRedo.isEnabled()) {
+						mntmRedo.notifyListeners(SWT.Selection, null);
+
 						// === show / hide graphics
 					} else if (e.keyCode == '1') {
 						showAnchor = !showAnchor;
@@ -2142,14 +2211,18 @@ public class Main {
 
 		mntmEmpty.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
+				selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 				selectedRoom.assignSystem(Systems.EMPTY);
+				selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 				canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 			}
 		});
 		mntmOxygen.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.OXYGEN, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.OXYGEN);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2157,7 +2230,9 @@ public class Main {
 		mntmMedbay.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.MEDBAY, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.MEDBAY);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2165,7 +2240,9 @@ public class Main {
 		mntmShields.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.SHIELDS, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.SHIELDS);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2173,7 +2250,9 @@ public class Main {
 		mntmWeapons.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.WEAPONS, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.WEAPONS);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2181,7 +2260,9 @@ public class Main {
 		mntmEngines.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.ENGINES, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.ENGINES);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2189,7 +2270,9 @@ public class Main {
 		mntmDoors.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.DOORS, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.DOORS);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2197,7 +2280,9 @@ public class Main {
 		mntmPilot.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.PILOT, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.PILOT);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2205,7 +2290,9 @@ public class Main {
 		mntmSensors.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.SENSORS, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.SENSORS);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2213,7 +2300,9 @@ public class Main {
 		mntmDrones.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.DRONES, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.DRONES);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2221,7 +2310,9 @@ public class Main {
 		mntmArtillery.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.ARTILLERY, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.ARTILLERY);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2229,7 +2320,9 @@ public class Main {
 		mntmTeleporter.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.TELEPORTER, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.TELEPORTER);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2237,7 +2330,9 @@ public class Main {
 		mntmCloaking.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (!isSystemAssigned(Systems.CLOAKING, selectedRoom)) {
+					selectedRoom.registerDown(Undoable.ASSIGN_SYSTEM);
 					selectedRoom.assignSystem(Systems.CLOAKING);
+					selectedRoom.registerUp(Undoable.ASSIGN_SYSTEM);
 					canvas.redraw(selectedRoom.getBounds().x, selectedRoom.getBounds().y, selectedRoom.getBounds().width, selectedRoom.getBounds().height, true);
 				}
 			}
@@ -2320,6 +2415,21 @@ public class Main {
 		mntmNewShip.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				if (!askedChoice) {
+					askSaveChoice();
+					askedChoice = false;
+					switch (askSaveChoice) {
+						case SWT.YES:
+							mntmSaveShip.notifyListeners(SWT.Selection, null);
+							break;
+
+						case SWT.NO:
+							break;
+
+						case SWT.CANCEL:
+							return;
+					}
+				}
 
 				int create = new NewShipDialog(shell).open();
 				shell.setEnabled(true);
@@ -2384,6 +2494,22 @@ public class Main {
 		mntmLoadShip.addSelectionListener(new SelectionAdapter() {
 			@SuppressWarnings("static-access")
 			public void widgetSelected(SelectionEvent e) {
+				if (!askedChoice) {
+					askSaveChoice();
+					switch (askSaveChoice) {
+						case SWT.YES:
+							mntmSaveShip.notifyListeners(SWT.Selection, null);
+							break;
+
+						case SWT.NO:
+							break;
+
+						case SWT.CANCEL:
+							askedChoice = false;
+							return;
+					}
+				}
+
 				ShipBrowser shipBrowser = new ShipBrowser(shell);
 				shipBrowser.shell.open();
 
@@ -2465,6 +2591,22 @@ public class Main {
 
 		mntmLoadShipFTL.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
+				if (!askedChoice) {
+					askSaveChoice();
+					switch (askSaveChoice) {
+						case SWT.YES:
+							mntmSaveShip.notifyListeners(SWT.Selection, null);
+							break;
+
+						case SWT.NO:
+							break;
+
+						case SWT.CANCEL:
+							askedChoice = false;
+							return;
+					}
+				}
+
 				FileDialog dialog = new FileDialog(shell, SWT.OPEN);
 				String[] filterExtensions = new String[] { "*.ftl" };
 				dialog.setFilterExtensions(filterExtensions);
@@ -2644,6 +2786,8 @@ public class Main {
 
 					ShipIO.errors.clear();
 				}
+
+				Main.shell.setEnabled(true);
 			}
 		});
 
@@ -2686,6 +2830,22 @@ public class Main {
 		mntmLoadShipProject.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				if (!askedChoice) {
+					askSaveChoice();
+					askedChoice = false;
+					switch (askSaveChoice) {
+						case SWT.YES:
+							mntmSaveShip.notifyListeners(SWT.Selection, null);
+							break;
+
+						case SWT.NO:
+							break;
+
+						case SWT.CANCEL:
+							return;
+					}
+				}
+
 				ShipIO.askLoadDir();
 
 				if (ship != null) {
@@ -2834,6 +2994,22 @@ public class Main {
 
 		mntmClose.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
+				if (!askedChoice) {
+					askSaveChoice();
+					askedChoice = false;
+					switch (askSaveChoice) {
+						case SWT.YES:
+							mntmSaveShip.notifyListeners(SWT.Selection, null);
+							break;
+
+						case SWT.NO:
+							break;
+
+						case SWT.CANCEL:
+							return;
+					}
+				}
+
 				if (ship != null) {
 					for (MenuItem mntm : menuGibItems) {
 						if (!mntm.isDisposed())
@@ -2929,12 +3105,38 @@ public class Main {
 				mntmCalculateOptimalOffset.setEnabled(false);
 
 				ship = null;
+				askedChoice = false;
+				askSaveChoice = 0;
+				savedSinceAction = true;
+				shell.setText(APPNAME + " - Ship Editor");
 
 				canvas.redraw();
 			}
 		});
 
 		// === EDIT MENU
+
+		mntmUndo.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (undoManager.canUndo()) {
+					print(undoManager.getUndoPresentationName());
+					undoManager.undo();
+				}
+				updateUndoButtons();
+			}
+		});
+
+		mntmRedo.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (undoManager.canRedo()) {
+					print(undoManager.getRedoPresentationName());
+					undoManager.redo();
+				}
+				updateUndoButtons();
+			}
+		});
 
 		mntmRemoveDoors.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
@@ -2956,6 +3158,8 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				if (ship == null || ship.rooms.size() == 0)
 					return;
+				
+				anchor.registerDown(Undoable.MOVE);
 
 				Point size = ship.computeShipSize();
 
@@ -2988,6 +3192,13 @@ public class Main {
 					ship.horizontal = 0;
 					ship.vertical = (HEIGHT / 2 - size.y / 2 - (int) (TOP_MARGIN * 1.5));
 				}
+
+				if (anchor.getBox().x < 0)
+					anchor.setLocation(0, anchor.getBox().y, true);
+				if (anchor.getBox().y < 0)
+					anchor.setLocation(anchor.getBox().x, 0, true);
+
+				anchor.registerUp(Undoable.MOVE);
 
 				canvas.redraw();
 			}
@@ -3643,6 +3854,18 @@ public class Main {
 	// =========================
 	// === AUXILIARY / LAZYNESS
 
+	public static void addEdit(AbstractUndoableEdit aue) {
+		undoManager.addEdit(aue);
+		updateUndoButtons();
+	}
+	
+	public static void updateUndoButtons() {
+		mntmUndo.setText(undoManager.getUndoPresentationName() + "\tCtrl+Z");
+		mntmRedo.setText(undoManager.getRedoPresentationName() + "\tCtrl+Y");
+		mntmUndo.setEnabled(undoManager.canUndo());
+		mntmRedo.setEnabled(undoManager.canRedo());
+	}
+
 	public void clearButtonImg() {
 		btnHull.setImage(null);
 		btnShields.setImage(null);
@@ -3779,16 +4002,16 @@ public class Main {
 			canvas.redraw();
 		}
 	}
-	
+
 	public static void enableMenus(boolean enable) {
 		mntmView.setEnabled(enable);
 		mntmEdit.setEnabled(enable);
-		
+
 		mntmNewShip.setEnabled(enable);
 		mntmLoadShip.setEnabled(enable);
 		mntmLoadShipFTL.setEnabled(enable);
 		mntmLoadShipProject.setEnabled(enable);
-		
+
 		mntmInclude.setEnabled(enable);
 	}
 
@@ -3807,6 +4030,7 @@ public class Main {
 		text.setText(lastMsg);
 	}
 
+	/** True for println, false for print */
 	public static void debug(Object msg, boolean ln) {
 		if (debug) {
 			if (ln) {
@@ -4045,5 +4269,15 @@ public class Main {
 
 	public static float getAngle(Point center, Point target) {
 		return getAngle(center.x, center.y, target.x, target.y);
+	}
+
+	public void askSaveChoice() {
+		if (!savedSinceAction) {
+			MessageBox box = new MessageBox(shell, SWT.ICON_WARNING | SWT.YES | SWT.NO | SWT.CANCEL);
+			box.setText("Unsaved Changes");
+			box.setMessage("You have unsaved modifications. Save changes?");
+			askSaveChoice = box.open();
+			askedChoice = true;
+		}
 	}
 }

@@ -4,6 +4,8 @@ package com.kartoflane.superluminal.elements;
 import java.awt.AWTException;
 import java.awt.Robot;
 
+import javax.swing.event.UndoableEditEvent;
+
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
@@ -14,6 +16,8 @@ import org.eclipse.swt.graphics.Rectangle;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ImageBox;
+import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableResizeEdit;
 
 @SuppressWarnings("serial")
 public class ShieldBox extends ImageBox implements DraggableBox {
@@ -155,10 +159,40 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	}
 	
 	@Override
+	public void registerUp(int undoable) {
+		super.registerUp(undoable);
+		if (ume != null) {
+			if (undoable == Undoable.RESIZE) {
+				Rectangle rect = ((UndoableResizeEdit) ume).getOldBounds();
+				if (rect.x != bounds.x || rect.y != bounds.y || rect.width != bounds.width || rect.height != bounds.height) {
+					((UndoableResizeEdit) ume).setCurrentBounds(bounds);
+					Main.addEdit(ume);
+				}
+			}
+		}
+	}
+	
+	@Override
+	public void registerDown (int undoable) {
+		super.registerDown(undoable);
+		if (undoable == Undoable.RESIZE) {
+			if (undoListener != null) {
+				ume = new UndoableResizeEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			}
+		}
+	}
+	
+	@Override
 	public void mouseUp(MouseEvent e) {
 		if (move) {
+			if (resize && Main.modAlt) {
+				registerUp(Undoable.RESIZE);
+			} else {
+				registerUp(Undoable.MOVE);
+			}
 			Main.cursor.setLocationAbsolute(bounds.x, bounds.y);
-			if (e.button == 3) 
+			if (e.button == 3)
 				Main.cursor.setSize(bounds.width, bounds.height);
 		}
 		move = false;
@@ -181,6 +215,11 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	public void mouseDown(MouseEvent e) {
 		if (bounds.contains(e.x, e.y) && Main.showShield) {
 			select();
+			if (resize && Main.modAlt) {
+				registerDown(Undoable.RESIZE);
+			} else {
+				registerDown(Undoable.MOVE);
+			}
 			if (!Main.modAlt) {
 				offset.x = e.x - bounds.x;
 				offset.y = e.y - bounds.y;

@@ -13,6 +13,7 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ImageBox;
 import com.kartoflane.superluminal.painter.LayeredPainter;
+import com.kartoflane.superluminal.undo.Undoable;
 
 public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	private static final long serialVersionUID = 6190867454456719261L;
@@ -234,6 +235,7 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	
 	@Override
 	public void mouseUp(MouseEvent e) {
+		registerUp(Undoable.MOVE);
 		Main.cursor.setVisible(true);
 		if (move) {
 			Main.copyRect(bounds, Main.cursor.getBounds());
@@ -251,6 +253,7 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	@Override
 	public void mouseDown(MouseEvent e) {
 		if (e.button==1 && bounds.contains(e.x, e.y)) {
+			registerDown(Undoable.MOVE);
 			select();
 			offset.x = e.x - (Main.hullBox.getBounds().x + position.x);
 			offset.y = e.y - (Main.hullBox.getBounds().y + position.y);

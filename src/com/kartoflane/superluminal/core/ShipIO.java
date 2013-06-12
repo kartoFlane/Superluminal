@@ -2608,6 +2608,9 @@ scan:			while(sc.hasNext()) {
 				debug("\t\tdone");
 			}
 			
+			Main.savedSinceAction = true;
+			Main.shell.setText(Main.APPNAME + " - Ship Editor");
+			
 			Main.layeredPainter.setSuppressed(false);
 		} catch (IOException e) {
 			e.printStackTrace();

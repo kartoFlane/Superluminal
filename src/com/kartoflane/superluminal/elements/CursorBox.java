@@ -1,4 +1,6 @@
 package com.kartoflane.superluminal.elements;
+import javax.swing.event.UndoableEditEvent;
+
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
@@ -10,6 +12,8 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.LayeredPainter;
 import com.kartoflane.superluminal.painter.PaintBox;
+import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableDirectionEdit;
 
 
 @SuppressWarnings("serial")
@@ -163,6 +167,27 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	public int round(double d) {
 		return (int) Math.floor(d);
 	}
+
+	@Override
+	public void registerDown(int undoable) {
+		if (undoable == Undoable.DIRECTION) {
+			if (undoListener != null) {
+				ume = new UndoableDirectionEdit(slot_sys);
+				undoListener.undoableEditHappened(new UndoableEditEvent(Main.getRoomWithSystem(slot_sys).sysBox, ume));
+			}
+		}
+	}
+	
+	@Override
+	public void registerUp(int undoable) {
+		if (undoable == Undoable.DIRECTION && ume != null && ume instanceof UndoableDirectionEdit) {
+			Slide temp = ((UndoableDirectionEdit) ume).getOldSlide();
+			if (temp != Main.ship.slotDirMap.get(slot_sys)) {
+				((UndoableDirectionEdit) ume).setCurrentSlide(Main.ship.slotDirMap.get(slot_sys));
+				Main.undoManager.addEdit(ume);
+			}
+		}
+	}
 	
 	@Override
 	public void mouseUp(MouseEvent e) {
@@ -218,8 +243,8 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			} else if (Main.tltmSystem.getSelection()) {
 				if (Main.modShift) {
 					if (Main.ship.slotMap.get(slot_sys) != -2) {
+						registerDown(Undoable.DIRECTION);
 						Slide tempSlide = Main.ship.slotDirMap.get(slot_sys);
-						
 						tempSlide = ((tempSlide.equals(Slide.UP))
 										? (Slide.RIGHT)
 										: (tempSlide.equals(Slide.RIGHT))
@@ -231,7 +256,8 @@ public class CursorBox extends PaintBox implements DraggableBox {
 													: (tempSlide));
 						
 						Main.ship.slotDirMap.put(slot_sys, tempSlide);
-						
+
+						registerUp(Undoable.DIRECTION);
 						Main.canvasRedraw(Main.getRoomWithSystem(slot_sys).getBounds(), false);
 					}
 				} else {
