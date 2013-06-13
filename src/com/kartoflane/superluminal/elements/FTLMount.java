@@ -39,6 +39,8 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	private Rectangle redrawBounds;
 	private boolean powered = true;
 	
+	public int index = -1;
+	
 	/**
 	 * Used to save old position for gib animation
 	 */
@@ -453,6 +455,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	}
 	
 	public void add(FTLShip ship) {
+		index = Main.getLowestMountIndex(ship);
 		ship.mounts.add(this);
 		Main.layeredPainter.add(this, LayeredPainter.MOUNT);
 	}
@@ -471,7 +474,6 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 			}
 		} else if (undoable == Undoable.FACING) {
 			if (undoListener != null) {
-				Main.debug("mirr");
 				ume = new UndoableMirrorEdit(this);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			}
@@ -600,7 +602,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	
 	public void mouseHover(MouseEvent e) {
 		if (bounds.contains(e.x, e.y)) {
-			Main.tooltip.setText("Mount number: "+(Main.getMountIndex(this)+1)
+			Main.tooltip.setText("Mount number: "+(index+1)
 					+ ShipIO.lineDelimiter + "Attached gib: " +gib
 					+ ShipIO.lineDelimiter + "Direction: " + slide.toString().toLowerCase()
 					+ ShipIO.lineDelimiter + (isPowered() ? "Powered" : "Unpowered")

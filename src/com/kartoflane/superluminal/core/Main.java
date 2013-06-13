@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.zip.ZipFile;
 
+import javax.swing.event.UndoableEditEvent;
 import javax.swing.event.UndoableEditListener;
 import javax.swing.undo.AbstractUndoableEdit;
 import javax.swing.undo.UndoManager;
@@ -86,6 +87,7 @@ import com.kartoflane.superluminal.elements.Systems;
 import com.kartoflane.superluminal.elements.Tooltip;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.LayeredPainter;
+import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.ui.AboutWindow;
 import com.kartoflane.superluminal.ui.DirectoriesWindow;
 import com.kartoflane.superluminal.ui.ErrorDialog;
@@ -101,6 +103,7 @@ import com.kartoflane.superluminal.ui.ShipPropertiesWindow;
 import com.kartoflane.superluminal.ui.TipWindow;
 import com.kartoflane.superluminal.undo.UEListener;
 import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableDeleteEdit;
 
 public class Main {
 	// === CONSTANTS
@@ -125,6 +128,7 @@ public class Main {
 
 	public final static int REACTOR_MAX_PLAYER = 25;
 	public final static int REACTOR_MAX_ENEMY = 32;
+	public final static int MAX_MOUNTS = 8;
 
 	public final static String APPNAME = "Superluminal";
 	public final static String VERSION = "13-06-09";
@@ -344,9 +348,8 @@ public class Main {
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
 	 * - door linking undo
-	 * - delete undo
+	 * - gib delete undo
 	 * - gib layering reorder undo
-	 * - 
 	 * 
 	 * undo checklist:
 	 * hull - done
@@ -355,13 +358,12 @@ public class Main {
 	 * doors - move done,
 	 * mounts - done
 	 * gibs - move done,
-	 * stations - dir done,
+	 * stations - dir done, un/assign done
+	 * delete - r/d/m done,
 	 * 
 	 * == MEDIUM PRIO: (new features)
 	 * - multiple systems for the same room for enemy ships
 	 * - fix (ie. implement...) weapon mount animation?
-	 * - finally get around to implementing ctrl-z?
-	 * - warning when trying to close unsaved project?
 	 * 
 	 * == LOW PRIO: (optional tweaks)
 	 * - port to Apache zip
@@ -389,6 +391,7 @@ public class Main {
 	 * - + selection is now cleared when switching between tools
 	 * - f when loading a project, gibs that failed to load their images (for example if the files couldn't be found) will now be removed, instead of crashing the editor
 	 * - f calculate optimal offset now moves the anchor, should it end up outside of the editable area after the operation
+	 * - f fixed a bug that caused the enemy crew random spinner to have no effect at all
 	 * - + The editor now warns you when you try to close an unsaved project
 	 * - + FUCKING FINALLY implemented undo/redo functionality
 	 */
@@ -573,8 +576,8 @@ public class Main {
 		tipWindow.setLocation(shell.getLocation().x + 300, shell.getLocation().y + 200);
 
 		createContents();
-		
-		//undoManager.setLimit(200);
+
+		// undoManager.setLimit(200);
 
 		shell.setFont(appFont);
 
@@ -1959,60 +1962,22 @@ public class Main {
 
 					// === element deletion
 					if ((selectedMount != null || selectedRoom != null || selectedDoor != null) && (e.keyCode == SWT.DEL || (e.stateMask == SWT.SHIFT && e.keyCode == 'd'))) {
-						Rectangle redrawBounds = null;
+						PaintBox box = null;
 						if (selectedRoom != null) {
-							Point oldLow = null;
-							Point oldHigh = null;
-							if (Main.ship != null) {
-								oldLow = Main.ship.findLowBounds();
-								oldHigh = Main.ship.findHighBounds();
-								oldLow.x = oldLow.x + (oldHigh.x - oldLow.x) / 2;
-								oldLow.y = oldLow.y + (oldHigh.y - oldLow.y) / 2;
-							}
-
-							redrawBounds = selectedRoom.getBounds();
-							selectedRoom.dispose();
-							ship.rooms.remove(selectedRoom);
-							removeUnalignedDoors();
-							ship.reassignID();
-							selectedRoom = null;
-
-							if (Main.ship != null) {
-								Point p = Main.ship.findLowBounds();
-								Point pt = Main.ship.findHighBounds();
-								p.x = p.x + (pt.x - p.x) / 2;
-								p.y = p.y + (pt.y - p.y) / 2;
-
-								pt.x = p.x - oldLow.x;
-								pt.y = p.y - oldLow.y;
-
-								p = Main.shieldBox.getLocation();
-								Main.shieldBox.setLocation(p.x + pt.x, p.y + pt.y);
-							}
-
-							if (ship.rooms.size() == 0) {
-								btnShields.setEnabled(false);
-							}
+							box = selectedRoom;
+							deleteObject(selectedRoom);
 						} else if (selectedDoor != null) {
-							redrawBounds = selectedDoor.getBounds();
-							selectedDoor.dispose();
-							ship.doors.remove(selectedDoor);
-							selectedDoor = null;
+							box = selectedDoor;
+							deleteObject(selectedDoor);
 						} else if (selectedMount != null) {
-							redrawBounds = selectedMount.getBounds();
-
-							selectedMount.dispose();
-							ship.mounts.remove(selectedMount);
-							selectedMount = null;
-
-							redrawBounds.x -= 40;
-							redrawBounds.y -= 40;
-							redrawBounds.width += 80;
-							redrawBounds.height += 80;
+							box = selectedMount;
+							deleteObject(selectedMount);
 						}
-
-						if (redrawBounds != null)
-							canvasRedraw(redrawBounds, false);
+						if (box != null) {
+							AbstractUndoableEdit aue = new UndoableDeleteEdit(box);
+							Main.ueListener.undoableEditHappened(new UndoableEditEvent(box, aue));
+							Main.addEdit(aue);
+						}
 
 						// === deselect
 					} else if (e.keyCode == SWT.ESC) {
@@ -3158,7 +3123,7 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				if (ship == null || ship.rooms.size() == 0)
 					return;
-				
+
 				anchor.registerDown(Undoable.MOVE);
 
 				Point size = ship.computeShipSize();
@@ -3623,6 +3588,28 @@ public class Main {
 		corners[3] = new Rectangle(r.getBounds().x + r.getBounds().width - CORNER, r.getBounds().y + r.getBounds().height - CORNER, CORNER, CORNER);
 	}
 
+	public static void recalculateShieldCenter() {
+		if (Main.ship != null) {
+			Point center = new Point(0, 0);
+			center.x = shieldEllipse.x + shieldEllipse.width / 2 - ship.ellipse.x;
+			center.y = shieldEllipse.y + shieldEllipse.height / 2 - ship.ellipse.y + (ship.isPlayer ? 0 : 110);
+
+			Point low = ship.findLowBounds();
+			Point high = ship.findHighBounds();
+
+			// new center
+			low.x = low.x + (high.x - low.x) / 2;
+			low.y = low.y + (high.y - low.y) / 2;
+
+			// difference
+			center.x = center.x - low.x;
+			center.y = center.y - low.y;
+
+			low = shieldBox.getLocation();
+			shieldBox.setLocation(low.x - center.x, low.y - center.y);
+		}
+	}
+
 	public static int getLowestId() {
 		int i = -1;
 		idList.add(-1);
@@ -3630,6 +3617,32 @@ public class Main {
 			i++;
 		}
 		return i;
+	}
+
+	public static int getLowestMountIndex(FTLShip ship) {
+		int i = -1;
+		HashSet<Integer> indexList = new HashSet<Integer>();
+		indexList.add(-1); // so that we can iterate over the set
+		for (FTLMount m : ship.mounts)
+			indexList.add(m.index);
+
+		while (i < MAX_MOUNTS && indexList.contains(i)) {
+			i++;
+		}
+
+		return i;
+	}
+
+	/**
+	 * @param i
+	 *            Index that is to be checked
+	 * @return True if index is taken, false is it's free
+	 */
+	public static boolean isMountIndexTaken(int i) {
+		for (FTLMount m : ship.mounts)
+			if (m.index == i)
+				return true;
+		return false;
 	}
 
 	public static Point findFarthestCorner(FTLRoom r, Point p) {
@@ -3858,7 +3871,7 @@ public class Main {
 		undoManager.addEdit(aue);
 		updateUndoButtons();
 	}
-	
+
 	public static void updateUndoButtons() {
 		mntmUndo.setText(undoManager.getUndoPresentationName() + "\tCtrl+Z");
 		mntmRedo.setText(undoManager.getRedoPresentationName() + "\tCtrl+Y");
@@ -4279,5 +4292,153 @@ public class Main {
 			askSaveChoice = box.open();
 			askedChoice = true;
 		}
+	}
+
+	/**
+	 * Hides the object and unregisters it from lists, painters and the like, but keeps it stored in memory
+	 * so that its deletion can be undone
+	 */
+	public static void deleteObject(PaintBox box) {
+		if (!(box instanceof FTLRoom || box instanceof FTLDoor || box instanceof FTLMount || box instanceof FTLGib)) {
+			throw new IllegalArgumentException("Not an instance of deletable object.");
+		}
+
+		Rectangle redrawBounds = null;
+		// unregister and hide
+		if (box instanceof FTLRoom) {
+			ship.rooms.remove(box);
+			idList.remove(((FTLRoom) box).id);
+			recalculateShieldCenter();
+			layeredPainter.remove(box);
+
+			if (ship.rooms.size() == 0)
+				btnShields.setEnabled(false);
+
+			box.setVisible(false);
+			redrawBounds = box.getBounds();
+		} else if (box instanceof FTLDoor) {
+			ship.doors.remove(box);
+			layeredPainter.remove(box);
+			box.setVisible(false);
+
+			redrawBounds = box.getBounds();
+		} else if (box instanceof FTLMount) {
+			ship.mounts.remove(box);
+			layeredPainter.remove(box);
+
+			redrawBounds = box.getBounds();
+			redrawBounds.x -= 40;
+			redrawBounds.y -= 40;
+			redrawBounds.width += 80;
+			redrawBounds.height += 80;
+		}
+
+		if (redrawBounds != null)
+			canvasRedraw(redrawBounds, true);
+	}
+
+	public static void recreateObject(PaintBox box) {
+		if (!(box instanceof FTLRoom || box instanceof FTLDoor || box instanceof FTLMount || box instanceof FTLGib)) {
+			throw new IllegalArgumentException("Not an instance of creatable object.");
+		}
+
+		Rectangle redrawBounds = null;
+		// register back and show
+		if (box instanceof FTLRoom) {
+			((FTLRoom) box).id = getLowestId();
+			((FTLRoom) box).add(ship);
+			((FTLRoom) box).assignSystem(((FTLRoom) box).sysBox);
+
+			box.setVisible(true);
+			redrawBounds = box.getBounds();
+		} else if (box instanceof FTLDoor) {
+			((FTLDoor) box).add(ship);
+
+			box.setVisible(true);
+			redrawBounds = box.getBounds();
+		} else if (box instanceof FTLMount) {
+			FTLMount m = (FTLMount) box;
+			if (isMountIndexTaken(m.index) || m.index > ship.mounts.size()) {
+				ship.mounts.add(m); // if the index is taken -- too bad
+			} else {
+				ship.mounts.add(m.index, m); // insert it at the same index it was previously
+			}
+			layeredPainter.add(box, LayeredPainter.MOUNT);
+			m.setRotated(m.isRotated());
+			
+			ShipIO.loadWeaponImages(Main.ship);
+			ShipIO.remapMountsToWeapons();
+
+			box.setVisible(true);
+			redrawBounds = box.getBounds();
+			cursor.mount_canBePlaced = ship.mounts.size() < MAX_MOUNTS;
+		}
+
+		if (redrawBounds != null)
+			canvasRedraw(redrawBounds, true);
+	}
+
+	/**
+	 * Destroys the object
+	 */
+	public static void reallyDeleteObject(PaintBox box) {
+		Rectangle redrawBounds = null;
+		if (box instanceof FTLRoom) {
+			FTLRoom r = (FTLRoom) box;
+
+			Point oldLow = null;
+			Point oldHigh = null;
+			if (Main.ship != null) {
+				oldLow = Main.ship.findLowBounds();
+				oldHigh = Main.ship.findHighBounds();
+				oldLow.x = oldLow.x + (oldHigh.x - oldLow.x) / 2;
+				oldLow.y = oldLow.y + (oldHigh.y - oldLow.y) / 2;
+			}
+
+			redrawBounds = r.getBounds();
+			r.dispose();
+			ship.rooms.remove(r);
+			removeUnalignedDoors();
+			ship.reassignID();
+			r = null;
+
+			if (Main.ship != null) {
+				Point p = Main.ship.findLowBounds();
+				Point pt = Main.ship.findHighBounds();
+				p.x = p.x + (pt.x - p.x) / 2;
+				p.y = p.y + (pt.y - p.y) / 2;
+
+				pt.x = p.x - oldLow.x;
+				pt.y = p.y - oldLow.y;
+
+				p = shieldBox.getLocation();
+				shieldBox.setLocation(p.x + pt.x, p.y + pt.y);
+			}
+
+			if (ship.rooms.size() == 0) {
+				btnShields.setEnabled(false);
+			}
+		} else if (box instanceof FTLDoor) {
+			FTLDoor d = (FTLDoor) box;
+			redrawBounds = d.getBounds();
+			d.dispose();
+			ship.doors.remove(d);
+			d = null;
+		} else if (box instanceof FTLMount) {
+			FTLMount m = (FTLMount) box;
+			redrawBounds = m.getBounds();
+
+			m.dispose();
+			ship.mounts.remove(m);
+			m = null;
+
+			redrawBounds.x -= 40;
+			redrawBounds.y -= 40;
+			redrawBounds.width += 80;
+			redrawBounds.height += 80;
+		}
+
+		if (redrawBounds != null)
+			canvasRedraw(redrawBounds, false);
 	}
 }

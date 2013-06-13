@@ -33,7 +33,7 @@ public class GibDialog {
 	private Button btnMoveUp;
 	private Button btnMoveDown;
 	private Button btnAddGib;
-	private Button btnDeleteGib;
+	public Button btnDeleteGib;
 	public Button btnHideGib;
 	public HashSet<String> letters = new HashSet<String>();
 	public Button btnAnimate;

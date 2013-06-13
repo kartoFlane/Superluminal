@@ -24,8 +24,14 @@ public class Undoable {
 	public static final int SLOT = 8;
 	/** Room interior, hull graphic, etc */
 	public static final int IMAGE = 9;
-	// TODO list all feasible undoable edits
 	public static final int SYS_LEVEL = 10;
 	public static final int SYS_MAX = 11;
 	public static final int LINK = 12;
+	public static final int LAYER = 13;
+	public static final int CREATE_ROOM = 14;
+	public static final int CREATE_DOOR = 15;
+	public static final int CREATE_MOUNT = 16;
+	public static final int CREATE_GIB = 17;
+	public static final int SPLIT = 18;
+	// TODO list all feasible undoable edits
 }

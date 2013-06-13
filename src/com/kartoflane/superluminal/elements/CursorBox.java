@@ -13,6 +13,7 @@ import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.LayeredPainter;
 import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableCreateEdit;
 import com.kartoflane.superluminal.undo.UndoableDirectionEdit;
 import com.kartoflane.superluminal.undo.UndoableSlotEdit;
 
@@ -27,9 +28,11 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	
 	private boolean room_canBePlaced = false;
 	private boolean door_canBePlaced = false;
-	private boolean mount_canBePlaced = false;
+	public boolean mount_canBePlaced = false;
 	private boolean slot_canBePlaced = false;
 	private Systems slot_sys = null;
+	
+	private PaintBox createdBox = null;
 	
 	public CursorBox() {
 		lastClick = new Point(0,0);
@@ -189,15 +192,21 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				Slide temp = ((UndoableDirectionEdit) ume).getOldSlide();
 				if (temp != Main.ship.slotDirMap.get(slot_sys)) {
 					((UndoableDirectionEdit) ume).setCurrentSlide(Main.ship.slotDirMap.get(slot_sys));
-					Main.undoManager.addEdit(ume);
+					Main.addEdit(ume);
 				}
 			} else if (undoable == Undoable.SLOT) {
 				int temp = ((UndoableSlotEdit) ume).getOldValue();
 				if (temp != Main.ship.slotMap.get(slot_sys)) {
 					((UndoableSlotEdit) ume).setCurrentValue(Main.ship.slotMap.get(slot_sys));
-					Main.undoManager.addEdit(ume);
+					Main.addEdit(ume);
 				}
 			}
+		} else if ((undoable == Undoable.CREATE_ROOM || undoable == Undoable.CREATE_DOOR || undoable == Undoable.CREATE_MOUNT) && createdBox != null) {
+			ume = new UndoableCreateEdit(createdBox);
+			undoListener.undoableEditHappened(new UndoableEditEvent(createdBox, ume));
+			Main.addEdit(ume);
+			ume = null;
+			createdBox = null;
 		}
 	}
 	
@@ -225,6 +234,10 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					r.add(Main.ship);
 					
 					Main.canvasRedraw(r.getBounds(), false);
+					
+					createdBox = r;
+					registerUp(Undoable.CREATE_ROOM);
+					Main.savedSinceAction = false;
 				}
 			} else if (Main.tltmDoor.getSelection()) {
 				if (door_canBePlaced && !Main.modShift) {
@@ -233,6 +246,10 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					d.fixRectOrientation();
 					
 					d.add(Main.ship);
+					
+					createdBox = d;
+					registerUp(Undoable.CREATE_DOOR);
+					Main.savedSinceAction = false;
 				}
 			} else if (Main.tltmMount.getSelection()) {
 				if (mount_canBePlaced) {
@@ -248,8 +265,12 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					
 					m.add(Main.ship);
 					
+					createdBox = m;
+					registerUp(Undoable.CREATE_MOUNT);
+					Main.savedSinceAction = false;
+					
 					//mount_canBePlaced = Main.ship.mounts.size() < (Main.ship.weaponSlots + (Main.isSystemAssigned(Systems.ARTILLERY) ? 1 : 0));
-					mount_canBePlaced = Main.ship.mounts.size() < 8;
+					mount_canBePlaced = Main.ship.mounts.size() < Main.MAX_MOUNTS;
 				}
 				
 			} else if (Main.tltmSystem.getSelection()) {
@@ -318,9 +339,11 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				}
 				
 			} else if (Main.tltmSystem.getSelection()) {
+				registerDown(Undoable.SLOT);
 				Main.ship.slotMap.put(slot_sys, -2);
 				Main.getRoomWithSystem(slot_sys).slot = Main.ship.slotMap.get(slot_sys);
-				
+
+				registerUp(Undoable.SLOT);
 				Main.canvasRedraw(Main.getRoomWithSystem(slot_sys).getBounds(), false);
 			}
 		}
@@ -484,7 +507,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				bounds.y = e.y - bounds.height/2;
 				
 				//mount_canBePlaced = Main.ship.mounts.size() < (Main.ship.weaponSlots + (Main.isSystemAssigned(Systems.ARTILLERY) ? 1 : 0));
-				mount_canBePlaced = Main.ship.mounts.size() < 8;
+				mount_canBePlaced = Main.ship.mounts.size() < Main.MAX_MOUNTS;
 				
 				Main.canvas.redraw(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+6, false);
 				Main.canvas.redraw(oldBounds.x-3, oldBounds.y-3, oldBounds.width+6, oldBounds.height+6, false);
