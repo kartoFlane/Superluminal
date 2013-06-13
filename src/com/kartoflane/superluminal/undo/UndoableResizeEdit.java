@@ -41,8 +41,8 @@ public class UndoableResizeEdit extends AbstractUndoableEdit {
 	
 	public void undo() throws CannotUndoException {
 		super.undo();
-		box.setLocation(oldBounds.x, oldBounds.y);
 		box.setSize(oldBounds.width, oldBounds.height);
+		box.setLocation(oldBounds.x, oldBounds.y);
 		if (box instanceof FTLRoom) {
 			((FTLRoom) box).updateCorners();
 		}
@@ -50,8 +50,8 @@ public class UndoableResizeEdit extends AbstractUndoableEdit {
 	
 	public void redo() throws CannotRedoException {
 		super.redo();
-		box.setLocation(currentBounds.x, currentBounds.y);
 		box.setSize(currentBounds.width, currentBounds.height);
+		box.setLocation(currentBounds.x, currentBounds.y);
 		if (box instanceof FTLRoom) {
 			((FTLRoom) box).updateCorners();
 		}

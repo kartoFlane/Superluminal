@@ -101,7 +101,11 @@ public class HullBox extends ImageBox implements DraggableBox {
 			Color prevColor = e.gc.getForeground();
 			int prevLineWidth = e.gc.getLineWidth();
 
-			e.gc.setForeground(borderColor);
+			if (pinned) {
+				e.gc.setForeground(pinColor);
+			} else {
+				e.gc.setForeground(borderColor);
+			}
 			e.gc.setLineWidth(borderThickness);
 
 			e.gc.drawRectangle(bounds.x + borderThickness / 2, bounds.y + borderThickness / 2, (bounds.width - 1) - borderThickness, (bounds.height - 1) - borderThickness);
@@ -120,7 +124,10 @@ public class HullBox extends ImageBox implements DraggableBox {
 			paintBorder(e);
 
 			if (borderColor != null)
-				e.gc.setBackground(borderColor);
+				if (pinned)
+					e.gc.setBackground(pinColor);
+				else
+					e.gc.setBackground(borderColor);
 
 			e.gc.setAlpha(Main.btnCloaked.getSelection() ? 0 : alpha); // alpha/3
 			if (image != null && Main.showHull)
@@ -131,9 +138,6 @@ public class HullBox extends ImageBox implements DraggableBox {
 				e.gc.setAlpha(alpha);
 				e.gc.drawImage(cloakImage, 0, 0, cloakImage.getBounds().width, cloakImage.getBounds().height, bounds.x - 10, bounds.y - 10, bounds.width + 20, bounds.height + 20);
 			}
-
-			if (selected && isPinned())
-				e.gc.drawImage(pin, bounds.x + 5, bounds.y + 5);
 
 			e.gc.setAlpha(alpha / 255 * 32);
 			if (selected)

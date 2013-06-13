@@ -179,17 +179,22 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 			
 			if (selected) {
 				e.gc.setAlpha(64);
-				e.gc.setBackground(borderColor);
+				if (pinned && selected) {
+					e.gc.setBackground(pinColor);
+				} else {
+					e.gc.setBackground(borderColor);
+				}
 				e.gc.fillRectangle(bounds);
 				
 				e.gc.setAlpha(255);
 				e.gc.setLineWidth(borderThickness);
-				e.gc.setForeground(borderColor);
+				if (pinned && selected) {
+					e.gc.setForeground(pinColor);
+				} else {
+					e.gc.setForeground(borderColor);
+				}
 				e.gc.drawRectangle(bounds.x+2, bounds.y+2, bounds.width-4, bounds.height-4);
 			}
-				
-			if (selected && isPinned())
-				e.gc.drawImage(pin, bounds.x+5, bounds.y+5);
 
 			e.gc.setTransform(Main.currentTransform);
 			transform.dispose();

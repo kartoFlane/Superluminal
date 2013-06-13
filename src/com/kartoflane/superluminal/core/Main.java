@@ -349,7 +349,7 @@ public class Main {
 	 * == IMMEDIATE PRIO: (bug fixes)
 	 * - door linking undo
 	 * - gib delete undo
-	 * - gib layering reorder undo
+	 * - gib layering reorder undo?
 	 * 
 	 * undo checklist:
 	 * hull - done
@@ -392,6 +392,7 @@ public class Main {
 	 * - f when loading a project, gibs that failed to load their images (for example if the files couldn't be found) will now be removed, instead of crashing the editor
 	 * - f calculate optimal offset now moves the anchor, should it end up outside of the editable area after the operation
 	 * - f fixed a bug that caused the enemy crew random spinner to have no effect at all
+	 * - ~ pinned down objects now have yellow-ish selection, instead of the obscure (and often hard-to-notice) pin image
 	 * - + The editor now warns you when you try to close an unsaved project
 	 * - + FUCKING FINALLY implemented undo/redo functionality
 	 */
@@ -2055,20 +2056,14 @@ public class Main {
 
 						// === pin
 					} else if (e.keyCode == '`' || e.keyCode == SWT.SPACE) {
-						if (selectedRoom != null)
-							selectedRoom.setPinned(!selectedRoom.isPinned());
-						if (selectedDoor != null)
-							selectedDoor.setPinned(!selectedDoor.isPinned());
-						if (selectedMount != null)
-							selectedMount.setPinned(!selectedMount.isPinned());
-						if (selectedGib != null)
-							selectedGib.setPinned(!selectedGib.isPinned());
-						if (hullBox.isSelected())
-							hullBox.setPinned(!hullBox.isPinned());
-						if (shieldBox.isSelected())
-							shieldBox.setPinned(!shieldBox.isPinned());
-
-						canvas.redraw();
+						PaintBox box = getSelected();
+						if (box != null) {
+							box.registerDown(Undoable.PIN);
+							box.setPinned(!box.isPinned());
+							if (box instanceof FTLRoom)
+								((FTLRoom) box).updateColor();
+							canvasRedraw(box.getBounds(), false);
+						}
 
 						// === tool hotkeys
 					} else if (e.stateMask == SWT.NONE && Main.ship != null && (e.keyCode == 'q' || e.keyCode == 'w' || e.keyCode == 'e' || e.keyCode == 'r' || e.keyCode == 't' || e.keyCode == 'g')) {
@@ -4306,6 +4301,7 @@ public class Main {
 		Rectangle redrawBounds = null;
 		// unregister and hide
 		if (box instanceof FTLRoom) {
+			((FTLRoom) box).deselect();
 			ship.rooms.remove(box);
 			idList.remove(((FTLRoom) box).id);
 			recalculateShieldCenter();
@@ -4317,12 +4313,14 @@ public class Main {
 			box.setVisible(false);
 			redrawBounds = box.getBounds();
 		} else if (box instanceof FTLDoor) {
+			((FTLDoor) box).deselect();
 			ship.doors.remove(box);
 			layeredPainter.remove(box);
 			box.setVisible(false);
 
 			redrawBounds = box.getBounds();
 		} else if (box instanceof FTLMount) {
+			((FTLMount) box).deselect();
 			ship.mounts.remove(box);
 			layeredPainter.remove(box);
 
@@ -4359,7 +4357,7 @@ public class Main {
 		} else if (box instanceof FTLMount) {
 			FTLMount m = (FTLMount) box;
 			if (isMountIndexTaken(m.index) || m.index > ship.mounts.size()) {
-				ship.mounts.add(m); // if the index is taken -- too bad
+				ship.mounts.add(m); // if the index is taken -- too bad (shouldn't really ever happen, tbh)
 			} else {
 				ship.mounts.add(m.index, m); // insert it at the same index it was previously
 			}
@@ -4440,5 +4438,22 @@ public class Main {
 
 		if (redrawBounds != null)
 			canvasRedraw(redrawBounds, false);
+	}
+	
+	public static PaintBox getSelected() {
+		if (selectedRoom != null) {
+			return selectedRoom;
+		} else if (selectedDoor != null) {
+			return selectedDoor;
+		} else if (selectedMount != null) {
+			return selectedMount;
+		} else if (selectedGib != null) {
+			return selectedGib;
+		} else if (hullBox != null && hullBox.isSelected()) {
+			return hullBox;
+		} else if (shieldBox != null && shieldBox.isSelected()) {
+			return shieldBox;
+		}
+		return null;
 	}
 }

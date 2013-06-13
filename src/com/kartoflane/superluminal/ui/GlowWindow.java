@@ -49,16 +49,19 @@ public class GlowWindow {
 		if (Main.selectedRoom != null && Main.selectedRoom.sysBox != null) {
 			if (Main.selectedRoom.interiorData.glowPath1 != null) {
 				glowText1.setText(Main.selectedRoom.interiorData.glowPath1);
+				glowText1.setSelection(glowText1.getText().length());
 			} else {
 				glowText1.setText("");
 			}
 			if (Main.selectedRoom.interiorData.glowPath2 != null) {
 				glowText2.setText(Main.selectedRoom.interiorData.glowPath2);
+				glowText2.setSelection(glowText2.getText().length());
 			} else {
 				glowText2.setText("");
 			}
 			if (Main.selectedRoom.interiorData.glowPath3 != null) {
 				glowText3.setText(Main.selectedRoom.interiorData.glowPath3);
+				glowText3.setSelection(glowText3.getText().length());
 			} else {
 				glowText3.setText("");
 			}
@@ -219,12 +222,15 @@ public class GlowWindow {
 						if (e.widget==btnBrowse1) {
 							Main.selectedRoom.sysBox.setGlowImage(path, 1);
 							glowText1.setText(Main.selectedRoom.sysBox.interiorData.glowPath1);
+							glowText1.setSelection(glowText1.getText().length());
 						} else if (e.widget==btnBrowse2) {
 							Main.selectedRoom.sysBox.setGlowImage(path, 2);
 							glowText2.setText(Main.selectedRoom.sysBox.interiorData.glowPath2);
+							glowText2.setSelection(glowText2.getText().length());
 						} else if (e.widget==btnBrowse3) {
 							Main.selectedRoom.sysBox.setGlowImage(path, 3);
 							glowText3.setText(Main.selectedRoom.sysBox.interiorData.glowPath3);
+							glowText3.setSelection(glowText3.getText().length());
 						}
 					} else {
 						if (path != null) {

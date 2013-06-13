@@ -77,6 +77,11 @@ public class CursorBox extends PaintBox implements DraggableBox {
 		e.gc.setLineWidth(borderThickness);
 		
 		if ((Main.tltmPointer.getSelection() || Main.tltmGib.getSelection()) && borderColor != null) {
+			/*
+			PaintBox box = Main.getSelected();
+			if (box != null && box.isPinned())
+				e.gc.setForeground(pinColor);
+			else */
 			e.gc.setForeground(borderColor);
 			
 		} else if (Main.tltmRoom.getSelection()) {

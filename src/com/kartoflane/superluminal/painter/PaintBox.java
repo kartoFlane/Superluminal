@@ -16,6 +16,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.undo.Undoable;
 import com.kartoflane.superluminal.undo.UndoableMoveEdit;
+import com.kartoflane.superluminal.undo.UndoablePinEdit;
 
 public class PaintBox implements Serializable {
 	private static final long serialVersionUID = 1856558606237917617L;
@@ -29,7 +30,9 @@ public class PaintBox implements Serializable {
 
 	protected Rectangle bounds = new Rectangle(0, 0, 0, 0);
 	protected Color borderColor = null;
+	protected Color pinColor = null;
 	protected RGB border_rgb = null;
+	protected RGB pin_rgb = null;
 	protected int borderThickness = 3;
 	protected int borderMode = BORDER_CENTER;
 	protected int borderShape = BORDER_RECTANGLE;
@@ -37,39 +40,46 @@ public class PaintBox implements Serializable {
 	protected boolean drawBorder = true;
 	protected boolean selected = false;
 	protected boolean pinned = false;
+	@Deprecated
 	protected Image pin;
+	@Deprecated
 	protected String pathPin;
 	protected int alpha;
-	
+
 	protected UndoableEditListener undoListener;
 	protected AbstractUndoableEdit ume = null;
 
 	public void stripUnserializable() {
 		Cache.checkInColor(this, border_rgb);
 		borderColor = null;
-		Cache.checkInImage(this, pathPin);
-		pin = null;
+		Cache.checkInColor(this, pin_rgb);
+		pinColor = null;
+		//Cache.checkInImage(this, pathPin);
+		//pin = null;
 		ume = null;
 		undoListener = null;
 	}
 
 	public void loadUnserializable() {
 		borderColor = Cache.checkOutColor(this, border_rgb);
-		pin = Cache.checkOutImage(this, pathPin);
+		pinColor = Cache.checkOutColor(this, pin_rgb);
+		//pin = Cache.checkOutImage(this, pathPin);
 		undoListener = Main.ueListener;
 	}
 
 	public PaintBox() {
 		this(PaintBox.BORDER_RECTANGLE);
-		pathPin = "/img/pin.png";
-		pin = Cache.checkOutImage(this, pathPin);
+		//pathPin = "/img/pin.png";
+		//pin = Cache.checkOutImage(this, pathPin);
 	}
 
 	public PaintBox(int borderShape) {
+		pin_rgb = new RGB(196, 196, 0);
+		pinColor = Cache.checkOutColor(this, pin_rgb);
 		bounds.width = 35;
 		bounds.height = 35;
 		this.borderShape = borderShape;
-		
+
 		addUndoableEditListener(Main.ueListener);
 	}
 
@@ -181,7 +191,11 @@ public class PaintBox implements Serializable {
 
 			// Lines grow out from the center, which makes
 			// math a little funky to accomodate odd/even widths.
-			e.gc.setForeground(borderColor);
+			if (pinned && selected) {
+				e.gc.setForeground(pinColor);
+			} else {
+				e.gc.setForeground(borderColor);
+			}
 			e.gc.setLineWidth(borderThickness);
 			e.gc.setAlpha(alpha);
 
@@ -205,6 +219,7 @@ public class PaintBox implements Serializable {
 
 	public void dispose() {
 		Cache.checkInColor(this, border_rgb);
+		Cache.checkInColor(this, pin_rgb);
 		Cache.checkInImage(this, pathPin);
 	}
 
@@ -215,16 +230,20 @@ public class PaintBox implements Serializable {
 	public void removeUndoableEditListener(UndoableEditListener l) {
 		undoListener = null;
 	}
-	
+
 	public void registerDown(int undoable) {
-		if (undoable == Undoable.MOVE) {
-			if (undoListener != null) {
+		if (undoListener != null) {
+			if (undoable == Undoable.MOVE) {
 				ume = new UndoableMoveEdit(this);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			} else if (undoable == Undoable.PIN) {
+				ume = new UndoablePinEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+				Main.addEdit(ume);
 			}
 		}
 	}
-	
+
 	public void registerUp(int undoable) {
 		if (ume != null && ume instanceof UndoableMoveEdit) {
 			if (undoable == Undoable.MOVE) {

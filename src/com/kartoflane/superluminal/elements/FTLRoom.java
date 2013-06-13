@@ -485,7 +485,11 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			if (selected) {
 				prevBg = e.gc.getBackground();
 
-				e.gc.setBackground(getBorderColor());
+				if (pinned && selected) {
+					e.gc.setBackground(pinColor);
+				} else {
+					e.gc.setBackground(borderColor);
+				}
 				e.gc.setAlpha(128);
 				// resize corners
 				e.gc.fillRectangle(bounds.x, bounds.y, 10, 10);
@@ -494,8 +498,10 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 				e.gc.fillRectangle(bounds.x + bounds.width - 10, bounds.y + bounds.height - 10, 10, 10);
 
 				e.gc.setAlpha(255);
+				/*
 				if (isPinned())
 					e.gc.drawImage(pin, bounds.x + 10, bounds.y + 3);
+				*/
 			}
 			// working stations
 			if (Main.ship != null && Main.ship.slotMap.keySet().contains(sys) && Main.ship.slotMap.get(getSystem()) != -2 && Main.showStations) {
@@ -626,13 +632,19 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	public void updateColor() {
 		if (sysBox == null || sysBox.isAvailable()) {
 			if (selected) {
-				setColor(new RGB(170, 170, 255));
+				if (pinned)
+					setColor(new RGB(183, 200, 127));
+				else
+					setColor(new RGB(170, 170, 255));
 			} else {
 				setColor(new RGB(230, 225, 220));
 			}
 		} else if (sysBox != null && !sysBox.isAvailable()) {
 			if (selected) {
-				setColor(new RGB(180, 100, 220));
+				if (pinned)
+					setColor(new RGB(188, 148, 110));
+				else
+					setColor(new RGB(180, 100, 220));
 			} else {
 				setColor(new RGB(220, 100, 100));
 			}

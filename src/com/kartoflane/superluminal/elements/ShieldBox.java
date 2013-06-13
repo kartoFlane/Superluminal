@@ -116,8 +116,12 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 		if (borderColor != null && selected && !Main.tltmGib.getSelection()) {
 			Color prevColor = e.gc.getForeground();
 			int prevLineWidth = e.gc.getLineWidth();
-			
-			e.gc.setForeground(borderColor);
+
+			if (pinned) {
+				e.gc.setForeground(pinColor);
+			} else {
+				e.gc.setForeground(borderColor);
+			}
 			e.gc.setLineWidth(borderThickness);
 
 			e.gc.drawRectangle(bounds.x+borderThickness/2, bounds.y+borderThickness/2, (bounds.width-1)-borderThickness, (bounds.height-1)-borderThickness);
@@ -135,7 +139,10 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 			
 			if (selected) {
 				e.gc.setAlpha(32);
-				e.gc.setBackground(borderColor);
+				if (pinned)
+					e.gc.setBackground(pinColor);
+				else
+					e.gc.setBackground(borderColor);
 				e.gc.fillRectangle(bounds);
 			}
 			
@@ -149,9 +156,6 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 				e.gc.fillOval(bounds.x, bounds.y, bounds.width, bounds.height);
 			}
 			paintBorder(e);
-			
-			if (selected && isPinned())
-				e.gc.drawImage(pin, bounds.x+5, bounds.y+5);
 			
 			e.gc.setAlpha(prevAlpha);
 			e.gc.setBackground(prevBg);

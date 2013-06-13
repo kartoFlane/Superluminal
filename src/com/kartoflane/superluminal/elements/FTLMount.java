@@ -438,12 +438,20 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 
 		if (selected) {
 			e.gc.setAlpha(64);
-			e.gc.setBackground(borderColor);
+			if (pinned) {
+				e.gc.setBackground(pinColor);
+			} else {
+				e.gc.setBackground(borderColor);
+			}
 			e.gc.fillRectangle(bounds);
 			
 			e.gc.setAlpha(255);
 			e.gc.setLineWidth(borderThickness);
-			e.gc.setForeground(borderColor);
+			if (pinned) {
+				e.gc.setForeground(pinColor);
+			} else {
+				e.gc.setForeground(borderColor);
+			}
 			e.gc.drawRectangle(bounds);
 		}
 		

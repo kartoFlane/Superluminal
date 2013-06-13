@@ -138,9 +138,6 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 				
 				e.gc.fillRectangle(getBounds().x+6, getBounds().y+1, 20, 4);
 				e.gc.drawRectangle(getBounds().x+15, getBounds().y, 1, 5);
-				
-				if (selected && isPinned())
-					e.gc.drawImage(pin, bounds.x+9, bounds.y-15);
 			} else {
 				e.gc.fillRectangle(getBounds().x+1, getBounds().y, 4, 5);
 				e.gc.fillRectangle(getBounds().x+1, getBounds().y+getBounds().height-4, 4, 5);
@@ -150,9 +147,6 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 				
 				e.gc.fillRectangle(getBounds().x+1, getBounds().y+6, 4, 20);
 				e.gc.drawRectangle(getBounds().x, getBounds().y+15, 5, 1);
-				
-				if (selected && isPinned())
-					e.gc.drawImage(pin, bounds.x-15, bounds.y+9);
 			}
 			
 			// draw the lines linking the door to rooms, if set explicitly

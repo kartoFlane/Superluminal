@@ -9,9 +9,8 @@ package com.kartoflane.superluminal.undo;
 public class Undoable {
 	public static final int MOVE = 0;
 	public static final int RESIZE = 1;
-	public static final int DELETE = 2;
-	/** Shift-moving anchor box, calculateOptimalOffset */
-	public static final int SHIP_OFFSET = 3;
+	public static final int PIN = 2;
+	public static final int SHIP_OFFSET = 3; // unused
 	/** Assign/unassign system to/from room */
 	public static final int ASSIGN_SYSTEM = 4;
 	/** Mount rotate flag */
