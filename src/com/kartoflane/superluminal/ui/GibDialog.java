@@ -43,6 +43,7 @@ public class GibDialog {
 	public boolean autoReposition = false;
 	
 	public boolean mainMoved = true;
+	//private Button btnRename;
 	
 	public GibDialog(Shell shl) {
 		shell = new Shell(shl, SWT.BORDER | SWT.TITLE);
@@ -87,13 +88,15 @@ public class GibDialog {
 	protected void createContents() {
 		shell.setLayout(new GridLayout(2, false));
 		list = new List(shell, SWT.BORDER | SWT.V_SCROLL);
-		GridData gd_list = new GridData(SWT.LEFT, SWT.FILL, false, false, 1, 1);
+		GridData gd_list = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
 		gd_list.widthHint = 115;
 		list.setLayoutData(gd_list);
 		list.setFont(Main.appFont);
 		
 		Composite composite = new Composite(shell, SWT.NONE);
+		composite.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 2));
 		GridLayout gl_composite = new GridLayout(1, false);
+		gl_composite.marginHeight = 0;
 		composite.setLayout(gl_composite);
 		
 		btnMoveUp = new Button(composite, SWT.NONE);
@@ -109,15 +112,22 @@ public class GibDialog {
 		Label label = new Label(composite, SWT.SEPARATOR | SWT.HORIZONTAL);
 		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
 		
+		btnAddGib = new Button(composite, SWT.NONE);
+		btnAddGib.setFont(Main.appFont);
+		btnAddGib.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
+		btnAddGib.setText("Add Gib");
+		
 		btnHideGib = new Button(composite, SWT.NONE);
 		btnHideGib.setFont(Main.appFont);
 		btnHideGib.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		btnHideGib.setText("Hide Gib");
 		
-		btnAddGib = new Button(composite, SWT.NONE);
-		btnAddGib.setFont(Main.appFont);
-		btnAddGib.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
-		btnAddGib.setText("Add Gib");
+		/*
+		btnRename = new Button(composite, SWT.NONE);
+		btnRename.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		btnRename.setText("Rename Gib");
+		btnRename.setFont(Main.appFont);
+		*/
 		
 		btnDeleteGib = new Button(composite, SWT.NONE);
 		btnDeleteGib.setFont(Main.appFont);
@@ -173,13 +183,6 @@ public class GibDialog {
 			}
 		});
 		
-		btnHideGib.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				hideSelected(Main.ship.gibs.get(list.getSelectionIndex()).isVisible());
-			}
-		});
-		
 		btnAddGib.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -203,6 +206,22 @@ public class GibDialog {
 				}
 			}
 		});
+		
+		btnHideGib.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				hideSelected(Main.ship.gibs.get(list.getSelectionIndex()).isVisible());
+			}
+		});
+		
+		/*
+		btnRename.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				
+			}
+		});
+		*/
 		
 		btnDeleteGib.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -396,6 +415,7 @@ public class GibDialog {
 				btnMoveDown.setEnabled(index+1!=list.getItemCount());
 				btnDeleteGib.setEnabled(!ShipIO.isNull(list.getSelection()[0]));
 				btnHideGib.setEnabled(!ShipIO.isNull(list.getSelection()[0]));
+				//btnRename.setEnabled(!ShipIO.isNull(list.getSelection()[0]));
 			}
 		} else {
 			list.deselectAll();
@@ -403,6 +423,7 @@ public class GibDialog {
 			btnMoveDown.setEnabled(false);
 			btnDeleteGib.setEnabled(false);
 			btnHideGib.setEnabled(false);
+			//btnRename.setEnabled(false);
 		}
 	}
 }

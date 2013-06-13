@@ -470,7 +470,7 @@ public class ShipPropertiesWindow extends Dialog {
 		tbtmShipInfo = new TabItem(tabFolder, SWT.NONE);
 		tbtmShipInfo.setText("Ship Information");
 
-		Composite shipInfoC = new Composite(tabFolder, SWT.NONE);
+		final Composite shipInfoC = new Composite(tabFolder, SWT.NONE);
 		tbtmShipInfo.setControl(shipInfoC);
 		shipInfoC.setLayout(new GridLayout(5, false));
 
@@ -522,7 +522,7 @@ public class ShipPropertiesWindow extends Dialog {
 		textImage.setFont(Main.appFont);
 		textImage.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
 
-		Label lblDescription = new Label(shipInfoC, SWT.NONE);
+		final Label lblDescription = new Label(shipInfoC, SWT.NONE);
 		lblDescription.setFont(Main.appFont);
 		lblDescription.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		lblDescription.setText("Description:");
@@ -563,7 +563,7 @@ public class ShipPropertiesWindow extends Dialog {
 		textDesc.setFont(Main.appFont);
 		GridData gd_textDesc = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 5);
 		gd_textDesc.widthHint = 200;
-		textDesc.setToolTipText("Should be generally ~4 lines of text, more will go outside of text box in-game.");
+		textDesc.setToolTipText("Exceeding the 200 characters limit will cause the description\nto go outside of the hangar text box in-game.");
 		textDesc.setLayoutData(gd_textDesc);
 
 		Label lblMissiles = new Label(shipInfoC, SWT.NONE);
@@ -1513,6 +1513,12 @@ public class ShipPropertiesWindow extends Dialog {
 				if (e.detail == SWT.TRAVERSE_TAB_NEXT || e.detail == SWT.TRAVERSE_TAB_PREVIOUS) {
 					e.doit = true;
 				}
+			}
+		});
+
+		textDesc.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				lblDescription.setText(String.format("Description (%s/200):", textDesc.getText().length()));
 			}
 		});
 

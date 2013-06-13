@@ -25,12 +25,13 @@ public class Undoable {
 	public static final int IMAGE = 9;
 	public static final int SYS_LEVEL = 10;
 	public static final int SYS_MAX = 11;
-	public static final int LINK = 12;
-	public static final int LAYER = 13;
-	public static final int CREATE_ROOM = 14;
-	public static final int CREATE_DOOR = 15;
-	public static final int CREATE_MOUNT = 16;
-	public static final int CREATE_GIB = 17;
-	public static final int SPLIT = 18;
+	public static final int LINK_LEFT = 12;
+	public static final int LINK_RIGHT = 13;
+	public static final int LAYER = 14;
+	public static final int CREATE_ROOM = 15;
+	public static final int CREATE_DOOR = 16;
+	public static final int CREATE_MOUNT = 17;
+	public static final int CREATE_GIB = 18;
+	public static final int SPLIT = 19;
 	// TODO list all feasible undoable edits
 }

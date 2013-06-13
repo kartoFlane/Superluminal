@@ -129,9 +129,10 @@ public class Main {
 	public final static int REACTOR_MAX_PLAYER = 25;
 	public final static int REACTOR_MAX_ENEMY = 32;
 	public final static int MAX_MOUNTS = 8;
+	public static final int MAX_DESCRIPTION_LENGTH = 200;
 
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-06-09";
+	public final static String VERSION = "13-06-13";
 
 	// === Important objects
 	public static Shell shell;
@@ -1327,7 +1328,7 @@ public class Main {
 		shieldBox = new ShieldBox();
 		layeredPainter.add(shieldBox, LayeredPainter.SHIELD);
 
-		tooltip = new Tooltip();
+		tooltip = new Tooltip(Main.canvas);
 
 		SystemBox tempBox = new SystemBox(Systems.PILOT);
 		tempBox.setImage("/img/systems/s_pilot_overlay.png", true);

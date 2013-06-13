@@ -15,6 +15,7 @@ import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.undo.Undoable;
 import com.kartoflane.superluminal.undo.UndoableCreateEdit;
 import com.kartoflane.superluminal.undo.UndoableDirectionEdit;
+import com.kartoflane.superluminal.undo.UndoableLinkEdit;
 import com.kartoflane.superluminal.undo.UndoableSlotEdit;
 
 
@@ -32,7 +33,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	private boolean slot_canBePlaced = false;
 	private Systems slot_sys = null;
 	
-	private PaintBox createdBox = null;
+	private PaintBox editBox = null;
 	
 	public CursorBox() {
 		lastClick = new Point(0,0);
@@ -186,6 +187,16 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			} else if (undoable == Undoable.SLOT) {
 				ume = new UndoableSlotEdit(Main.getRoomWithSystem(slot_sys).sysBox);
 				undoListener.undoableEditHappened(new UndoableEditEvent(Main.getRoomWithSystem(slot_sys).sysBox, ume));
+			} else if (undoable == Undoable.LINK_LEFT && editBox != null) {
+				ume = new UndoableLinkEdit(editBox, true);
+				undoListener.undoableEditHappened(new UndoableEditEvent(editBox, ume));
+			} else if (undoable == Undoable.LINK_RIGHT && editBox != null) {
+				ume = new UndoableLinkEdit(editBox, false);
+				undoListener.undoableEditHappened(new UndoableEditEvent(editBox, ume));
+			} else if ((undoable == Undoable.CREATE_ROOM || undoable == Undoable.CREATE_DOOR || undoable == Undoable.CREATE_MOUNT) && editBox != null) {
+				ume = new UndoableCreateEdit(editBox);
+				undoListener.undoableEditHappened(new UndoableEditEvent(editBox, ume));
+				Main.addEdit(ume);
 			}
 		}
 	}
@@ -205,13 +216,19 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					((UndoableSlotEdit) ume).setCurrentValue(Main.ship.slotMap.get(slot_sys));
 					Main.addEdit(ume);
 				}
+			} else if (undoable == Undoable.LINK_LEFT && editBox != null) {
+				int temp = ((UndoableLinkEdit) ume).getOldValue();
+				if (temp != ((FTLDoor) editBox).leftId) {
+					((UndoableLinkEdit) ume).setCurrentValue(((FTLDoor) editBox).leftId);
+					Main.addEdit(ume);
+				}
+			} else if (undoable == Undoable.LINK_RIGHT && editBox != null) {
+				int temp = ((UndoableLinkEdit) ume).getOldValue();
+				if (temp != ((FTLDoor) editBox).rightId) {
+					((UndoableLinkEdit) ume).setCurrentValue(((FTLDoor) editBox).rightId);
+					Main.addEdit(ume);
+				}
 			}
-		} else if ((undoable == Undoable.CREATE_ROOM || undoable == Undoable.CREATE_DOOR || undoable == Undoable.CREATE_MOUNT) && createdBox != null) {
-			ume = new UndoableCreateEdit(createdBox);
-			undoListener.undoableEditHappened(new UndoableEditEvent(createdBox, ume));
-			Main.addEdit(ume);
-			ume = null;
-			createdBox = null;
 		}
 	}
 	
@@ -240,8 +257,8 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					
 					Main.canvasRedraw(r.getBounds(), false);
 					
-					createdBox = r;
-					registerUp(Undoable.CREATE_ROOM);
+					editBox = r;
+					registerDown(Undoable.CREATE_ROOM);
 					Main.savedSinceAction = false;
 				}
 			} else if (Main.tltmDoor.getSelection()) {
@@ -252,8 +269,8 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					
 					d.add(Main.ship);
 					
-					createdBox = d;
-					registerUp(Undoable.CREATE_DOOR);
+					editBox = d;
+					registerDown(Undoable.CREATE_DOOR);
 					Main.savedSinceAction = false;
 				}
 			} else if (Main.tltmMount.getSelection()) {
@@ -270,8 +287,8 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					
 					m.add(Main.ship);
 					
-					createdBox = m;
-					registerUp(Undoable.CREATE_MOUNT);
+					editBox = m;
+					registerDown(Undoable.CREATE_MOUNT);
 					Main.savedSinceAction = false;
 					
 					//mount_canBePlaced = Main.ship.mounts.size() < (Main.ship.weaponSlots + (Main.isSystemAssigned(Systems.ARTILLERY) ? 1 : 0));
@@ -358,9 +375,15 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			// left mouse -> left ID, right mouse -> right ID
 			FTLRoom r = Main.getRoomAt(e.x, e.y);
 			if (e.button == 1) {
+				editBox = Main.selectedDoor;
+				registerDown(Undoable.LINK_LEFT);
 				Main.selectedDoor.leftId = (r==null ? -2 : r.id);
+				registerUp(Undoable.LINK_LEFT);
 			} else if (e.button == 3) {
+				editBox = Main.selectedDoor;
+				registerDown(Undoable.LINK_RIGHT);
 				Main.selectedDoor.rightId = (r==null ? -2 : r.id);
+				registerUp(Undoable.LINK_RIGHT);
 			}
 			
 			if (Main.modShift)
