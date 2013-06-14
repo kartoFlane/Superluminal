@@ -8,6 +8,7 @@ import org.eclipse.swt.graphics.Point;
 
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.elements.FTLDoor;
+import com.kartoflane.superluminal.elements.FTLGib;
 import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.painter.PaintBox;
 
@@ -54,6 +55,8 @@ public class UndoableMoveEdit extends AbstractUndoableEdit {
 			((FTLMount) box).setLocationAbsolute(oldPos.x, oldPos.y);
 		} else if (box instanceof FTLDoor) {
 			((FTLDoor) box).setLocationAbsolute(oldPos.x + 15, oldPos.y); // is shifted one grid cell to the left otherwise
+		} else if (box instanceof FTLGib) {
+			((FTLGib) box).setLocationAbsolute(oldPos.x, oldPos.y);
 		} else {
 			box.setLocation(oldPos.x, oldPos.y);
 		}
@@ -66,6 +69,8 @@ public class UndoableMoveEdit extends AbstractUndoableEdit {
 			((FTLMount) box).setLocationAbsolute(currentPos.x, currentPos.y);
 		} else if (box instanceof FTLDoor) {
 			((FTLDoor) box).setLocationAbsolute(currentPos.x + 15, currentPos.y); // is shifted one grid cell to the left otherwise
+		} else if (box instanceof FTLGib) {
+			((FTLGib) box).setLocationAbsolute(currentPos.x, currentPos.y);
 		} else {
 			box.setLocation(currentPos.x, currentPos.y);
 		}
