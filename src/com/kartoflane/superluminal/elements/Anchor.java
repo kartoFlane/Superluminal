@@ -130,12 +130,15 @@ public class Anchor extends PaintBox implements DraggableBox {
 	
 	@Override
 	public void registerDown(int undoable) {
-		if (undoable == Undoable.MOVE) {
-			if (undoListener != null) {
+		if (undoListener != null) {
+			if (undoable == Undoable.MOVE) {
 				ume = new UndoableMoveEdit(this);
 				((UndoableMoveEdit) ume).setOldPos((box.x==FTLShip.ANCHOR ? 0 : box.x+FTLShip.ANCHOR), (box.y==FTLShip.ANCHOR ? 0 : box.y+FTLShip.ANCHOR));
 				offsetEdit.x = Main.ship.offset.x;
 				offsetEdit.y = Main.ship.offset.y;
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			} else if (undoable == Undoable.OFFSET_X || undoable == Undoable.OFFSET_Y) {
+				ume = new UndoableOffsetEdit(this, undoable);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			}
 		}
@@ -143,20 +146,28 @@ public class Anchor extends PaintBox implements DraggableBox {
 	
 	@Override
 	public void registerUp(int undoable) {
-		if (undoable == Undoable.MOVE && ume != null && ume instanceof UndoableMoveEdit) {
-			// the shift-drag functionality is implemented in mouseMove listener, which would result in a flood of undoableEdit calls...
-			// no way to differentiate between undoable MOVE and SHIP_OFFSET at mouse click listeners, gotta check it here 
-			if (offsetEdit.x != Main.ship.offset.x || offsetEdit.y != Main.ship.offset.y) {
-				ume = new UndoableOffsetEdit(this);
-				// luckily the AbstractUndoableEdit framework is pretty flexible...
-				((UndoableOffsetEdit) ume).setOldOffset(offsetEdit.x, offsetEdit.y);
-				((UndoableOffsetEdit) ume).setCurrentOffset(Main.ship.offset.x, Main.ship.offset.y);
-				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
-				Main.addEdit(ume);
-			} else {
-				Point pt = ((UndoableMoveEdit) ume).getOldPos();
-				if (pt.x != (box.x==FTLShip.ANCHOR ? 0 : box.x+FTLShip.ANCHOR) || pt.y != (box.y==FTLShip.ANCHOR ? 0 : box.y+FTLShip.ANCHOR)) {
-					((UndoableMoveEdit) ume).setCurrentPos((box.x==FTLShip.ANCHOR ? 0 : box.x+FTLShip.ANCHOR), (box.y==FTLShip.ANCHOR ? 0 : box.y+FTLShip.ANCHOR));
+		if (ume != null) {
+			if (undoable == Undoable.MOVE) {
+				// the shift-drag functionality is implemented in mouseMove listener, which would result in a flood of undoableEdit calls...
+				// no way to differentiate between undoable MOVE and SHIP_OFFSET at mouse click listeners, gotta check it here 
+				if (offsetEdit.x != Main.ship.offset.x || offsetEdit.y != Main.ship.offset.y) {
+					ume = new UndoableOffsetEdit(this, undoable);
+					// luckily the AbstractUndoableEdit framework is pretty flexible...
+					((UndoableOffsetEdit) ume).setOldOffset(offsetEdit.x, offsetEdit.y);
+					((UndoableOffsetEdit) ume).setCurrentOffset(Main.ship.offset.x, Main.ship.offset.y);
+					undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+					Main.addEdit(ume);
+				} else {
+					Point pt = ((UndoableMoveEdit) ume).getOldPos();
+					if (pt.x != (box.x==FTLShip.ANCHOR ? 0 : box.x+FTLShip.ANCHOR) || pt.y != (box.y==FTLShip.ANCHOR ? 0 : box.y+FTLShip.ANCHOR)) {
+						((UndoableMoveEdit) ume).setCurrentPos((box.x==FTLShip.ANCHOR ? 0 : box.x+FTLShip.ANCHOR), (box.y==FTLShip.ANCHOR ? 0 : box.y+FTLShip.ANCHOR));
+						Main.addEdit(ume);
+					}
+				}
+			} else if (undoable == Undoable.OFFSET_X || undoable == Undoable.OFFSET_Y) {
+				Point temp = ((UndoableOffsetEdit) ume).getOldOffset();
+				if (temp.x != Main.ship.horizontal || temp.y != Main.ship.vertical) {
+					((UndoableOffsetEdit) ume).setCurrentOffset(Main.ship.horizontal, Main.ship.vertical);
 					Main.addEdit(ume);
 				}
 			}
@@ -168,6 +179,8 @@ public class Anchor extends PaintBox implements DraggableBox {
 		if (moveAnchor || moveVertical) {
 			if (!moveVertical)
 				registerUp(Undoable.MOVE);
+			if (!moveAnchor)
+				registerUp(Undoable.OFFSET_X); // doesn't really matter which offset is called
 			moveAnchor = false;
 			moveVertical = false;
 			Main.cursor.setVisible(true);
@@ -185,10 +198,16 @@ public class Anchor extends PaintBox implements DraggableBox {
 				moveVertical = true;
 				initialClick = true;
 				if (e.count == 2) {
+					// doesn't really matter which offset is called
+					registerDown(Undoable.OFFSET_X);
 					mouseDoubleClick(e);
+					registerUp(Undoable.OFFSET_X);
 				}
 			}
-			registerDown(Undoable.MOVE);
+			if (!moveVertical)
+				registerDown(Undoable.MOVE);
+			if (!moveAnchor)
+				registerDown(Undoable.OFFSET_X); // doesn't really matter which offset is called
 			Main.canvasRedraw(box, false);
 		}
 	}

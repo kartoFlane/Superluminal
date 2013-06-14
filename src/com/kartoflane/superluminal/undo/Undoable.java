@@ -9,7 +9,7 @@ package com.kartoflane.superluminal.undo;
 public class Undoable {
 	public static final int MOVE = 0;
 	public static final int RESIZE = 1;
-	public static final int PIN = 2; // scratch
+	public static final int PIN = 2; // unused
 	/** System power/level, gib properties, ship properties */
 	public static final int MODIFY = 3;
 	/** Assign/unassign system to/from room */
@@ -24,15 +24,17 @@ public class Undoable {
 	public static final int SLOT = 8;
 	/** Room interior, hull graphic, etc */
 	public static final int IMAGE = 9;
-	public static final int GLOW_1 = 10; // scratch
-	public static final int GLOW_2 = 11; // scratch
-	public static final int GLOW_3 = 12; // scratch
+	/** Anchor horizontal offset */
+	public static final int OFFSET_X = 10;
+	/** Anchor vertical offset */
+	public static final int OFFSET_Y = 11;
+	// public static final int ?? = 12;
 	/** Door linking, left/top ID */
 	public static final int LINK_LEFT = 13;
 	/** Door linking, right/bottom ID */
 	public static final int LINK_RIGHT = 14;
 	/** Gib layering */
-	public static final int LAYER = 15;
+	public static final int LAYER = 15; // unused
 	public static final int CREATE_ROOM = 16;
 	public static final int CREATE_DOOR = 17;
 	public static final int CREATE_MOUNT = 18;

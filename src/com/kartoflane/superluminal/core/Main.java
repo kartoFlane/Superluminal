@@ -353,7 +353,6 @@ public class Main {
 	 * - gib delete undo
 	 * - gib layering reorder undo?
 	 * - nudge undo
-	 * - anchor: set horizontal/vertical undo
 	 * 
 	 * undo checklist:
 	 * hull - done, image done
