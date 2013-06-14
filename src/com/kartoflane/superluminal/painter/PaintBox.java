@@ -46,8 +46,8 @@ public class PaintBox implements Serializable {
 	protected String pathPin;
 	protected int alpha;
 
-	protected UndoableEditListener undoListener;
-	protected AbstractUndoableEdit ume = null;
+	public UndoableEditListener undoListener;
+	public AbstractUndoableEdit ume = null;
 
 	public void stripUnserializable() {
 		Cache.checkInColor(this, border_rgb);

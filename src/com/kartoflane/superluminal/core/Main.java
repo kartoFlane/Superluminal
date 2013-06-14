@@ -348,17 +348,17 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
-	 * - room splitting
 	 * - modify system undo
 	 * - modify gib undo
-	 * - set image undo
 	 * - gib delete undo
 	 * - gib layering reorder undo?
+	 * - nudge undo
+	 * - anchor: set horizontal/vertical undo
 	 * 
 	 * undo checklist:
-	 * hull - done
-	 * shield - done
-	 * rooms - move done, resize done, system assign undo
+	 * hull - done, image done
+	 * shield - done, image done
+	 * rooms - move done, resize done, system assign done, split done, interior done
 	 * doors - move done, link done
 	 * mounts - done
 	 * gibs - move done,

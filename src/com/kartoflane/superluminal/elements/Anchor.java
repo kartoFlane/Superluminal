@@ -165,8 +165,9 @@ public class Anchor extends PaintBox implements DraggableBox {
 
 	@Override
 	public void mouseUp(MouseEvent e) {
-		if (moveAnchor) {
-			registerUp(Undoable.MOVE);
+		if (moveAnchor || moveVertical) {
+			if (!moveVertical)
+				registerUp(Undoable.MOVE);
 			moveAnchor = false;
 			moveVertical = false;
 			Main.cursor.setVisible(true);

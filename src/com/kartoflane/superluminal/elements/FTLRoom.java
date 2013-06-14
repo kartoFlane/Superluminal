@@ -22,6 +22,7 @@ import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.undo.Undoable;
 import com.kartoflane.superluminal.undo.UndoableImageEdit;
 import com.kartoflane.superluminal.undo.UndoableResizeEdit;
+import com.kartoflane.superluminal.undo.UndoableSplitEdit;
 import com.kartoflane.superluminal.undo.UndoableSystemEdit;
 
 /**
@@ -544,6 +545,9 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 					((UndoableImageEdit) ume).setCurrentValue(interiorData.interiorPath);
 					Main.addEdit(ume);
 				}
+			} else if (undoable == Undoable.SPLIT) {
+				((UndoableSplitEdit) ume).setCurrentBounds(bounds);
+				Main.addEdit(ume);
 			}
 		}
 	}
@@ -560,6 +564,9 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			} else if (undoable == Undoable.IMAGE) {
 				ume = new UndoableImageEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			} else if (undoable == Undoable.SPLIT) {
+				ume = new UndoableSplitEdit(this);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			}
 		}

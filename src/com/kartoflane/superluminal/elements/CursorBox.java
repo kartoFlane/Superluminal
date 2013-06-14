@@ -17,6 +17,7 @@ import com.kartoflane.superluminal.undo.UndoableCreateEdit;
 import com.kartoflane.superluminal.undo.UndoableDirectionEdit;
 import com.kartoflane.superluminal.undo.UndoableLinkEdit;
 import com.kartoflane.superluminal.undo.UndoableSlotEdit;
+import com.kartoflane.superluminal.undo.UndoableSplitEdit;
 
 
 @SuppressWarnings("serial")
@@ -242,11 +243,18 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				FTLRoom r = null;
 				if (Main.modShift) {
 					r = Main.getRoomContainingRect(bounds);
+					FTLRoom newr = null;
+					
+					r.registerDown(Undoable.SPLIT);
 					if (bounds.width > 20) {
-						r.split((bounds.y-r.getBounds().y)/35 + 1, AxisFlag.X);
+						newr = r.split((bounds.y-r.getBounds().y)/35 + 1, AxisFlag.X);
 					} else {
-						r.split((bounds.x-r.getBounds().x)/35 + 1, AxisFlag.Y);
+						newr = r.split((bounds.x-r.getBounds().x)/35 + 1, AxisFlag.Y);
 					}
+					if (r.ume != null)
+						((UndoableSplitEdit) r.ume).setNewRoom(newr);
+					r.registerUp(Undoable.SPLIT);
+					
 					room_canBePlaced = !Main.isDoorAtWall(bounds);
 					Main.canvas.redraw();
 				} else {

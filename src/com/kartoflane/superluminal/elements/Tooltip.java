@@ -16,10 +16,6 @@ public class Tooltip extends Composite {
 		text.setEnabled(true);
 	}
 	
-	public void setSize(int w, int h) {
-		text.setSize(w, h);
-	}
-	
 	public void setText(String msg) {
 		if (msg == null) {
 			text.setText("");
