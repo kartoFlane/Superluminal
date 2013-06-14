@@ -348,7 +348,10 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
-	 * - door linking undo
+	 * - room splitting
+	 * - modify system undo
+	 * - modify gib undo
+	 * - set image undo
 	 * - gib delete undo
 	 * - gib layering reorder undo?
 	 * 
@@ -356,7 +359,7 @@ public class Main {
 	 * hull - done
 	 * shield - done
 	 * rooms - move done, resize done, system assign undo
-	 * doors - move done,
+	 * doors - move done, link done
 	 * mounts - done
 	 * gibs - move done,
 	 * stations - dir done, un/assign done
@@ -1751,10 +1754,12 @@ public class Main {
 				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					// if (ShipIO.isDefaultResource(new File(path)))
 					// Main.ship.shieldOverride = path;
+					shieldBox.registerDown(Undoable.IMAGE);
 
-					Main.ship.shieldPath = path;
-
+					ship.shieldPath = path;
 					ShipIO.loadImage(path, "shields");
+					
+					shieldBox.registerUp(Undoable.IMAGE);
 
 					if (ship.isPlayer)
 						if (shieldImage != null && !shieldImage.isDisposed()) {
@@ -1789,9 +1794,12 @@ public class Main {
 				String path = dialog.open();
 
 				if (!ShipIO.isNull(path) && new File(path).exists()) {
+					hullBox.registerDown(Undoable.IMAGE);
+					
 					Main.ship.imagePath = path;
-
 					ShipIO.loadImage(path, "hull");
+					
+					hullBox.registerUp(Undoable.IMAGE);
 					canvas.redraw();
 				} else {
 					if (path != null) {
@@ -2059,7 +2067,7 @@ public class Main {
 					} else if (e.keyCode == '`' || e.keyCode == SWT.SPACE) {
 						PaintBox box = getSelected();
 						if (box != null) {
-							box.registerDown(Undoable.PIN);
+							//box.registerDown(Undoable.PIN);
 							box.setPinned(!box.isPinned());
 							if (box instanceof FTLRoom)
 								((FTLRoom) box).updateColor();
@@ -2311,17 +2319,16 @@ public class Main {
 				String path = dialog.open();
 
 				if (!ShipIO.isNull(path) && selectedRoom != null && new File(path).exists()) {
-					if (e.widget == mntmSysImage) {
-						interiorPath = new String(path);
-						selectedRoom.setInterior(path);
-					} else if (e.widget == mntmGlow) {
-						if (selectedRoom.sysBox != null)
-							selectedRoom.sysBox.setGlowImage(path, 1);
-					}
+					selectedRoom.registerDown(Undoable.IMAGE);
+					
+					interiorPath = new String(path);
+					selectedRoom.setInterior(path);
+					
+					selectedRoom.registerUp(Undoable.IMAGE);
 				} else {
 					if (path != null) {
 						MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-						box.setMessage("" + Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
+						box.setMessage(Paths.get(path).getFileName() + ShipIO.lineDelimiter + "File was not found." + ShipIO.lineDelimiter + "Check the file's name and try again.");
 						box.open();
 					}
 				}
@@ -2336,7 +2343,9 @@ public class Main {
 
 		mntmRemoveInterior.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
+				selectedRoom.registerDown(Undoable.IMAGE);
 				selectedRoom.setInterior(null);
+				selectedRoom.registerUp(Undoable.IMAGE);
 			}
 		});
 

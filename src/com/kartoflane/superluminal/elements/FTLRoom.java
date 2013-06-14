@@ -20,6 +20,7 @@ import com.kartoflane.superluminal.painter.ColorBox;
 import com.kartoflane.superluminal.painter.LayeredPainter;
 import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableImageEdit;
 import com.kartoflane.superluminal.undo.UndoableResizeEdit;
 import com.kartoflane.superluminal.undo.UndoableSystemEdit;
 
@@ -499,9 +500,9 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 
 				e.gc.setAlpha(255);
 				/*
-				if (isPinned())
-					e.gc.drawImage(pin, bounds.x + 10, bounds.y + 3);
-				*/
+				 * if (isPinned())
+				 * e.gc.drawImage(pin, bounds.x + 10, bounds.y + 3);
+				 */
 			}
 			// working stations
 			if (Main.ship != null && Main.ship.slotMap.keySet().contains(sys) && Main.ship.slotMap.get(getSystem()) != -2 && Main.showStations) {
@@ -537,6 +538,12 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 					((UndoableSystemEdit) ume).setCurrentValue(sys);
 					Main.addEdit(ume);
 				}
+			} else if (undoable == Undoable.IMAGE) {
+				String path = ((UndoableImageEdit) ume).getOldValue();
+				if (!path.equals(interiorData.interiorPath)) {
+					((UndoableImageEdit) ume).setCurrentValue(interiorData.interiorPath);
+					Main.addEdit(ume);
+				}
 			}
 		}
 	}
@@ -550,6 +557,9 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			} else if (undoable == Undoable.ASSIGN_SYSTEM) {
 				ume = new UndoableSystemEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			} else if (undoable == Undoable.IMAGE) {
+				ume = new UndoableImageEdit(this);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			}
 		}
@@ -721,10 +731,11 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	 *            How many grid cells, from top or left, the new room is to have
 	 * @param axis
 	 *            either X or Y - BOTH flag has no effect
+	 * @return the second, newly created room
 	 */
-	public void split(int gridCells, AxisFlag axis) {
+	public FTLRoom split(int gridCells, AxisFlag axis) {
 		if (axis.equals(AxisFlag.BOTH) || gridCells == 0)
-			return;
+			return null;
 
 		FTLRoom newRoom = null;
 		if (axis.equals(AxisFlag.X)) {
@@ -780,6 +791,10 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 
 			Main.shieldBox.setLocationCenter(p.x, p.y);
 		}
+
+		if (Main.ship.rooms.contains(newRoom))
+			return newRoom;
+		return null;
 	}
 
 	public void dispose() {

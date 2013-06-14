@@ -9,8 +9,9 @@ package com.kartoflane.superluminal.undo;
 public class Undoable {
 	public static final int MOVE = 0;
 	public static final int RESIZE = 1;
-	public static final int PIN = 2;
-	public static final int SHIP_OFFSET = 3; // unused
+	public static final int PIN = 2; // scratch
+	/** System power/level, gib properties, ship properties */
+	public static final int MODIFY = 3;
 	/** Assign/unassign system to/from room */
 	public static final int ASSIGN_SYSTEM = 4;
 	/** Mount rotate flag */
@@ -23,15 +24,20 @@ public class Undoable {
 	public static final int SLOT = 8;
 	/** Room interior, hull graphic, etc */
 	public static final int IMAGE = 9;
-	public static final int SYS_LEVEL = 10;
-	public static final int SYS_MAX = 11;
-	public static final int LINK_LEFT = 12;
-	public static final int LINK_RIGHT = 13;
-	public static final int LAYER = 14;
-	public static final int CREATE_ROOM = 15;
-	public static final int CREATE_DOOR = 16;
-	public static final int CREATE_MOUNT = 17;
-	public static final int CREATE_GIB = 18;
-	public static final int SPLIT = 19;
+	public static final int GLOW_1 = 10; // scratch
+	public static final int GLOW_2 = 11; // scratch
+	public static final int GLOW_3 = 12; // scratch
+	/** Door linking, left/top ID */
+	public static final int LINK_LEFT = 13;
+	/** Door linking, right/bottom ID */
+	public static final int LINK_RIGHT = 14;
+	/** Gib layering */
+	public static final int LAYER = 15;
+	public static final int CREATE_ROOM = 16;
+	public static final int CREATE_DOOR = 17;
+	public static final int CREATE_MOUNT = 18;
+	public static final int CREATE_GIB = 19;
+	/** Room splitting */
+	public static final int SPLIT = 20;
 	// TODO list all feasible undoable edits
 }

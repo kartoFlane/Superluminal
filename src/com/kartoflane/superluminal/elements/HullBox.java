@@ -1,5 +1,7 @@
 package com.kartoflane.superluminal.elements;
 
+import javax.swing.event.UndoableEditEvent;
+
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.graphics.Color;
@@ -12,6 +14,7 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ImageBox;
 import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableImageEdit;
 
 @SuppressWarnings("serial")
 public class HullBox extends ImageBox implements DraggableBox {
@@ -150,6 +153,31 @@ public class HullBox extends ImageBox implements DraggableBox {
 				e.gc.drawImage(image, 0, 0, image.getBounds().width, image.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
 		}
 		e.gc.setAlpha(prevAlpha);
+	}
+	
+	@Override
+	public void registerDown(int undoable) {
+		super.registerDown(undoable);
+		if (undoListener != null) {
+			if (undoable == Undoable.IMAGE) {
+				ume = new UndoableImageEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			}
+		}
+	}
+	
+	@Override
+	public void registerUp(int undoable) {
+		super.registerUp(undoable);
+		if (ume != null) {
+			if (undoable == Undoable.IMAGE) {
+				String path = ((UndoableImageEdit) ume).getOldValue();
+				if (!path.equals(getPath())) {
+					((UndoableImageEdit) ume).setCurrentValue(getPath());
+					Main.addEdit(ume);
+				}
+			}
+		}
 	}
 
 	@Override

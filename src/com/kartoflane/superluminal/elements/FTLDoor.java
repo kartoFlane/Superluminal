@@ -194,7 +194,7 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 
 	@Override
 	public void mouseUp(MouseEvent e) {
-		if (move && !isPinned())
+		if (move)
 			registerUp(Undoable.MOVE);
 		move = false;
 		Main.cursor.setVisible(true);

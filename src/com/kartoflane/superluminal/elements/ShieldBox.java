@@ -17,6 +17,7 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ImageBox;
 import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableImageEdit;
 import com.kartoflane.superluminal.undo.UndoableResizeEdit;
 
 @SuppressWarnings("serial")
@@ -172,6 +173,12 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 					((UndoableResizeEdit) ume).setCurrentBounds(bounds);
 					Main.addEdit(ume);
 				}
+			} else if (undoable == Undoable.IMAGE) {
+				String path = ((UndoableImageEdit) ume).getOldValue();
+				if (!path.equals(getPath())) {
+					((UndoableImageEdit) ume).setCurrentValue(getPath());
+					Main.addEdit(ume);
+				}
 			}
 		}
 	}
@@ -179,9 +186,12 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	@Override
 	public void registerDown (int undoable) {
 		super.registerDown(undoable);
-		if (undoable == Undoable.RESIZE) {
-			if (undoListener != null) {
+		if (undoListener != null) {
+			if (undoable == Undoable.RESIZE) {
 				ume = new UndoableResizeEdit(this);
+				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
+			} else if (undoable == Undoable.IMAGE) {
+				ume = new UndoableImageEdit(this);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			}
 		}

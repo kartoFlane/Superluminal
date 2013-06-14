@@ -240,9 +240,9 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	
 	@Override
 	public void mouseUp(MouseEvent e) {
-		registerUp(Undoable.MOVE);
 		Main.cursor.setVisible(true);
 		if (move) {
+			registerUp(Undoable.MOVE);
 			Main.copyRect(bounds, Main.cursor.getBounds());
 		}
 		
