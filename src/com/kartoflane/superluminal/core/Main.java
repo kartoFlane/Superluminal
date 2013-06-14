@@ -97,6 +97,7 @@ import com.kartoflane.superluminal.ui.GibPropertiesWindow;
 import com.kartoflane.superluminal.ui.GlowWindow;
 import com.kartoflane.superluminal.ui.NewShipDialog;
 import com.kartoflane.superluminal.ui.PropertiesWindow;
+import com.kartoflane.superluminal.ui.RenameGibDialog;
 import com.kartoflane.superluminal.ui.ShipBrowser;
 import com.kartoflane.superluminal.ui.ShipChoiceDialog;
 import com.kartoflane.superluminal.ui.ShipPropertiesWindow;
@@ -348,9 +349,6 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
-	 * - modify system undo (level/power) ?
-	 * - modify gib undo ?
-	 * - gib delete undo ? maybe
 	 * - gib layering reorder undo? perhaps
 	 * - nudge undo
 	 * 
@@ -360,7 +358,7 @@ public class Main {
 	 * rooms - move done, resize done, system assign done, split done, interior done
 	 * doors - move done, link done
 	 * mounts - done
-	 * gibs - move done,
+	 * gibs - move done, delete done, 
 	 * stations - dir done, un/assign done
 	 * delete - r/d/m done,
 	 * 
@@ -395,6 +393,7 @@ public class Main {
 	 * - f when loading a project, gibs that failed to load their images (for example if the files couldn't be found) will now be removed, instead of crashing the editor
 	 * - f calculate optimal offset now moves the anchor, should it end up outside of the editable area after the operation
 	 * - f fixed a bug that caused the enemy crew random spinner to have no effect at all
+	 * - + gib layers in the gib editor can now be renamed
 	 * - ~ pinned down objects now have yellow-ish selection, instead of the obscure (and often hard-to-notice) pin image
 	 * - + Layout name is now also autosuggested when loading hull image, if its field was blank.
 	 * - + The editor now warns you when you try to close an unsaved project
@@ -548,6 +547,7 @@ public class Main {
 		browser = new ShipBrowser(shell);
 		choiceDialog = new ShipChoiceDialog(shell);
 		glowWindow = new GlowWindow(shell);
+		GibDialog.gibRename = new RenameGibDialog(gibDialog.getShell());
 
 		tipsList = new LinkedList<String>();
 		tipsList.add("You can quickly switch between tools using Q, W, E, R, T and G keys.");
@@ -1979,7 +1979,7 @@ public class Main {
 				}
 
 				// check to make sure that the hotkeys won't be triggered while the user is modifying fields in another window
-				if (shell.isEnabled() && !txtX.isFocusControl() && !txtY.isFocusControl() && !gibWindow.isVisible()) {
+				if (shell.isEnabled() && !txtX.isFocusControl() && !txtY.isFocusControl() && !gibWindow.isVisible() && !GibDialog.gibRename.isVisible()) {
 
 					// === element deletion
 					if ((selectedMount != null || selectedRoom != null || selectedDoor != null) && (e.keyCode == SWT.DEL || (e.stateMask == SWT.SHIFT && e.keyCode == 'd'))) {
@@ -4354,6 +4354,15 @@ public class Main {
 			redrawBounds.y -= 40;
 			redrawBounds.width += 80;
 			redrawBounds.height += 80;
+		} else if (box instanceof FTLGib) {
+			FTLGib g = (FTLGib) box;
+			if (gibWindow.isVisible())
+				gibWindow.escape();
+			g.deselect();
+			gibDialog.removeGibFromList(g);
+			Main.ship.gibs.remove(g);
+			box.setVisible(false);
+			Main.canvas.redraw(g.getBounds().x - 1, g.getBounds().y - 1, g.getBounds().width + 2, g.getBounds().height + 2, false);
 		}
 
 		if (redrawBounds != null)
@@ -4395,6 +4404,13 @@ public class Main {
 			box.setVisible(true);
 			redrawBounds = box.getBounds();
 			cursor.mount_canBePlaced = ship.mounts.size() < MAX_MOUNTS;
+		} else if (box instanceof FTLGib) {
+			FTLGib g = (FTLGib) box;
+			Main.ship.gibs.add(g.number - 1, g);
+			box.setVisible(true);
+			gibDialog.addGibToListAtIndex(g, g.number - 1);
+			gibDialog.refreshList();
+			Main.canvas.redraw(g.getBounds().x - 1, g.getBounds().y - 1, g.getBounds().width + 2, g.getBounds().height + 2, false);
 		}
 
 		if (redrawBounds != null)
@@ -4459,6 +4475,16 @@ public class Main {
 			redrawBounds.y -= 40;
 			redrawBounds.width += 80;
 			redrawBounds.height += 80;
+		} else if (box instanceof FTLGib) {
+			FTLGib g = (FTLGib) box;
+			if (gibWindow.isVisible())
+				gibWindow.escape();
+			g.deselect();
+			gibDialog.removeGibFromList(g);
+			g.dispose();
+			Main.ship.gibs.remove(g);
+			gibDialog.letters.remove(g.ID);
+			Main.canvas.redraw(g.getBounds().x - 1, g.getBounds().y - 1, g.getBounds().width + 2, g.getBounds().height + 2, false);
 		}
 
 		if (redrawBounds != null)

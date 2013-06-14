@@ -83,7 +83,7 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	}
 
 	public String toString() {
-		return number + ". gib " + ID;
+		return number + ". " + ID;
 	}
 
 	public void add(FTLShip ship) {
@@ -92,7 +92,16 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 
 		ID = getFreeLetter();
 		Main.gibDialog.letters.add(ID);
-		Main.gibDialog.list.add(number + ". gib " + ID);
+		Main.gibDialog.list.add(number + ". " + ID);
+	}
+	
+	/**
+	 * Remember to refresh list afterwards
+	 * @param newID new name of the gib
+	 */
+	public void rename(String newID) {
+		Main.gibDialog.letters.remove(ID);
+		ID = newID;
 	}
 
 	private String getFreeLetter() {
