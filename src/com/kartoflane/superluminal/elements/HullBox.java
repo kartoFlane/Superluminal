@@ -18,9 +18,9 @@ import com.kartoflane.superluminal.undo.UndoableImageEdit;
 
 @SuppressWarnings("serial")
 public class HullBox extends ImageBox implements DraggableBox {
-	protected String floorPath;
+	public String floorPath;
 	protected Image floorImage;
-	protected String cloakPath;
+	public String cloakPath;
 	protected Image cloakImage;
 	public boolean move = false;
 	private Point orig;
@@ -159,8 +159,8 @@ public class HullBox extends ImageBox implements DraggableBox {
 	public void registerDown(int undoable) {
 		super.registerDown(undoable);
 		if (undoListener != null) {
-			if (undoable == Undoable.IMAGE) {
-				ume = new UndoableImageEdit(this);
+			if (undoable == Undoable.IMAGE || undoable == Undoable.FLOOR || undoable == Undoable.CLOAK) {
+				ume = new UndoableImageEdit(this, undoable);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			}
 		}
@@ -170,13 +170,18 @@ public class HullBox extends ImageBox implements DraggableBox {
 	public void registerUp(int undoable) {
 		super.registerUp(undoable);
 		if (ume != null) {
+			String path = ((UndoableImageEdit) ume).getOldValue();
 			if (undoable == Undoable.IMAGE) {
-				String path = ((UndoableImageEdit) ume).getOldValue();
-				if (!path.equals(getPath())) {
+				if (path != getPath() || (path != null && getPath() != null && !path.equals(getPath())))
 					((UndoableImageEdit) ume).setCurrentValue(getPath());
-					Main.addEdit(ume);
-				}
+			} else if (undoable == Undoable.FLOOR) {
+				if (path != floorPath || (path != null && floorPath != null && !path.equals(floorPath)))
+					((UndoableImageEdit) ume).setCurrentValue(floorPath);
+			} else if (undoable == Undoable.CLOAK) {
+				if (path != cloakPath || (path != null && cloakPath != null && !path.equals(cloakPath)))
+					((UndoableImageEdit) ume).setCurrentValue(cloakPath);
 			}
+			Main.addEdit(ume);
 		}
 	}
 

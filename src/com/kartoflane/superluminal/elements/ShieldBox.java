@@ -175,7 +175,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 				}
 			} else if (undoable == Undoable.IMAGE) {
 				String path = ((UndoableImageEdit) ume).getOldValue();
-				if (!path.equals(getPath())) {
+				if (path != getPath() || (path != null && getPath() != null && !path.equals(getPath()))) {
 					((UndoableImageEdit) ume).setCurrentValue(getPath());
 					Main.addEdit(ume);
 				}
@@ -191,7 +191,7 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 				ume = new UndoableResizeEdit(this);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			} else if (undoable == Undoable.IMAGE) {
-				ume = new UndoableImageEdit(this);
+				ume = new UndoableImageEdit(this, undoable);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			}
 		}

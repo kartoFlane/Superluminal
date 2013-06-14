@@ -24,11 +24,10 @@ public class Undoable {
 	public static final int SLOT = 8;
 	/** Room interior, hull graphic, etc */
 	public static final int IMAGE = 9;
-	/** Anchor horizontal offset */
-	public static final int OFFSET_X = 10;
-	/** Anchor vertical offset */
-	public static final int OFFSET_Y = 11;
-	// public static final int ?? = 12;
+	/** Anchor horizontal/vertical offset */
+	public static final int OFFSET = 10;
+	public static final int FLOOR = 11;
+	public static final int CLOAK = 12;
 	/** Door linking, left/top ID */
 	public static final int LINK_LEFT = 13;
 	/** Door linking, right/bottom ID */

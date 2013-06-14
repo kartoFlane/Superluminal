@@ -257,11 +257,11 @@ public class Main {
 	private static Text txtX;
 	private static Text txtY;
 	private Label mPosText;
-	private Button btnHull;
+	private static Button btnHull;
 	public static Button btnShields;
-	private Button btnFloor;
-	private Button btnCloak;
-	private Button btnMiniship;
+	private static Button btnFloor;
+	private static Button btnCloak;
+	private static Button btnMiniship;
 	private Label canvasBg;
 	private FormData fd_canvas;
 	private boolean shellStateChange;
@@ -348,10 +348,10 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
-	 * - modify system undo
-	 * - modify gib undo
-	 * - gib delete undo
-	 * - gib layering reorder undo?
+	 * - modify system undo (level/power) ?
+	 * - modify gib undo ?
+	 * - gib delete undo ? maybe
+	 * - gib layering reorder undo? perhaps
 	 * - nudge undo
 	 * 
 	 * undo checklist:
@@ -396,8 +396,10 @@ public class Main {
 	 * - f calculate optimal offset now moves the anchor, should it end up outside of the editable area after the operation
 	 * - f fixed a bug that caused the enemy crew random spinner to have no effect at all
 	 * - ~ pinned down objects now have yellow-ish selection, instead of the obscure (and often hard-to-notice) pin image
+	 * - + Layout name is now also autosuggested when loading hull image, if its field was blank.
 	 * - + The editor now warns you when you try to close an unsaved project
-	 * - + FUCKING FINALLY implemented undo/redo functionality
+	 * - + FUCKING FINALLY implemented undo/redo functionality. Pretty much every modification that influences the ship in-game can be undone/redone, except for stuff that is changed in properties
+	 * windows, some gib-specific functions and nudge functionality
 	 */
 
 	// =================================================================================================== //
@@ -1694,9 +1696,11 @@ public class Main {
 				String path = dialog.open();
 
 				if (!ShipIO.isNull(path) && new File(path).exists()) {
+					hullBox.registerDown(Undoable.FLOOR);
 					Main.ship.floorPath = path;
 
 					ShipIO.loadImage(path, "floor");
+					hullBox.registerUp(Undoable.FLOOR);
 					canvas.redraw();
 				} else {
 					if (path != null) {
@@ -1720,13 +1724,13 @@ public class Main {
 				String path = dialog.open();
 
 				if (!ShipIO.isNull(path) && new File(path).exists()) {
-					// if (ShipIO.isDefaultResource(new File(path)))
-					// Main.ship.cloakOverride = path;
+					hullBox.registerDown(Undoable.CLOAK);
 
 					Main.ship.cloakPath = path;
 					btnCloaked.setEnabled(!tltmGib.getSelection());
 
 					ShipIO.loadImage(path, "cloak");
+					hullBox.registerUp(Undoable.CLOAK);
 					canvas.redraw();
 				} else {
 					if (path != null) {
@@ -1757,7 +1761,7 @@ public class Main {
 
 					ship.shieldPath = path;
 					ShipIO.loadImage(path, "shields");
-					
+
 					shieldBox.registerUp(Undoable.IMAGE);
 
 					if (ship.isPlayer)
@@ -1794,10 +1798,10 @@ public class Main {
 
 				if (!ShipIO.isNull(path) && new File(path).exists()) {
 					hullBox.registerDown(Undoable.IMAGE);
-					
+
 					Main.ship.imagePath = path;
 					ShipIO.loadImage(path, "hull");
-					
+
 					hullBox.registerUp(Undoable.IMAGE);
 					canvas.redraw();
 				} else {
@@ -1877,15 +1881,23 @@ public class Main {
 		mntmUnload.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if (sourceBtn == btnHull) {
+					hullBox.registerDown(Undoable.IMAGE);
 					hullBox.setHullImage(null);
+					hullBox.registerUp(Undoable.IMAGE);
 				} else if (sourceBtn == btnShields) {
+					shieldBox.registerDown(Undoable.IMAGE);
 					shieldBox.setImage(null, true);
+					shieldBox.registerUp(Undoable.IMAGE);
 				} else if (sourceBtn == btnFloor) {
+					hullBox.registerDown(Undoable.FLOOR);
 					hullBox.setFloorImage(null);
+					hullBox.registerUp(Undoable.FLOOR);
 				} else if (sourceBtn == btnCloak) {
+					hullBox.registerDown(Undoable.CLOAK);
 					hullBox.setCloakImage(null);
 					btnCloaked.setSelection(false);
 					btnCloaked.setEnabled(false);
+					hullBox.registerUp(Undoable.CLOAK);
 				} else if (sourceBtn == btnMiniship) {
 					ship.miniPath = null;
 				}
@@ -2066,7 +2078,7 @@ public class Main {
 					} else if (e.keyCode == '`' || e.keyCode == SWT.SPACE) {
 						PaintBox box = getSelected();
 						if (box != null) {
-							//box.registerDown(Undoable.PIN);
+							// box.registerDown(Undoable.PIN);
 							box.setPinned(!box.isPinned());
 							if (box instanceof FTLRoom)
 								((FTLRoom) box).updateColor();
@@ -2319,10 +2331,10 @@ public class Main {
 
 				if (!ShipIO.isNull(path) && selectedRoom != null && new File(path).exists()) {
 					selectedRoom.registerDown(Undoable.IMAGE);
-					
+
 					interiorPath = new String(path);
 					selectedRoom.setInterior(path);
-					
+
 					selectedRoom.registerUp(Undoable.IMAGE);
 				} else {
 					if (path != null) {
@@ -2399,6 +2411,8 @@ public class Main {
 							return;
 					}
 				}
+
+				undoManager.discardAllEdits();
 
 				int create = new NewShipDialog(shell).open();
 				shell.setEnabled(true);
@@ -2978,6 +2992,8 @@ public class Main {
 							return;
 					}
 				}
+
+				undoManager.discardAllEdits();
 
 				if (ship != null) {
 					for (MenuItem mntm : menuGibItems) {
@@ -3891,7 +3907,7 @@ public class Main {
 		btnMiniship.setImage(null);
 	}
 
-	public void updateButtonImg() {
+	public static void updateButtonImg() {
 		btnHull.setImage((ShipIO.isNull(ship.imagePath) ? crossImage : tickImage));
 		btnShields.setImage((ShipIO.isNull(ship.shieldPath) ? crossImage : tickImage));
 		btnFloor.setImage((ShipIO.isNull(ship.floorPath) ? crossImage : tickImage));
@@ -4372,7 +4388,7 @@ public class Main {
 			}
 			layeredPainter.add(box, LayeredPainter.MOUNT);
 			m.setRotated(m.isRotated());
-			
+
 			ShipIO.loadWeaponImages(Main.ship);
 			ShipIO.remapMountsToWeapons();
 
@@ -4448,7 +4464,7 @@ public class Main {
 		if (redrawBounds != null)
 			canvasRedraw(redrawBounds, false);
 	}
-	
+
 	public static PaintBox getSelected() {
 		if (selectedRoom != null) {
 			return selectedRoom;

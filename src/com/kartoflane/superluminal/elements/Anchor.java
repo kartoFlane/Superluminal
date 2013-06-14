@@ -137,7 +137,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 				offsetEdit.x = Main.ship.offset.x;
 				offsetEdit.y = Main.ship.offset.y;
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
-			} else if (undoable == Undoable.OFFSET_X || undoable == Undoable.OFFSET_Y) {
+			} else if (undoable == Undoable.OFFSET) {
 				ume = new UndoableOffsetEdit(this, undoable);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			}
@@ -164,7 +164,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 						Main.addEdit(ume);
 					}
 				}
-			} else if (undoable == Undoable.OFFSET_X || undoable == Undoable.OFFSET_Y) {
+			} else if (undoable == Undoable.OFFSET) {
 				Point temp = ((UndoableOffsetEdit) ume).getOldOffset();
 				if (temp.x != Main.ship.horizontal || temp.y != Main.ship.vertical) {
 					((UndoableOffsetEdit) ume).setCurrentOffset(Main.ship.horizontal, Main.ship.vertical);
@@ -180,7 +180,7 @@ public class Anchor extends PaintBox implements DraggableBox {
 			if (!moveVertical)
 				registerUp(Undoable.MOVE);
 			if (!moveAnchor)
-				registerUp(Undoable.OFFSET_X); // doesn't really matter which offset is called
+				registerUp(Undoable.OFFSET);
 			moveAnchor = false;
 			moveVertical = false;
 			Main.cursor.setVisible(true);
@@ -198,16 +198,15 @@ public class Anchor extends PaintBox implements DraggableBox {
 				moveVertical = true;
 				initialClick = true;
 				if (e.count == 2) {
-					// doesn't really matter which offset is called
-					registerDown(Undoable.OFFSET_X);
+					registerDown(Undoable.OFFSET);
 					mouseDoubleClick(e);
-					registerUp(Undoable.OFFSET_X);
+					registerUp(Undoable.OFFSET);
 				}
 			}
 			if (!moveVertical)
 				registerDown(Undoable.MOVE);
 			if (!moveAnchor)
-				registerDown(Undoable.OFFSET_X); // doesn't really matter which offset is called
+				registerDown(Undoable.OFFSET);
 			Main.canvasRedraw(box, false);
 		}
 	}

@@ -541,7 +541,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 				}
 			} else if (undoable == Undoable.IMAGE) {
 				String path = ((UndoableImageEdit) ume).getOldValue();
-				if (!path.equals(interiorData.interiorPath)) {
+				if (path != interiorData.interiorPath || (path != null && interiorData.interiorPath != null && !path.equals(interiorData.interiorPath))) {
 					((UndoableImageEdit) ume).setCurrentValue(interiorData.interiorPath);
 					Main.addEdit(ume);
 				}
@@ -563,7 +563,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 				ume = new UndoableSystemEdit(this);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			} else if (undoable == Undoable.IMAGE) {
-				ume = new UndoableImageEdit(this);
+				ume = new UndoableImageEdit(this, undoable);
 				undoListener.undoableEditHappened(new UndoableEditEvent(this, ume));
 			} else if (undoable == Undoable.SPLIT) {
 				ume = new UndoableSplitEdit(this);

@@ -277,6 +277,8 @@ public class ShipIO {
 		boolean systemList = false;
 		File f = null;
 
+		Main.undoManager.discardAllEdits();
+
 		boolean scanDefault = fileToScan == null;
 		if (scanDefault)
 			fileToScan = new File(Main.dataPath + pathDelimiter + "autoBlueprints.xml");
@@ -1578,7 +1580,11 @@ public class ShipIO {
 				Main.ship.imageName = path.substring(path.lastIndexOf(pathDelimiter) + 1, path.lastIndexOf("."));
 				if (Main.ship.imageName.contains("_base"))
 					Main.ship.imageName = Main.ship.imageName.substring(0, Main.ship.imageName.indexOf("_base"));
-				// Main.ship.imageName = Main.ship.imageName.replace("_base", "");
+			}
+			if (isNull(Main.ship.layout)) {
+				Main.ship.layout = path.substring(path.lastIndexOf(pathDelimiter) + 1, path.lastIndexOf("."));
+				if (Main.ship.layout.contains("_base"))
+					Main.ship.layout = Main.ship.layout.substring(0, Main.ship.layout.indexOf("_base"));
 			}
 
 			Main.ship.imagePath = path;
@@ -2596,6 +2602,8 @@ public class ShipIO {
 			debug("\tupdating painter...");
 			Main.updatePainter();
 			debug("\t\tdone");
+
+			Main.undoManager.discardAllEdits();
 		} catch (FileNotFoundException e) {
 			Main.erDialog.add("Error: load ship project - file not found.");
 		} catch (ClassNotFoundException e) {
