@@ -220,7 +220,7 @@ public class PaintBox implements Serializable {
 	public void dispose() {
 		Cache.checkInColor(this, border_rgb);
 		Cache.checkInColor(this, pin_rgb);
-		Cache.checkInImage(this, pathPin);
+		//Cache.checkInImage(this, pathPin);
 	}
 
 	public void addUndoableEditListener(UndoableEditListener l) {

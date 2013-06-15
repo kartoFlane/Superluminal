@@ -11,7 +11,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.zip.ZipFile;
@@ -202,6 +201,7 @@ public class Main {
 	public static boolean modShift = false;
 	public static boolean modAlt = false;
 	public static boolean modCtrl = false;
+	public static boolean arrowDown = false;
 
 	// === Internal
 	public static boolean debug = true;
@@ -226,6 +226,7 @@ public class Main {
 	public static Image shieldImage = null;
 	public static Image cloakImage = null;
 	public static Image tempImage = null;
+	@Deprecated
 	public static Image pinImage = null;
 	public static Image tickImage = null;
 	public static Image crossImage = null;
@@ -301,7 +302,7 @@ public class Main {
 	private static Spinner stepSpinner;
 
 	/** List containing all tips displayed when the editor is launched. */
-	public static LinkedList<String> tipsList;
+	public static ArrayList<String> tipsList;
 
 	/**
 	 * The amount that gets added to X/Y coordinates of selected item, whenever the +/- values are pressed. Modified by the stepSpinner.
@@ -349,8 +350,7 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
-	 * - gib layering reorder undo? perhaps
-	 * - nudge undo
+	 * - gib layering reorder undo? perhaps?
 	 * 
 	 * undo checklist:
 	 * hull - done, image done
@@ -358,7 +358,7 @@ public class Main {
 	 * rooms - move done, resize done, system assign done, split done, interior done
 	 * doors - move done, link done
 	 * mounts - done
-	 * gibs - move done, delete done, 
+	 * gibs - move done, delete done,
 	 * stations - dir done, un/assign done
 	 * delete - r/d/m done,
 	 * 
@@ -394,8 +394,10 @@ public class Main {
 	 * - f calculate optimal offset now moves the anchor, should it end up outside of the editable area after the operation
 	 * - f fixed a bug that caused the enemy crew random spinner to have no effect at all
 	 * - + gib layers in the gib editor can now be renamed
+	 * - + gibs can now also be deleted like other objects, by pressing shift+D or Delete
 	 * - ~ pinned down objects now have yellow-ish selection, instead of the obscure (and often hard-to-notice) pin image
 	 * - + Layout name is now also autosuggested when loading hull image, if its field was blank.
+	 * - f mounts now no longer are offset to match their old position once moved, if hull was moved beforehand.
 	 * - + The editor now warns you when you try to close an unsaved project
 	 * - + FUCKING FINALLY implemented undo/redo functionality. Pretty much every modification that influences the ship in-game can be undone/redone, except for stuff that is changed in properties
 	 * windows, some gib-specific functions and nudge functionality
@@ -497,9 +499,6 @@ public class Main {
 			resPath = properties.getProperty("resPath");
 			removeDoor = Boolean.valueOf(properties.getProperty("removeDoor"));
 			arbitraryPosOverride = Boolean.valueOf(properties.getProperty("arbitraryPosOverride"));
-			// loadFloor = Boolean.valueOf(properties.getProperty("loadFloor"));
-			// loadShield = Boolean.valueOf(properties.getProperty("loadShield"));
-			// loadSystem = Boolean.valueOf(properties.getProperty("loadSystem"));
 			forbidBossLoading = Boolean.valueOf(properties.getProperty("forbidBossLoading"));
 			showTips = Boolean.valueOf(properties.getProperty("showTips"));
 		} else {
@@ -518,10 +517,6 @@ public class Main {
 			removeDoor = ConfigIO.getBoolean("removeDoor");
 			arbitraryPosOverride = ConfigIO.getBoolean("arbitraryPosOverride");
 			// view
-			// showGrid = ConfigIO.getBoolean("showGrid");
-			// loadFloor = ConfigIO.getBoolean("loadFloor");
-			// loadShield = ConfigIO.getBoolean("loadShield");
-			// loadSystem = ConfigIO.getBoolean("loadSystem");
 			forbidBossLoading = ConfigIO.getBoolean("forbidBossLoading");
 			shownIncludeWarning = ConfigIO.getBoolean("shownIncludeWarning");
 			showTips = ConfigIO.getBoolean("showTips");
@@ -549,7 +544,7 @@ public class Main {
 		glowWindow = new GlowWindow(shell);
 		GibDialog.gibRename = new RenameGibDialog(gibDialog.getShell());
 
-		tipsList = new LinkedList<String>();
+		tipsList = new ArrayList<String>();
 		tipsList.add("You can quickly switch between tools using Q, W, E, R, T and G keys.");
 		tipsList.add("Each tool has a tooltip detailing its functions - hover over an icon to show the tooltip.");
 		tipsList.add("Selection Tool (Q) also allows you to modify (rotate, change direction, etc) already placed weapon mounts.");
@@ -574,8 +569,9 @@ public class Main {
 		tipsList.add("You can use File > Change Archives... options to change the .dat archives used by the editor (or to unpack them again).");
 		tipsList.add("You can copy contents of a .ftl mod into Superluminal's files by using File > Include Mod... option, allowing you to use assets from that mod."
 				+ "\n\nNote that using assets from another mod will cause your ship to have a dependency on that mod");
-		tipsList.add("You can right-click on the anchor box to set a precise vertical offset of your ship. Shift-right-clicking sets horizontal offset.");
-		tipsList.add("On player ships, systems that don't have a station placed will use default station positions, which may cause them to be unreachable in small enough rooms.");
+		tipsList.add("You can right-click on the anchor box to set a precise vertical offset of your ship. Shift-right-clicking sets horizontal offset. Double-right-clicking on the box resets the respective offset to 0.");
+		tipsList.add("On player ships, systems that don't have a station placed will use default station positions, which may cause them to be unreachable in small enough rooms."
+				+ "\nEnemy ships' stations are random by default, so you don't have to place them in order for your ship to work.");
 
 		tipWindow = new TipWindow(shell);
 		tipWindow.updateButtons();
@@ -668,7 +664,7 @@ public class Main {
 
 		display.timerExec(INTERVAL, new Runnable() {
 			public void run() {
-				// === used to resize grid when the editor window is maximized
+				// used to resize grid when the editor window is maximized
 				if (canvas.isDisposed())
 					return;
 				if (shellStateChange != shell.getMaximized()) {
@@ -748,11 +744,7 @@ public class Main {
 	}
 
 	protected void createContents() {
-		// highlightColor = shell.getDisplay().getSystemColor(SWT.COLOR_GREEN);
-		// tempImage = Cache.checkOutImage(shell, "/org/eclipse/jface/dialogs/images/help.gif");
-
-		// === Load images to a map for easy access
-
+		// Load images to a map for easy access
 		tempImage = Cache.checkOutImage(shell, "/img/room.png");
 		toolsMap.put("room", tempImage);
 		tempImage = Cache.checkOutImage(shell, "/img/door.png");
@@ -766,7 +758,7 @@ public class Main {
 		tempImage = Cache.checkOutImage(shell, "/img/gib.png");
 		toolsMap.put("gib", tempImage);
 
-		pinImage = Cache.checkOutImage(shell, "/img/pin.png");
+		// pinImage = Cache.checkOutImage(shell, "/img/pin.png");
 		tickImage = Cache.checkOutImage(shell, "/img/check.png");
 		crossImage = Cache.checkOutImage(shell, "/img/cross.png");
 
@@ -1611,7 +1603,10 @@ public class Main {
 		txtX.addTraverseListener(new TraverseListener() {
 			public void keyTraversed(TraverseEvent e) {
 				if (e.detail == SWT.TRAVERSE_RETURN) {
+					PaintBox box = getSelected();
+					box.registerDown(Undoable.MOVE);
 					updateSelectedPosition();
+					box.registerUp(Undoable.MOVE);
 				} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
 					updateSelectedPosText();
 				}
@@ -1623,7 +1618,10 @@ public class Main {
 		txtY.addTraverseListener(new TraverseListener() {
 			public void keyTraversed(TraverseEvent e) {
 				if (e.detail == SWT.TRAVERSE_RETURN) {
+					PaintBox box = getSelected();
+					box.registerDown(Undoable.MOVE);
 					updateSelectedPosition();
+					box.registerUp(Undoable.MOVE);
 				} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
 					updateSelectedPosText();
 				}
@@ -1959,6 +1957,13 @@ public class Main {
 				}
 				if (e.keyCode == SWT.CTRL)
 					modCtrl = false;
+
+				if (arrowDown && (e.keyCode == SWT.ARROW_UP || e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_LEFT || e.keyCode == SWT.ARROW_RIGHT)
+						&& e.stateMask != SWT.CTRL && e.stateMask != SWT.ALT) {
+					arrowDown = false;
+					PaintBox box = getSelected();
+					box.registerUp(Undoable.MOVE);
+				}
 			}
 		});
 
@@ -1982,17 +1987,12 @@ public class Main {
 				if (shell.isEnabled() && !txtX.isFocusControl() && !txtY.isFocusControl() && !gibWindow.isVisible() && !GibDialog.gibRename.isVisible()) {
 
 					// === element deletion
-					if ((selectedMount != null || selectedRoom != null || selectedDoor != null) && (e.keyCode == SWT.DEL || (e.stateMask == SWT.SHIFT && e.keyCode == 'd'))) {
-						PaintBox box = null;
-						if (selectedRoom != null) {
-							box = selectedRoom;
-							deleteObject(selectedRoom);
-						} else if (selectedDoor != null) {
-							box = selectedDoor;
-							deleteObject(selectedDoor);
-						} else if (selectedMount != null) {
-							box = selectedMount;
-							deleteObject(selectedMount);
+					if ((selectedMount != null || selectedRoom != null || selectedDoor != null || selectedGib != null) && (e.keyCode == SWT.DEL || (e.stateMask == SWT.SHIFT && e.keyCode == 'd'))) {
+						PaintBox box = getSelected();
+						deleteObject(box);
+						if (box instanceof FTLGib && selectedGib != null) {
+							gibDialog.btnDeleteGib.setEnabled(false);
+							gibDialog.refreshList();
 						}
 						if (box != null) {
 							AbstractUndoableEdit aue = new UndoableDeleteEdit(box);
@@ -2108,10 +2108,14 @@ public class Main {
 							canvas.redraw();
 
 						// === nudge function
-					} else if (e.keyCode == SWT.ARROW_UP || e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_LEFT || e.keyCode == SWT.ARROW_RIGHT) {
-						// sending it to an auxiliary function as to not make a clutter here
-						if (e.stateMask != SWT.CTRL)
-							nudgeSelected(e.keyCode);
+					} else if ((e.keyCode == SWT.ARROW_UP || e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_LEFT || e.keyCode == SWT.ARROW_RIGHT)
+							&& e.stateMask != SWT.CTRL && e.stateMask != SWT.ALT) {
+						if (!arrowDown) {
+							arrowDown = true;
+							PaintBox box = getSelected();
+							box.registerDown(Undoable.MOVE);
+						}
+						nudgeSelected(e.keyCode);
 					} else if (tltmGib.getSelection() && e.keyCode == 'h') {
 						if (gibDialog.btnHideGib.isEnabled()) {
 							gibDialog.btnHideGib.notifyListeners(SWT.Selection, null);

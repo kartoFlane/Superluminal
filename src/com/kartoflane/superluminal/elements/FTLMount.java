@@ -468,6 +468,12 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		Main.layeredPainter.add(this, LayeredPainter.MOUNT);
 	}
 	
+	public void updatePos() {
+		Point loc = getLocation();
+		pos.x = loc.x - Main.ship.imageRect.x;
+		pos.y = loc.y - Main.ship.imageRect.y; 
+	}
+	
 	@Override
 	public void registerDown(int undoable) {
 		if (undoable == Undoable.DIRECTION) {

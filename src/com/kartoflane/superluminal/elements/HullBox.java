@@ -86,9 +86,10 @@ public class HullBox extends ImageBox implements DraggableBox {
 			Main.ship.imageRect.x = x;
 			Main.ship.imageRect.y = y;
 
-			for (FTLGib g : Main.ship.gibs) {
+			for (FTLGib g : Main.ship.gibs)
 				g.setLocationRelative(g.position.x, g.position.y);
-			}
+			for (FTLMount m : Main.ship.mounts)
+				m.updatePos();
 		}
 
 		// setVisible(Main.canvas.getBounds().contains(x, y) && Main.canvas.getBounds().contains(x+bounds.width, y+bounds.height));
@@ -170,18 +171,23 @@ public class HullBox extends ImageBox implements DraggableBox {
 	public void registerUp(int undoable) {
 		super.registerUp(undoable);
 		if (ume != null) {
-			String path = ((UndoableImageEdit) ume).getOldValue();
+			String path = null;
 			if (undoable == Undoable.IMAGE) {
+				path = ((UndoableImageEdit) ume).getOldValue();
 				if (path != getPath() || (path != null && getPath() != null && !path.equals(getPath())))
 					((UndoableImageEdit) ume).setCurrentValue(getPath());
+				Main.addEdit(ume);
 			} else if (undoable == Undoable.FLOOR) {
+				path = ((UndoableImageEdit) ume).getOldValue();
 				if (path != floorPath || (path != null && floorPath != null && !path.equals(floorPath)))
 					((UndoableImageEdit) ume).setCurrentValue(floorPath);
+				Main.addEdit(ume);
 			} else if (undoable == Undoable.CLOAK) {
+				path = ((UndoableImageEdit) ume).getOldValue();
 				if (path != cloakPath || (path != null && cloakPath != null && !path.equals(cloakPath)))
 					((UndoableImageEdit) ume).setCurrentValue(cloakPath);
+				Main.addEdit(ume);
 			}
-			Main.addEdit(ume);
 		}
 	}
 

@@ -47,8 +47,11 @@ public class RenameGibDialog {
 	
 	protected void createContents() {
 		nameText = new Text(shell, SWT.BORDER);
-		nameText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		GridData gd_nameText = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
+		gd_nameText.widthHint = 200;
+		nameText.setLayoutData(gd_nameText);
 		nameText.setTextLimit(30);
+		nameText.setFont(Main.appFont);
 		
 		final Button btnConfirm = new Button(shell, SWT.NONE);
 		GridData gd_btnConfirm = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1);
