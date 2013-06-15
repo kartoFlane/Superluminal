@@ -132,7 +132,7 @@ public class Main {
 	public static final int MAX_DESCRIPTION_LENGTH = 200;
 
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-06-13";
+	public final static String VERSION = "13-06-15";
 
 	// === Important objects
 	public static Shell shell;
@@ -350,17 +350,6 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
-	 * - gib layering reorder undo? perhaps?
-	 * 
-	 * undo checklist:
-	 * hull - done, image done
-	 * shield - done, image done
-	 * rooms - move done, resize done, system assign done, split done, interior done
-	 * doors - move done, link done
-	 * mounts - done
-	 * gibs - move done, delete done,
-	 * stations - dir done, un/assign done
-	 * delete - r/d/m done,
 	 * 
 	 * == MEDIUM PRIO: (new features)
 	 * - multiple systems for the same room for enemy ships
@@ -1634,6 +1623,7 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				txtX.setText("" + (Integer.valueOf(txtX.getText()) - ((selectedRoom == null) ? arbitraryStep : 1)));
 				updateSelectedPosition();
+				canvas.forceFocus();
 			}
 		});
 
@@ -1641,6 +1631,7 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				txtX.setText("" + (Integer.valueOf(txtX.getText()) + ((selectedRoom == null) ? arbitraryStep : 1)));
 				updateSelectedPosition();
+				canvas.forceFocus();
 			}
 		});
 
@@ -1648,6 +1639,7 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				txtY.setText("" + (Integer.valueOf(txtY.getText()) - ((selectedRoom == null) ? arbitraryStep : 1)));
 				updateSelectedPosition();
+				canvas.forceFocus();
 			}
 		});
 
@@ -1655,6 +1647,7 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				txtY.setText("" + (Integer.valueOf(txtY.getText()) + ((selectedRoom == null) ? arbitraryStep : 1)));
 				updateSelectedPosition();
+				canvas.forceFocus();
 			}
 		});
 
@@ -2876,6 +2869,8 @@ public class Main {
 					}
 
 					btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath) && !tltmGib.getSelection());
+					
+					recalculateShieldCenter();
 
 					mntmSaveShip.setEnabled(true);
 					mntmSaveShipAs.setEnabled(true);
@@ -4366,6 +4361,7 @@ public class Main {
 			gibDialog.removeGibFromList(g);
 			Main.ship.gibs.remove(g);
 			box.setVisible(false);
+			gibDialog.refreshList();
 			Main.canvas.redraw(g.getBounds().x - 1, g.getBounds().y - 1, g.getBounds().width + 2, g.getBounds().height + 2, false);
 		}
 

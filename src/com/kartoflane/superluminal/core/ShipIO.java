@@ -752,8 +752,6 @@ public class ShipIO {
 								}
 
 								str = shipBeingLoaded.imageName;
-								if (str.contains("_2"))
-									str = str.substring(0, str.lastIndexOf('_'));
 								str = parentPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + str + "_shields1.png";
 								f = new File(str);
 								if (f.exists()) {
@@ -763,8 +761,6 @@ public class ShipIO {
 								}
 
 								str = shipBeingLoaded.imageName;
-								if (str.contains("_2"))
-									str = str.substring(0, str.lastIndexOf('_'));
 								str = parentPath + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + str + "_cloak.png";
 								f = new File(str);
 								if (f.exists()) {
