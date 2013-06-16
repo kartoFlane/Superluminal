@@ -246,7 +246,7 @@ public class PaintBox implements Serializable {
 
 	public void registerUp(int undoable) {
 		if (ume != null) {
-			if (undoable == Undoable.MOVE) {
+			if (undoable == Undoable.MOVE && ume instanceof UndoableMoveEdit) {
 				Point pt = ((UndoableMoveEdit) ume).getOldPos();
 				if (pt.x != bounds.x || pt.y != bounds.y) {
 					((UndoableMoveEdit) ume).setCurrentPos(bounds.x, bounds.y);

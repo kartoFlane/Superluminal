@@ -360,36 +360,6 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * - ~ hull now is not displayed when viewing cloak image
-	 * - + available/unavailable rooms now have their color refreshed immediately after exiting the properties window
-	 * - + stations can now also be hidden, View > Graphics > Show Stations (or by pressing 7)
-	 * - + weapon mounts now return to default images if their weapon was removed (may be buggy)
-	 * - - removed crewMax and random spinners from player ship section of crew tab, since they don't really do anything
-	 * - ~ in ship browser, pressing cancel during selection of a ship will now return to the ship browser, instead of closing it
-	 * - ~ ship browser now stays open after loading a ship, allowing you to quickly view ships - in order to start editing the ship, you have to dismiss the ship browser by pressing "Close" or
-	 * hitting Escape
-	 * - + numeric shortcuts to graphic options (1,2,3, etc) should now be disabled while editing gib properties
-	 * - + hull image is now being shown below the gibs, at 33% opacity while Gib Editor is selected
-	 * - + added shortcut to Hide Gib button - H
-	 * - + added some tooltips to Gib Editor toolbar button
-	 * - - removed load shield/floor/system graphic options
-	 * - + added tips window displayed on startup (can be turned off)
-	 * - ~ small changes in the way room borders are drawn - closer to what they're like in-game.
-	 * - f fixed a crash with augments/weapon/drone lists in ship's Properties
-	 * - ~ the archive unpacking window can now be dismissed (the editor will be unusable until the archives are unpacked)
-	 * - ~ "Import Room Layout" moved from File to Edit menu
-	 * - + selection is now cleared when switching between tools
-	 * - f when loading a project, gibs that failed to load their images (for example if the files couldn't be found) will now be removed, instead of crashing the editor
-	 * - f calculate optimal offset now moves the anchor, should it end up outside of the editable area after the operation
-	 * - f fixed a bug that caused the enemy crew random spinner to have no effect at all
-	 * - + gib layers in the gib editor can now be renamed
-	 * - + gibs can now also be deleted like other objects, by pressing shift+D or Delete
-	 * - ~ pinned down objects now have yellow-ish selection, instead of the obscure (and often hard-to-notice) pin image
-	 * - + Layout name is now also autosuggested when loading hull image, if its field was blank.
-	 * - f mounts now no longer are offset to match their old position once moved, if hull was moved beforehand.
-	 * - + The editor now warns you when you try to close an unsaved project
-	 * - + FUCKING FINALLY implemented undo/redo functionality. Pretty much every modification that influences the ship in-game can be undone/redone, except for stuff that is changed in properties
-	 * windows, some gib-specific functions and nudge functionality
 	 */
 
 	// =================================================================================================== //
