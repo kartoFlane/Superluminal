@@ -19,6 +19,7 @@ import org.eclipse.swt.widgets.Spinner;
 
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
+import com.kartoflane.superluminal.elements.FTLRoom;
 import com.kartoflane.superluminal.elements.Systems;
 
 
@@ -141,9 +142,10 @@ public class PropertiesWindow {
 
 				Main.ship.startMap.put(sys, btnAvailable.getSelection());
 				Main.systemsMap.get(sys).setAvailable(btnAvailable.getSelection());
-				
-				Main.selectedRoom.updateColor();
-				Main.canvasRedraw(Main.selectedRoom.getBounds(), true);
+
+				FTLRoom r = Main.selectedRoom == null ? Main.getRoomWithSystem(sys) : Main.selectedRoom;
+				r.updateColor();
+				Main.canvasRedraw(r.getBounds(), true);
 				
 				shell.setVisible(false);
 				
