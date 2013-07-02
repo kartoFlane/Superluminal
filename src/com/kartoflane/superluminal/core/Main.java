@@ -517,7 +517,7 @@ public class Main {
 		tipsList.add("If you leave all crew spinners at 0, the game will consider your ship as an automated ship, with all systems appearing manned by inexperienced crew (they will slowly repair by themselves, too).");
 		tipsList.add("All movable objects can be moved in a single direction by holding down Shift.");
 		tipsList.add("You can hold down Ctrl while moving an object if you want to place it more precisely.");
-		tipsList.add("You can change the nudge value of arrow keys by changing the number in the box next to Properties button.");
+		tipsList.add("You can change the nudge value of -/+ buttons by changing the number in the leftmost box beneath the toolbar.");
 		tipsList.add("You can right-click on the image buttons (hull, shield, etc) to bring up a small popup menu with options.");
 		tipsList.add("You can right-click on hull graphic to select and move the shield graphic - useful when the shield is completely obscured by the hull.");
 		tipsList.add("You can make weapons float with gibs when the ship is destroyed - in Gib Editor, right click on a mount to assign it to a gib.");
@@ -566,7 +566,7 @@ public class Main {
 		}
 
 		shell.pack();
-		shell.setMinimumSize(GRID_W * 35 + 60, GRID_H * 35);
+		shell.setMinimumSize(19 * 35, 12 * 35);
 		shell.open();
 
 		if (showTips && !dirWindow.shell.isVisible()) {
@@ -923,19 +923,11 @@ public class Main {
 
 		MenuItem mntmAbout = new MenuItem(menu, SWT.NONE);
 		mntmAbout.setText("About");
-
-		mntmAbout.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				AboutWindow about = new AboutWindow(shell);
-				about.shell.open();
-				about = null;
-			}
-		});
 		// === Tool bar
 
 		// === Container - holds all the items on the left side of the screen
 		Composite toolBarHolder = new Composite(shell, SWT.NONE);
-		toolBarHolder.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+		toolBarHolder.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
 		GridLayout gl_toolBarHolder = new GridLayout(2, false);
 		gl_toolBarHolder.marginWidth = 0;
 		gl_toolBarHolder.marginHeight = 0;
@@ -944,16 +936,16 @@ public class Main {
 		// === Container -> Tools - tool bar containing the tool icons
 		final ToolBar toolBar = new ToolBar(toolBarHolder, SWT.NONE);
 		toolBar.setFont(appFont);
-		GridData gd_toolBar = new GridData(SWT.LEFT, SWT.FILL, true, true, 1, 1);
+		GridData gd_toolBar = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
 		gd_toolBar.minimumHeight = -1;
 		gd_toolBar.minimumWidth = -1;
 		toolBar.setLayoutData(gd_toolBar);
 
 		// === Container -> Tools -> Pointer
 		tltmPointer = new ToolItem(toolBar, SWT.RADIO);
+		tltmPointer.setImage(toolsMap.get("pointer"));
 		tltmPointer.setWidth(60);
 		tltmPointer.setSelection(true);
-		tltmPointer.setImage(toolsMap.get("pointer"));
 		tltmPointer.setToolTipText("Selection Tool [Q]"
 				+ ShipIO.lineDelimiter + " -Click to selet an object"
 				+ ShipIO.lineDelimiter + " -Click and hold to move the object around"
@@ -1012,7 +1004,6 @@ public class Main {
 				+ " -Pressing H hides currently selected gib.\n"
 				+ " -Use Move Up/Move Down buttons to change the layering order.");
 		tltmGib.setImage(toolsMap.get("gib"));
-
 		tltmPointer.setEnabled(false);
 		tltmRoom.setEnabled(false);
 		tltmDoor.setEnabled(false);
@@ -1022,16 +1013,13 @@ public class Main {
 
 		// === Container -> buttonComposite
 		Composite composite = new Composite(toolBarHolder, SWT.NONE);
-		GridData gd_composite = new GridData(SWT.FILL, SWT.TOP, true, false, 1, 1);
+		GridData gd_composite = new GridData(SWT.RIGHT, SWT.TOP, true, false, 1, 1);
 		gd_composite.heightHint = 30;
 		composite.setLayoutData(gd_composite);
-		GridLayout gl_composite = new GridLayout(13, false);
+		GridLayout gl_composite = new GridLayout(5, false);
 		gl_composite.marginTop = 2;
 		gl_composite.marginHeight = 0;
 		composite.setLayout(gl_composite);
-
-		Label label = new Label(composite, SWT.SEPARATOR | SWT.VERTICAL);
-		label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
 
 		// === Container -> buttonComposite -> Hull image button
 		btnHull = new Button(composite, SWT.NONE);
@@ -1102,23 +1090,10 @@ public class Main {
 		mntmShowFile = new MenuItem(menu_imageBtns, SWT.NONE);
 		mntmShowFile.setText("Show Directory");
 
-		Label label_1 = new Label(composite, SWT.SEPARATOR | SWT.VERTICAL);
-		label_1.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
-
-		// === Container -> Properties
-		final Button btnShipProperties = new Button(composite, SWT.NONE);
-		btnShipProperties.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
-		btnShipProperties.setFont(appFont);
-		btnShipProperties.setText("Properties");
-		btnShipProperties.setEnabled(false);
-
-		Label label_2 = new Label(composite, SWT.SEPARATOR | SWT.VERTICAL);
-		label_2.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
-
 		// === Container -> set position composite
-		Composite coSetPosition = new Composite(composite, SWT.NONE);
-		coSetPosition.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1));
-		GridLayout gl_coSetPosition = new GridLayout(8, false);
+		Composite coSetPosition = new Composite(toolBarHolder, SWT.NONE);
+		coSetPosition.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		GridLayout gl_coSetPosition = new GridLayout(9, false);
 		gl_coSetPosition.marginWidth = 0;
 		gl_coSetPosition.marginHeight = 0;
 		coSetPosition.setLayout(gl_coSetPosition);
@@ -1131,16 +1106,10 @@ public class Main {
 				+ "Set up the value that gets added whenever you click the -/+ buttons");
 		stepSpinner.setEnabled(false);
 
-		stepSpinner.addModifyListener(new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				arbitraryStep = stepSpinner.getSelection();
-			}
-		});
-
 		// === Cotnainer -> set position composite -> X
 		Label lblX = new Label(coSetPosition, SWT.NONE);
 		lblX.setFont(appFont);
-		GridData gd_lblX = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
+		GridData gd_lblX = new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1);
 		gd_lblX.horizontalIndent = 5;
 		lblX.setLayoutData(gd_lblX);
 		lblX.setText("X:");
@@ -1153,7 +1122,6 @@ public class Main {
 		gl_setPosXBtnsCo.marginWidth = 0;
 		gl_setPosXBtnsCo.marginHeight = 0;
 		setPosXBtnsCo.setLayout(gl_setPosXBtnsCo);
-		setPosXBtnsCo.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1));
 
 		// === Cotnainer -> set position composite -> X buttons container -> X minus
 		btnXminus = new Button(setPosXBtnsCo, SWT.CENTER);
@@ -1178,11 +1146,11 @@ public class Main {
 		txtX.setEnabled(false);
 		txtX.setFont(appFont);
 		txtX.setTextLimit(5);
-		txtX.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
+		txtX.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1));
 
 		// === Cotnainer -> set position composite -> Y
 		Label lblY = new Label(coSetPosition, SWT.NONE);
-		GridData gd_lblY = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
+		GridData gd_lblY = new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1);
 		gd_lblY.horizontalIndent = 5;
 		lblY.setLayoutData(gd_lblY);
 		lblY.setFont(appFont);
@@ -1218,32 +1186,24 @@ public class Main {
 		txtY.setEnabled(false);
 		txtY.setFont(appFont);
 		txtY.setTextLimit(5);
-		txtY.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
-		new Label(coSetPosition, SWT.NONE);
+		txtY.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1));
 
-		Label label_3 = new Label(composite, SWT.SEPARATOR | SWT.RIGHT);
-		label_3.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
-
-		// === Cotnainer -> state buttons composite
-		Composite stateBtnsCo = new Composite(composite, SWT.NONE);
-		GridLayout gl_stateBtnsCo = new GridLayout(1, false);
-		gl_stateBtnsCo.marginWidth = 0;
-		gl_stateBtnsCo.verticalSpacing = 0;
-		gl_stateBtnsCo.marginHeight = 0;
-		stateBtnsCo.setLayout(gl_stateBtnsCo);
-		stateBtnsCo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 1));
+		// === Container -> Properties
+		final Button btnShipProperties = new Button(coSetPosition, SWT.NONE);
+		btnShipProperties.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false, 1, 1));
+		btnShipProperties.setFont(appFont);
+		btnShipProperties.setText("Properties");
+		btnShipProperties.setEnabled(false);
 
 		// === Cotnainer -> state buttons composite -> cloaked
-		btnCloaked = new Button(stateBtnsCo, SWT.TOGGLE | SWT.CENTER);
+		btnCloaked = new Button(coSetPosition, SWT.TOGGLE | SWT.CENTER);
+		btnCloaked.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		btnCloaked.setEnabled(false);
 		btnCloaked.setFont(appFont);
 		btnCloaked.setImage(Cache.checkOutImage(shell, "/img/smallsys/smallcloak.png"));
 		btnCloaked.setToolTipText("View the cloaked version of the ship.");
-		btnCloaked.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
-		new Label(composite, SWT.NONE);
 
 		// === Canvas
-
 		Composite canvasHolder = new Composite(shell, SWT.NONE);
 		canvasHolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 4));
 		canvasHolder.setLayout(new FormLayout());
@@ -1529,98 +1489,6 @@ public class Main {
 		canvas.addMouseTrackListener(mouseListener);
 		canvas.addMouseListener(mouseListener);
 
-		// === SELECTED ITEM POSITION
-
-		txtX.addVerifyListener(new VerifyListener() {
-			public void verifyText(VerifyEvent e) {
-				String string = e.text;
-				char[] chars = new char[string.length()];
-				string.getChars(0, chars.length, chars, 0);
-				for (int i = 0; i < chars.length; i++) {
-					if (!('0' <= chars[i] && chars[i] <= '9') && ('-' != chars[i])) {
-						e.doit = false;
-						return;
-					}
-				}
-			}
-		});
-
-		txtY.addVerifyListener(new VerifyListener() {
-			public void verifyText(VerifyEvent e) {
-				String string = e.text;
-				char[] chars = new char[string.length()];
-				string.getChars(0, chars.length, chars, 0);
-				for (int i = 0; i < chars.length; i++) {
-					if (!('0' <= chars[i] && chars[i] <= '9') && ('-' != chars[i])) {
-						e.doit = false;
-						return;
-					}
-				}
-			}
-		});
-
-		txtX.addTraverseListener(new TraverseListener() {
-			public void keyTraversed(TraverseEvent e) {
-				if (e.detail == SWT.TRAVERSE_RETURN) {
-					PaintBox box = getSelected();
-					box.registerDown(Undoable.MOVE);
-					updateSelectedPosition();
-					box.registerUp(Undoable.MOVE);
-				} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
-					updateSelectedPosText();
-				}
-				canvas.forceFocus();
-				e.doit = (e.detail == SWT.TRAVERSE_TAB_NEXT || e.detail == SWT.TRAVERSE_TAB_PREVIOUS);
-			}
-		});
-
-		txtY.addTraverseListener(new TraverseListener() {
-			public void keyTraversed(TraverseEvent e) {
-				if (e.detail == SWT.TRAVERSE_RETURN) {
-					PaintBox box = getSelected();
-					box.registerDown(Undoable.MOVE);
-					updateSelectedPosition();
-					box.registerUp(Undoable.MOVE);
-				} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
-					updateSelectedPosText();
-				}
-				canvas.forceFocus();
-				e.doit = (e.detail == SWT.TRAVERSE_TAB_NEXT || e.detail == SWT.TRAVERSE_TAB_PREVIOUS);
-			}
-		});
-
-		btnXminus.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				txtX.setText("" + (Integer.valueOf(txtX.getText()) - ((selectedRoom == null) ? arbitraryStep : 1)));
-				updateSelectedPosition();
-				canvas.forceFocus();
-			}
-		});
-
-		btnXplus.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				txtX.setText("" + (Integer.valueOf(txtX.getText()) + ((selectedRoom == null) ? arbitraryStep : 1)));
-				updateSelectedPosition();
-				canvas.forceFocus();
-			}
-		});
-
-		btnYminus.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				txtY.setText("" + (Integer.valueOf(txtY.getText()) - ((selectedRoom == null) ? arbitraryStep : 1)));
-				updateSelectedPosition();
-				canvas.forceFocus();
-			}
-		});
-
-		btnYplus.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				txtY.setText("" + (Integer.valueOf(txtY.getText()) + ((selectedRoom == null) ? arbitraryStep : 1)));
-				updateSelectedPosition();
-				canvas.forceFocus();
-			}
-		});
-
 		// === IMAGE BUTTONS
 
 		btnMiniship.addSelectionListener(new SelectionAdapter() {
@@ -1777,17 +1645,6 @@ public class Main {
 			}
 		});
 
-		btnShipProperties.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				shell.setEnabled(false);
-				shipDialog.open();
-
-				shell.setEnabled(true);
-				canvas.redraw();
-				canvas.setFocus();
-			}
-		});
-
 		btnHull.addMouseListener(new MouseAdapter() {
 			public void mouseUp(MouseEvent e) {
 				sourceBtn = (Button) e.widget;
@@ -1903,6 +1760,115 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				// cloak graphic is handled by HullBox class, the button itself is only used to provide the toggle functionality
 				canvas.redraw();
+			}
+		});
+
+		stepSpinner.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				arbitraryStep = stepSpinner.getSelection();
+			}
+		});
+
+		btnShipProperties.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				shell.setEnabled(false);
+				shipDialog.open();
+
+				shell.setEnabled(true);
+				canvas.redraw();
+				canvas.setFocus();
+			}
+		});
+
+		// === SELECTED ITEM POSITION
+
+		txtX.addVerifyListener(new VerifyListener() {
+			public void verifyText(VerifyEvent e) {
+				String string = e.text;
+				char[] chars = new char[string.length()];
+				string.getChars(0, chars.length, chars, 0);
+				for (int i = 0; i < chars.length; i++) {
+					if (!('0' <= chars[i] && chars[i] <= '9') && ('-' != chars[i])) {
+						e.doit = false;
+						return;
+					}
+				}
+			}
+		});
+
+		txtY.addVerifyListener(new VerifyListener() {
+			public void verifyText(VerifyEvent e) {
+				String string = e.text;
+				char[] chars = new char[string.length()];
+				string.getChars(0, chars.length, chars, 0);
+				for (int i = 0; i < chars.length; i++) {
+					if (!('0' <= chars[i] && chars[i] <= '9') && ('-' != chars[i])) {
+						e.doit = false;
+						return;
+					}
+				}
+			}
+		});
+
+		txtX.addTraverseListener(new TraverseListener() {
+			public void keyTraversed(TraverseEvent e) {
+				if (e.detail == SWT.TRAVERSE_RETURN) {
+					PaintBox box = getSelected();
+					box.registerDown(Undoable.MOVE);
+					updateSelectedPosition();
+					box.registerUp(Undoable.MOVE);
+				} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
+					updateSelectedPosText();
+				}
+				canvas.forceFocus();
+				e.doit = (e.detail == SWT.TRAVERSE_TAB_NEXT || e.detail == SWT.TRAVERSE_TAB_PREVIOUS);
+			}
+		});
+
+		txtY.addTraverseListener(new TraverseListener() {
+			public void keyTraversed(TraverseEvent e) {
+				if (e.detail == SWT.TRAVERSE_RETURN) {
+					PaintBox box = getSelected();
+					box.registerDown(Undoable.MOVE);
+					updateSelectedPosition();
+					box.registerUp(Undoable.MOVE);
+				} else if (e.detail == SWT.TRAVERSE_ESCAPE) {
+					updateSelectedPosText();
+				}
+				canvas.forceFocus();
+				e.doit = (e.detail == SWT.TRAVERSE_TAB_NEXT || e.detail == SWT.TRAVERSE_TAB_PREVIOUS);
+			}
+		});
+
+		btnXminus.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				txtX.setText("" + (Integer.valueOf(txtX.getText()) - ((selectedRoom == null) ? arbitraryStep : 1)));
+				updateSelectedPosition();
+				canvas.forceFocus();
+			}
+		});
+
+		btnXplus.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				txtX.setText("" + (Integer.valueOf(txtX.getText()) + ((selectedRoom == null) ? arbitraryStep : 1)));
+				updateSelectedPosition();
+				canvas.forceFocus();
+			}
+		});
+
+		btnYminus.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				txtY.setText("" + (Integer.valueOf(txtY.getText()) - ((selectedRoom == null) ? arbitraryStep : 1)));
+				updateSelectedPosition();
+				canvas.forceFocus();
+			}
+		});
+
+		btnYplus.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				txtY.setText("" + (Integer.valueOf(txtY.getText()) + ((selectedRoom == null) ? arbitraryStep : 1)));
+				updateSelectedPosition();
+				canvas.forceFocus();
 			}
 		});
 
@@ -2099,8 +2065,6 @@ public class Main {
 				}
 			}
 		};
-
-		tltmPointer.addSelectionListener(adapter);
 		tltmRoom.addSelectionListener(adapter);
 		tltmDoor.addSelectionListener(adapter);
 		tltmMount.addSelectionListener(adapter);
@@ -2839,7 +2803,7 @@ public class Main {
 					}
 
 					btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath) && !tltmGib.getSelection());
-					
+
 					recalculateShieldCenter();
 
 					mntmSaveShip.setEnabled(true);
@@ -3244,6 +3208,14 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				showStations = ((MenuItem) e.widget).getSelection();
 				canvas.redraw();
+			}
+		});
+
+		mntmAbout.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				AboutWindow about = new AboutWindow(shell);
+				about.shell.open();
+				about = null;
 			}
 		});
 

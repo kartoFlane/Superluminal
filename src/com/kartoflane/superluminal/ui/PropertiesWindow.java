@@ -143,7 +143,7 @@ public class PropertiesWindow {
 				Main.ship.startMap.put(sys, btnAvailable.getSelection());
 				Main.systemsMap.get(sys).setAvailable(btnAvailable.getSelection());
 
-				FTLRoom r = Main.selectedRoom == null ? Main.getRoomWithSystem(sys) : Main.selectedRoom;
+				FTLRoom r = Main.getRoomWithSystem(sys);
 				r.updateColor();
 				Main.canvasRedraw(r.getBounds(), true);
 				

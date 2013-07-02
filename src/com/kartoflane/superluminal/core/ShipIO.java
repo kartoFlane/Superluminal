@@ -1088,6 +1088,8 @@ public class ShipIO {
 
 			Point p = shipBeingLoaded.computeShipSize();
 			p = new Point(35 * Math.round((Main.GRID_W * 35 - p.x) / 70 - shipBeingLoaded.offset.x), 35 * Math.round((Main.GRID_H * 35 - p.y) / 70 - shipBeingLoaded.offset.y));
+			p.x = p.x < 0 ? 0 : p.x;
+			p.y = p.y < 0 ? 0 : p.y;
 			Main.anchor.setLocation(p.x, p.y);
 
 			if (negativeX || negativeY) {

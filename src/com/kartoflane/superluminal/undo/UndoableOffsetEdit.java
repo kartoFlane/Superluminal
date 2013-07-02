@@ -80,9 +80,15 @@ public class UndoableOffsetEdit extends AbstractUndoableEdit {
 			Point size = Main.ship.findLowBounds();
 			int x = size.x - old.x * 35;
 			int y = size.y - old.y * 35;
+			x = Main.roundToGrid(x);
+			y = Main.roundToGrid(y);
 			((Anchor) box).setLocation(x, y, false);
 			Main.ship.anchor.x = x;
 			Main.ship.anchor.y = y;
+			
+			Main.ship.offset.x = (size.x - x)/35;
+			Main.ship.offset.y = (size.y - y)/35;
+			
 			Main.canvas.redraw();
 		} else {
 			Main.ship.horizontal = old.x;
@@ -103,11 +109,17 @@ public class UndoableOffsetEdit extends AbstractUndoableEdit {
 		super.redo();
 		if (undoable == Undoable.MOVE) {
 			Point size = Main.ship.findLowBounds();
-			int x = size.x - current.x * 35;
-			int y = size.y - current.y * 35;
+			int x = size.x - current.x * 35 - 10; // -10 to make sure it rounds correctly (sometimes it doesn't)
+			int y = size.y - current.y * 35 - 10;
+			x = Main.roundToGrid(x);
+			y = Main.roundToGrid(y);
 			((Anchor) box).setLocation(x, y, false);
 			Main.ship.anchor.x = x;
 			Main.ship.anchor.y = y;
+			
+			Main.ship.offset.x = (size.x - x)/35;
+			Main.ship.offset.y = (size.y - y)/35;
+			
 			Main.canvas.redraw();
 		} else {
 			Main.ship.horizontal = current.x;
