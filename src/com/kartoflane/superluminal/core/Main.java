@@ -1511,7 +1511,7 @@ public class Main {
 					}
 				}
 				updateButtonImg();
-				canvas.setFocus();
+				canvas.forceFocus();
 			}
 		});
 
@@ -1539,7 +1539,7 @@ public class Main {
 					}
 				}
 				updateButtonImg();
-				canvas.setFocus();
+				canvas.forceFocus();
 			}
 		});
 
@@ -1569,7 +1569,7 @@ public class Main {
 					}
 				}
 				updateButtonImg();
-				canvas.setFocus();
+				canvas.forceFocus();
 			}
 		});
 
@@ -1612,7 +1612,7 @@ public class Main {
 						box.open();
 					}
 				}
-				canvas.setFocus();
+				canvas.forceFocus();
 			}
 		});
 
@@ -1641,7 +1641,7 @@ public class Main {
 					}
 				}
 				updateButtonImg();
-				canvas.setFocus();
+				canvas.forceFocus();
 			}
 		});
 
@@ -1776,7 +1776,7 @@ public class Main {
 
 				shell.setEnabled(true);
 				canvas.redraw();
-				canvas.setFocus();
+				canvas.forceFocus();
 			}
 		});
 
