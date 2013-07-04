@@ -360,6 +360,7 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
+	 * 	- manually-linked doors are now correctly loaded when loading a ship from ftl archive.
 	 */
 
 	// =================================================================================================== //
@@ -425,10 +426,10 @@ public class Main {
 		shell.setImages(images);
 
 		// resize the window as to not exceed screen dimensions, with maximum size being defined by GRID_W_MAX and GRID_H_MAX
-		GRID_W = ((int) ((display.getBounds().width - 35)) / 35);
-		GRID_H = ((int) ((display.getBounds().height - shell.getLocation().y - 140)) / 35);
-		GRID_W = (GRID_W > GRID_W_MAX) ? GRID_W_MAX : GRID_W;
-		GRID_H = (GRID_H > GRID_H_MAX) ? GRID_H_MAX : GRID_H;
+		GRID_W = ((int) ((0.7f * display.getBounds().width - shell.getLocation().x)) / 35);
+		GRID_H = ((int) ((0.6f * display.getBounds().height - shell.getLocation().y)) / 35);
+		GRID_W = (GRID_W > GRID_W_MAX) ? GRID_W_MAX : (GRID_W < 18) ? 18 : GRID_W;
+		GRID_H = (GRID_H > GRID_H_MAX) ? GRID_H_MAX : (GRID_H < 7) ? 7 : GRID_H;
 
 		if (!ConfigIO.configExists())
 			ConfigIO.saveConfig();

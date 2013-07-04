@@ -163,12 +163,16 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 					tempColor = Cache.checkOutColor(this, tempRGB);
 					r = Main.ship.getRoomWithId(leftId);
 					
-					e.gc.setForeground(tempColor);
-					e.gc.drawLine(bounds.x + bounds.width/2, bounds.y + bounds.height/2,
-							r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
-					
-					Cache.checkInColor(this, tempRGB);
-					tempColor = null;
+					if (r != null) {
+						e.gc.setForeground(tempColor);
+						e.gc.drawLine(bounds.x + bounds.width/2, bounds.y + bounds.height/2,
+								r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+						
+						Cache.checkInColor(this, tempRGB);
+						tempColor = null;
+					} else {
+						Main.erDialog.add("Error - draw door: selected door is linked to a non-existing room.");
+					}
 				}
 				
 				if (rightId != -2) {
@@ -176,12 +180,16 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 					tempColor = Cache.checkOutColor(this, tempRGB);
 					r = Main.ship.getRoomWithId(rightId);
 					
-					e.gc.setForeground(tempColor);
-					e.gc.drawLine(bounds.x + bounds.width/2, bounds.y + bounds.height/2,
-							r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
-					
-					Cache.checkInColor(this, tempRGB);
-					tempColor = null;
+					if (r != null) {
+						e.gc.setForeground(tempColor);
+						e.gc.drawLine(bounds.x + bounds.width/2, bounds.y + bounds.height/2,
+								r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+						
+						Cache.checkInColor(this, tempRGB);
+						tempColor = null;
+					} else {
+						Main.erDialog.add("Error - draw door: selected door is linked to a non-existing room.");
+					}
 				}
 			}
 			
@@ -264,23 +272,31 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 		Point temp;
 		if (leftId != -2) {
 			r = Main.ship.getRoomWithId(leftId);
-			temp = new Point(r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
-			
-			Main.canvas.redraw(Math.min(temp.x, bounds.x + bounds.width/2) -5,
-					Math.min(temp.y, bounds.y + bounds.height/2) -5,
-					Math.max(temp.x, bounds.x + bounds.width/2) + 10,
-					Math.max(temp.y, bounds.y + bounds.height/2) + 10,
-					false);
+			if (r != null) {
+				temp = new Point(r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+				
+				Main.canvas.redraw(Math.min(temp.x, bounds.x + bounds.width/2) -5,
+						Math.min(temp.y, bounds.y + bounds.height/2) -5,
+						Math.max(temp.x, bounds.x + bounds.width/2) + 10,
+						Math.max(temp.y, bounds.y + bounds.height/2) + 10,
+						false);
+			} else {
+				Main.erDialog.add("Error - redraw door ID links: selected door is linked to a non-existing room.");
+			}
 		}
 		if (rightId != -2) {
 			r = Main.ship.getRoomWithId(rightId);
-			temp = new Point(r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
-			
-			Main.canvas.redraw(Math.min(temp.x, bounds.x + bounds.width/2) -5,
-					Math.min(temp.y, bounds.y + bounds.height/2) -5,
-					Math.max(temp.x, bounds.x + bounds.width/2) + 10,
-					Math.max(temp.y, bounds.y + bounds.height/2) + 10,
-					false);
+			if (r != null) {
+				temp = new Point(r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+				
+				Main.canvas.redraw(Math.min(temp.x, bounds.x + bounds.width/2) -5,
+						Math.min(temp.y, bounds.y + bounds.height/2) -5,
+						Math.max(temp.x, bounds.x + bounds.width/2) + 10,
+						Math.max(temp.y, bounds.y + bounds.height/2) + 10,
+						false);
+			} else {
+				Main.erDialog.add("Error - redraw door ID links: selected door is linked to a non-existing room.");
+			}
 		}
 	}
 

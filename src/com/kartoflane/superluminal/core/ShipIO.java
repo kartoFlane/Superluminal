@@ -1316,13 +1316,16 @@ public class ShipIO {
 				} else if (s.equals("DOOR")) {
 					door = new FTLDoor();
 
+					// position
 					x = scanner.nextInt() * 35 + ship.offset.x * 35;
 					y = scanner.nextInt() * 35 + ship.offset.y * 35;
 					door.setLocationAbsolute(x, y);
 
-					scanner.nextInt();
-					scanner.nextInt();
+					// room IDs
+					door.leftId = scanner.nextInt();
+					door.rightId = scanner.nextInt();
 
+					// horizontal / vertical
 					x = scanner.nextInt();
 					door.horizontal = (x == 0) ? true : false;
 
@@ -1340,6 +1343,8 @@ public class ShipIO {
 					foundSection = true;
 				}
 			}
+			
+			resetUnnecessaryLinkIds();
 
 			ship.offset.x = Math.max(ship.offset.x, 0);
 			ship.offset.y = Math.max(ship.offset.y, 0);
@@ -3443,6 +3448,17 @@ public class ShipIO {
 			zf.close();
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	private static void resetUnnecessaryLinkIds() {
+		if (shipBeingLoaded == null) return;
+		int l,r;
+		for (FTLDoor d : shipBeingLoaded.doors) {
+			l = shipBeingLoaded.findLeftRoom(d);
+			r = shipBeingLoaded.findRightRoom(d);
+			if (d.leftId == l) d.leftId = -2;
+			if (d.rightId == r) d.rightId = -2;
 		}
 	}
 }
