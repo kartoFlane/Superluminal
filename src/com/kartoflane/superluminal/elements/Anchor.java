@@ -240,11 +240,11 @@ public class Anchor extends PaintBox implements DraggableBox {
 				Main.ship.offset.x = (p.x - x)/35;
 				Main.ship.offset.y = (p.y - y)/35;
 			}
-			
-			x = Math.max(x, 0);
-			y = Math.max(y, 0);
+
 			x = Math.min(x, Main.GRID_W*35-35 - size.x - Main.ship.offset.x*35);
 			y = Math.min(y, Main.GRID_H*35-35 - size.y - Main.ship.offset.y*35);
+			x = Math.max(x, 0);
+			y = Math.max(y, 0);
 			
 			x = Main.roundToGrid(x);
 			y = Main.roundToGrid(y);
