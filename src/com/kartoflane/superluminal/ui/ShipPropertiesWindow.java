@@ -1,5 +1,7 @@
 package com.kartoflane.superluminal.ui;
 
+import java.util.TreeSet;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -276,7 +278,6 @@ public class ShipPropertiesWindow extends Dialog {
 		btnExplicit.setSelection(!Main.ship.weaponsBySet);
 
 		listWeapons.removeAll();
-
 		for (String s : ShipIO.weaponSetMap.keySet()) {
 			presets.add(s);
 		}
@@ -360,9 +361,11 @@ public class ShipPropertiesWindow extends Dialog {
 		}
 
 		// augments
-		for (FTLItem it : ShipIO.augMap.values()) {
-			augments.add(it.name + " (" + it.blueprint + ")");
-		}
+		TreeSet<String> sortedSet = new TreeSet<String>();
+		for (FTLItem it : ShipIO.augMap.values())
+			sortedSet.add(String.format("%-50s (%s)", it.name, it.blueprint));
+		for (String entry : sortedSet)
+			augments.add(entry);
 		listAugments.removeAll();
 
 		FTLItem it = null;
@@ -1703,13 +1706,17 @@ public class ShipPropertiesWindow extends Dialog {
 			s = s + "S";
 
 		weapons.removeAll();
+		TreeSet<String> sortedSet = new TreeSet<String>();
 
 		for (String str : ShipIO.weaponMap.keySet()) {
 			i = ShipIO.weaponMap.get(str);
 			if ((i.category.equals(s) && (!s.equals("LASER") || (s.equals("LASER") && !i.blueprint.contains("ION"))) || (s.equals("ION") && i.blueprint.contains(s)))) {
-				weapons.add(i.name + " (" + i.blueprint + ")");
+				sortedSet.add(String.format("%-40s (%s)", i.name, i.blueprint));
 			}
 		}
+
+		for (String entry : sortedSet)
+			weapons.add(entry);
 	}
 
 	public void dronesListSet(String s) {
@@ -1718,13 +1725,17 @@ public class ShipPropertiesWindow extends Dialog {
 		s = st[0].toUpperCase();
 
 		drones.removeAll();
+		TreeSet<String> sortedSet = new TreeSet<String>();
 
 		for (String str : ShipIO.droneMap.keySet()) {
 			i = ShipIO.droneMap.get(str);
 			if ((s.equals("DEFENSIVE") && (i.category.equals("DEFENSE") || i.category.contains("REPAIR")
 					|| i.category.equals("BATTLE"))) || (s.equals("OFFENSIVE") && !(i.category.equals("DEFENSE") || i.category.contains("REPAIR") || i.category.equals("BATTLE")))) {
-				drones.add(i.name + " (" + i.blueprint + ")");
+				sortedSet.add(String.format("%-40s (%s)", i.name, i.blueprint));
 			}
 		}
+		
+		for (String entry : sortedSet)
+			drones.add(entry);
 	}
 }
