@@ -519,13 +519,6 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 			Main.copyRect(bounds, Main.cursor.getBounds());
 		}
 		
-		if (!Main.canvas.getBounds().contains(bounds.x+bounds.width/2, bounds.y+bounds.height/2)) {
-			setLocationAbsolute(orig.x, orig.y);
-		} else {
-			orig.x = bounds.x;
-			orig.y = bounds.y;
-		}
-		
 		move = false;
 	}
 

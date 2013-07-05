@@ -360,7 +360,13 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
+	 * 	- rearranged UI - the editor can now be resized down to about 650x350 px
+	 * 	- fixed a bug with undo offset operation (was moving the anchor, but didn't actually update the offset values)
 	 * 	- manually-linked doors are now correctly loaded when loading a ship from ftl archive.
+	 * 	- fixed a crash that would occur if you tried to nudge an object after clicking a button (for example cloak)
+	 * 	- fixed a crash when closing room properties window when no room was selected
+	 *  - weapon mounts will no longer get snapped to weird positions should they end up outside of visible area
+	 *  - the drop-down lists of augments, weapons and drones are now sorted alphabetically, and there's some spacing between the name and the blueprint name of the item to make it easier to read
 	 */
 
 	// =================================================================================================== //
