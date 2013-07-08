@@ -414,6 +414,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 											? Slide.UP
 											: Slide.NO;
 		} else if (ShipIO.shipBeingLoaded != null || Main.ship != null) {
+			dir = Slide.UP;
 			// random direction for enemy ships
 			/*
 			 * dir = (sys.equals(Systems.MEDBAY))
