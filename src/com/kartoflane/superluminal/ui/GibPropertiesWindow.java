@@ -139,7 +139,10 @@ public class GibPropertiesWindow {
 		lblTip.setText("You can use Ctrl+Arrow keys to precisely control the sliders");
 		
 		composite = new Composite(shell, SWT.NONE);
-		composite.setLayout(new GridLayout(2, false));
+		GridLayout gl_composite = new GridLayout(2, false);
+		gl_composite.marginWidth = 0;
+		gl_composite.marginHeight = 0;
+		composite.setLayout(gl_composite);
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 5, 2));
 		
 		btnOk = new Button(composite, SWT.NONE);
