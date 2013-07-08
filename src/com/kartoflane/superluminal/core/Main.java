@@ -285,6 +285,7 @@ public class Main {
 	private MenuItem mntmConToPlayer;
 	private MenuItem mntmConToEnemy;
 	public static Font appFont;
+	public static Font monoFontRef;
 	public static Font monoFont;
 	public static ToolItem tltmPointer;
 	public static ToolItem tltmRoom;
@@ -495,8 +496,9 @@ public class Main {
 			showTips = ConfigIO.getBoolean("showTips");
 		}
 
-		display.loadFont("SourceCodePro-Semibold.otf");
-		monoFont = new Font(display, "SourceCodePro-Semibold", 9, SWT.NORMAL);
+		display.loadFont("UbuntuMono-R.ttf");
+		monoFontRef = new Font(display, "Ubuntu Mono", 10, SWT.NORMAL);
+		monoFont = monoFontRef; // so that we can swap between monofont and appfont without having to create a new instance
 		appFont = new Font(display, "Monospaced", 9, SWT.NORMAL);
 
 		// used as a default, "null" transformation to fall back to in order to do regular drawing.
