@@ -171,7 +171,8 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 						Cache.checkInColor(this, tempRGB);
 						tempColor = null;
 					} else {
-						Main.erDialog.add("Error - draw door: selected door is linked to a non-existing room.");
+						//Main.erDialog.add("Error - draw door: selected door is linked to a non-existing room.");
+						leftId = -2;
 					}
 				}
 				
@@ -188,7 +189,8 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 						Cache.checkInColor(this, tempRGB);
 						tempColor = null;
 					} else {
-						Main.erDialog.add("Error - draw door: selected door is linked to a non-existing room.");
+						//Main.erDialog.add("Error - draw door: selected door is linked to a non-existing room.");
+						rightId = -2;
 					}
 				}
 			}
@@ -281,7 +283,8 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 						Math.max(temp.y, bounds.y + bounds.height/2) + 10,
 						false);
 			} else {
-				Main.erDialog.add("Error - redraw door ID links: selected door is linked to a non-existing room.");
+				//Main.erDialog.add("Error - redraw door ID links: selected door is linked to a non-existing room.");
+				leftId = -2;
 			}
 		}
 		if (rightId != -2) {
@@ -295,7 +298,8 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 						Math.max(temp.y, bounds.y + bounds.height/2) + 10,
 						false);
 			} else {
-				Main.erDialog.add("Error - redraw door ID links: selected door is linked to a non-existing room.");
+				//Main.erDialog.add("Error - redraw door ID links: selected door is linked to a non-existing room.");
+				rightId = -2;
 			}
 		}
 	}
