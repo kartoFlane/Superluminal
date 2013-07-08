@@ -322,6 +322,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				} else {
 					if (slot_canBePlaced) {
 						registerDown(Undoable.SLOT);
+						
 						Main.ship.slotMap.put(slot_sys, Main.getStationFromRect(Main.getRectAt(e.x, e.y)));
 						Main.getRoomWithSystem(slot_sys).slot = Main.ship.slotMap.get(slot_sys);
 

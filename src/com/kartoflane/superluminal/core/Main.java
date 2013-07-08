@@ -371,6 +371,8 @@ public class Main {
 	 *  - weapon mount tool now displays the image of the dummy mount instead of an ambiguous green box, controls are the same
 	 *  - the ship list in Ship Browser can now be sorted either by blueprint names (default), or by class names of ships
 	 *  - the Ship Browser can now be resized
+	 *  - fixed a crash when opening Properties window on enemy ships
+	 *  - fixed a crash when assigning station on enemy ships
 	 */
 
 	// =================================================================================================== //

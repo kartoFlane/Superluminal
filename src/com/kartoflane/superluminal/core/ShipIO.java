@@ -128,7 +128,7 @@ public class ShipIO {
 		TreeItem blueprint;
 
 		ShipBrowser.clearTrees();
-		
+
 		final int FORMAT_CHARACTERS = 30;
 
 		if (ShipBrowser.sortByBlueprint) {
@@ -1381,7 +1381,7 @@ public class ShipIO {
 					foundSection = true;
 				}
 			}
-			
+
 			resetUnnecessaryLinkIds();
 
 			ship.offset.x = Math.max(ship.offset.x, 0);
@@ -1685,15 +1685,15 @@ public class ShipIO {
 					mountWeaponMap.put(Main.ship.getMountWithIndex(i), wpn);
 			}
 			/*
-			for (FTLMount m : Main.ship.mounts) {
-				i++;
-				if (i < Main.ship.weaponSet.size() && m.index == i) {
-					wpn = Main.ship.weaponSet.get(i);
-					if (wpn != null)
-						mountWeaponMap.put(m, wpn);
-				}
-			}
-			*/
+			 * for (FTLMount m : Main.ship.mounts) {
+			 * i++;
+			 * if (i < Main.ship.weaponSet.size() && m.index == i) {
+			 * wpn = Main.ship.weaponSet.get(i);
+			 * if (wpn != null)
+			 * mountWeaponMap.put(m, wpn);
+			 * }
+			 * }
+			 */
 		}
 	}
 
@@ -2598,7 +2598,7 @@ public class ShipIO {
 					r.setBorderMode(PaintBox.BORDER_INSIDE);
 				}
 			}
-			
+
 			if (Main.ship.version < 14) {
 				for (FTLGib g : Main.ship.gibs) {
 					if (g.getRotation() == 0)
@@ -3500,15 +3500,18 @@ public class ShipIO {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private static void resetUnnecessaryLinkIds() {
-		if (shipBeingLoaded == null) return;
-		int l,r;
+		if (shipBeingLoaded == null)
+			return;
+		int l, r;
 		for (FTLDoor d : shipBeingLoaded.doors) {
 			l = shipBeingLoaded.findLeftRoom(d);
 			r = shipBeingLoaded.findRightRoom(d);
-			if (d.leftId == l) d.leftId = -2;
-			if (d.rightId == r) d.rightId = -2;
+			if (d.leftId == l)
+				d.leftId = -2;
+			if (d.rightId == r)
+				d.rightId = -2;
 		}
 	}
 }
