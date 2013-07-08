@@ -135,17 +135,19 @@ public class ShipIO {
 			for (String s : playerBlueprintNames) {
 				blueprint = new TreeItem(ShipBrowser.trtmPlayer, SWT.NONE);
 				blueprint.setText(String.format("%-" + FORMAT_CHARACTERS + "s (%s)", playerShipNames.get(s), s));
-				blueprint.setFont(Main.appFont);
+				blueprint.setFont(Main.monoFont);
 				ShipBrowser.ships.add(blueprint);
 			}
 			for (String s : enemyBlueprintNames) {
 				blueprint = new TreeItem(ShipBrowser.trtmEnemy, SWT.NONE);
 				blueprint.setText(String.format("%-" + FORMAT_CHARACTERS + "s (%s)", enemyShipNames.get(s), s));
+				blueprint.setFont(Main.monoFont);
 				ShipBrowser.ships.add(blueprint);
 			}
 			for (String s : otherBlueprintNames) {
 				blueprint = new TreeItem(ShipBrowser.trtmOther, SWT.NONE);
 				blueprint.setText(String.format("%-" + FORMAT_CHARACTERS + "s (%s)", otherShipNames.get(s), s));
+				blueprint.setFont(Main.monoFont);
 				ShipBrowser.ships.add(blueprint);
 			}
 		} else {
@@ -158,6 +160,7 @@ public class ShipIO {
 			for (String name : nameSet) {
 				blueprint = new TreeItem(ShipBrowser.trtmPlayer, SWT.NONE);
 				blueprint.setText(nameMap.get(name));
+				blueprint.setFont(Main.monoFont);
 				ShipBrowser.ships.add(blueprint);
 			}
 			nameMap.clear();
@@ -169,6 +172,7 @@ public class ShipIO {
 			for (String name : nameSet) {
 				blueprint = new TreeItem(ShipBrowser.trtmEnemy, SWT.NONE);
 				blueprint.setText(nameMap.get(name));
+				blueprint.setFont(Main.monoFont);
 				ShipBrowser.ships.add(blueprint);
 			}
 			nameMap.clear();
@@ -180,6 +184,7 @@ public class ShipIO {
 			for (String name : nameSet) {
 				blueprint = new TreeItem(ShipBrowser.trtmOther, SWT.NONE);
 				blueprint.setText(nameMap.get(name));
+				blueprint.setFont(Main.monoFont);
 				ShipBrowser.ships.add(blueprint);
 			}
 		}

@@ -285,6 +285,7 @@ public class Main {
 	private MenuItem mntmConToPlayer;
 	private MenuItem mntmConToEnemy;
 	public static Font appFont;
+	public static Font monoFont;
 	public static ToolItem tltmPointer;
 	public static ToolItem tltmRoom;
 	public static ToolItem tltmDoor;
@@ -494,17 +495,9 @@ public class Main {
 			showTips = ConfigIO.getBoolean("showTips");
 		}
 
-		appFont = new Font(Display.getCurrent(), "Monospaced", 9, SWT.NORMAL);
-		if (appFont == null) {
-			debug("Monospaced font not found, loading Serif.");
-			appFont = new Font(shell.getDisplay(), "Serif", 9, SWT.NORMAL);
-		}
-		if (appFont == null) {
-			debug("Serif font not found, loading Courier.");
-			appFont = new Font(shell.getDisplay(), "Courier", 9, SWT.NORMAL);
-		}
-		if (appFont == null)
-			debug("No suitable font was found. We're doomed!");
+		display.loadFont("SourceCodePro-Semibold.otf");
+		monoFont = new Font(display, "SourceCodePro-Semibold", 9, SWT.NORMAL);
+		appFont = new Font(display, "Monospaced", 9, SWT.NORMAL);
 
 		// used as a default, "null" transformation to fall back to in order to do regular drawing.
 		currentTransform = new Transform(shell.getDisplay());

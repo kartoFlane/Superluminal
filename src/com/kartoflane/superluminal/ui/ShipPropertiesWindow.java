@@ -363,7 +363,7 @@ public class ShipPropertiesWindow extends Dialog {
 		// augments
 		TreeSet<String> sortedSet = new TreeSet<String>();
 		for (FTLItem it : ShipIO.augMap.values())
-			sortedSet.add(String.format("%-50s (%s)", it.name, it.blueprint));
+			sortedSet.add(String.format("%-30s (%s)", it.name, it.blueprint));
 		for (String entry : sortedSet)
 			augments.add(entry);
 		listAugments.removeAll();
@@ -1173,14 +1173,14 @@ public class ShipPropertiesWindow extends Dialog {
 		grpAugments.setText("Augments");
 
 		listAugments = new List(grpAugments, SWT.BORDER);
-		listAugments.setFont(Main.appFont);
+		listAugments.setFont(Main.monoFont);
 		listAugments.setToolTipText("Double-click on an item to delete it.");
 		GridData gd_listAugments = new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1);
 		gd_listAugments.heightHint = 65;
 		listAugments.setLayoutData(gd_listAugments);
 
 		augments = new Combo(grpAugments, SWT.READ_ONLY);
-		augments.setFont(Main.appFont);
+		augments.setFont(Main.monoFont);
 		augments.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
 		augments.setBounds(0, 0, 400, 23);
 
@@ -1251,7 +1251,7 @@ public class ShipPropertiesWindow extends Dialog {
 		grpPresetDefinition.setText("Preset definition");
 
 		presets = new Combo(grpPresetDefinition, SWT.READ_ONLY);
-		presets.setFont(Main.appFont);
+		presets.setFont(Main.monoFont);
 		presets.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
 		presets.setEnabled(false);
 		for (String s : ShipIO.weaponSetMap.keySet()) {
@@ -1265,12 +1265,12 @@ public class ShipPropertiesWindow extends Dialog {
 		grpExplicitDefinition.setText("Explicit definition");
 
 		listWeapons = new List(grpExplicitDefinition, SWT.BORDER);
-		listWeapons.setFont(Main.appFont);
+		listWeapons.setFont(Main.monoFont);
 		listWeapons.setToolTipText("Double-click on an item to delete it.");
 		listWeapons.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 
 		categories = new Combo(grpExplicitDefinition, SWT.READ_ONLY);
-		categories.setFont(Main.appFont);
+		categories.setFont(Main.monoFont);
 		GridData gd_categories = new GridData(SWT.FILL, SWT.BOTTOM, false, false, 1, 1);
 		gd_categories.widthHint = 100;
 		categories.setLayoutData(gd_categories);
@@ -1282,7 +1282,7 @@ public class ShipPropertiesWindow extends Dialog {
 		categories.select(-1);
 
 		weapons = new Combo(grpExplicitDefinition, SWT.READ_ONLY);
-		weapons.setFont(Main.appFont);
+		weapons.setFont(Main.monoFont);
 		weapons.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
 
 		// === Drones
@@ -1352,7 +1352,7 @@ public class ShipPropertiesWindow extends Dialog {
 		grpPresetDefinitionDr.setText("Preset definition");
 
 		presetsDr = new Combo(grpPresetDefinitionDr, SWT.READ_ONLY);
-		presetsDr.setFont(Main.appFont);
+		presetsDr.setFont(Main.monoFont);
 		presetsDr.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
 		presetsDr.setEnabled(false);
 		for (String s : ShipIO.droneSetMap.keySet()) {
@@ -1366,7 +1366,7 @@ public class ShipPropertiesWindow extends Dialog {
 		grpExplicitDefinitionDr.setText("Explicit definition");
 
 		listDrones = new List(grpExplicitDefinitionDr, SWT.BORDER);
-		listDrones.setFont(Main.appFont);
+		listDrones.setFont(Main.monoFont);
 		listDrones.setToolTipText("Double-click on an item to delete it.");
 		listDrones.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 
@@ -1380,7 +1380,7 @@ public class ShipPropertiesWindow extends Dialog {
 		categoriesDr.select(-1);
 
 		drones = new Combo(grpExplicitDefinitionDr, SWT.READ_ONLY);
-		drones.setFont(Main.appFont);
+		drones.setFont(Main.monoFont);
 		drones.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
 
 		// === Bottom buttons
@@ -1711,7 +1711,7 @@ public class ShipPropertiesWindow extends Dialog {
 		for (String str : ShipIO.weaponMap.keySet()) {
 			i = ShipIO.weaponMap.get(str);
 			if ((i.category.equals(s) && (!s.equals("LASER") || (s.equals("LASER") && !i.blueprint.contains("ION"))) || (s.equals("ION") && i.blueprint.contains(s)))) {
-				sortedSet.add(String.format("%-40s (%s)", i.name, i.blueprint));
+				sortedSet.add(String.format("%-35s (%s)", i.name, i.blueprint));
 			}
 		}
 
@@ -1731,7 +1731,7 @@ public class ShipPropertiesWindow extends Dialog {
 			i = ShipIO.droneMap.get(str);
 			if ((s.equals("DEFENSIVE") && (i.category.equals("DEFENSE") || i.category.contains("REPAIR")
 					|| i.category.equals("BATTLE"))) || (s.equals("OFFENSIVE") && !(i.category.equals("DEFENSE") || i.category.contains("REPAIR") || i.category.equals("BATTLE")))) {
-				sortedSet.add(String.format("%-40s (%s)", i.name, i.blueprint));
+				sortedSet.add(String.format("%-35s (%s)", i.name, i.blueprint));
 			}
 		}
 		
