@@ -162,8 +162,8 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 				redrawBounds.y = bounds.y + bounds.height/2 + (mountPoint.y+bounds.height/2) * (mirror ? -1 : 1);
 			} else {
 				//redrawBounds.width *= 3/2;
-				redrawBounds.x = Main.hullBox.getLocation().x + pos.x + (bounds.width + mountPoint.x) * (mirror ? -1 : 1);
-				redrawBounds.y = Main.hullBox.getLocation().y + pos.y - bounds.height/2 + (bounds.width-bounds.height)/2 - mountPoint.y;
+				redrawBounds.x = bounds.x + (bounds.width + mountPoint.x) * (mirror ? -1 : 1);
+				redrawBounds.y = bounds.y - bounds.height/2 + (bounds.width-bounds.height)/2 - mountPoint.y;
 			}
 		}
 		if (!powered) {
