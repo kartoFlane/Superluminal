@@ -370,6 +370,7 @@ public class Main {
 	 *  - corrected a dumb design oversight that prevented the editor from being able to use fractional values for gib rotation. Gib animation should now be much more smooth.
 	 *  - weapon mount tool now displays the image of the dummy mount instead of an ambiguous green box, controls are the same
 	 *  - the ship list in Ship Browser can now be sorted either by blueprint names (default), or by class names of ships
+	 *  - the Ship Browser can now be resized
 	 */
 
 	// =================================================================================================== //

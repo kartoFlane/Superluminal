@@ -156,6 +156,7 @@ public class FTLShip implements Serializable {
 		crewMap.put("rock", 0);
 		crewMap.put("crystal", 0);
 		crewMap.put("ghost", 0);
+		crewMap.put("random", 0);
 
 		crewMaxMap.put("human", 0);
 		crewMaxMap.put("engi", 0);
@@ -165,6 +166,7 @@ public class FTLShip implements Serializable {
 		crewMaxMap.put("rock", 0);
 		crewMaxMap.put("crystal", 0);
 		crewMaxMap.put("ghost", 0);
+		crewMaxMap.put("random", 0);
 
 		for (Systems key : Systems.values()) {
 			levelMap.put(key, 1);
@@ -173,8 +175,6 @@ public class FTLShip implements Serializable {
 
 			slotMap.put(key, -2);
 			slotDirMap.put(key, Slide.UP);
-
-			// interiorMap.put(key, new FTLInterior());
 		}
 	}
 
