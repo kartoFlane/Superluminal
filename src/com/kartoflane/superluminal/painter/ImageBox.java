@@ -15,7 +15,10 @@ public class ImageBox extends PaintBox implements Serializable {
 	protected String path;
 	protected Image image;
 	protected int alpha = 255;
-	protected float rotation = 0;
+	@Deprecated
+	/** Kept for compatibility with earlier projects. Use rotationF instead */
+	protected int rotation = 0;
+	protected float rotationF = 0;
 	protected Rectangle redrawBounds;
 	protected boolean shrinkWrap = false;
 	public Point imageLoc = new Point(0,0);
@@ -64,10 +67,16 @@ public class ImageBox extends PaintBox implements Serializable {
 	 * Sets rotation, in degrees counterclockwise.
 	 */
 	public void setRotation(float rotation) {
-		this.rotation = rotation;
+		this.rotationF = rotation;
 	}
 	
 	public float getRotation() {
+		return rotationF;
+	}
+	
+	@Deprecated
+	/** Kept for compatibility with earlier projects. Use getRotation() instead. */
+	public int getOldRotation() {
 		return rotation;
 	}
 	
@@ -99,10 +108,10 @@ public class ImageBox extends PaintBox implements Serializable {
 	}
 	
 	public Rectangle getRedrawBounds() {
-		redrawBounds.x = Math.round((float) (bounds.x - Math.abs(bounds.width*Math.sin(Math.toRadians(rotation*2))/2)));
-		redrawBounds.y = Math.round((float) (bounds.y - Math.abs(bounds.height*Math.sin(Math.toRadians(rotation*2))/2)));
-		redrawBounds.width = Math.round((float) (bounds.width + Math.abs(bounds.width*Math.sin(Math.toRadians(rotation*2)))));
-		redrawBounds.height = Math.round((float) (bounds.height + Math.abs(bounds.height*Math.sin(Math.toRadians(rotation*2)))));
+		redrawBounds.x = Math.round((float) (bounds.x - Math.abs(bounds.width*Math.sin(Math.toRadians(rotationF*2))/2)));
+		redrawBounds.y = Math.round((float) (bounds.y - Math.abs(bounds.height*Math.sin(Math.toRadians(rotationF*2))/2)));
+		redrawBounds.width = Math.round((float) (bounds.width + Math.abs(bounds.width*Math.sin(Math.toRadians(rotationF*2)))));
+		redrawBounds.height = Math.round((float) (bounds.height + Math.abs(bounds.height*Math.sin(Math.toRadians(rotationF*2)))));
 		
 		return redrawBounds;
 	}
@@ -132,7 +141,7 @@ public class ImageBox extends PaintBox implements Serializable {
 		if (!shrinkWrap) {
 			transform = new Transform(e.gc.getDevice());
 			transform.translate(bounds.x + bounds.width/2, bounds.y + bounds.height/2);
-			transform.rotate(rotation);
+			transform.rotate(rotationF);
 			transform.translate(-bounds.x - bounds.width/2, -bounds.y - bounds.height/2);
 			e.gc.setTransform(transform);
 		}

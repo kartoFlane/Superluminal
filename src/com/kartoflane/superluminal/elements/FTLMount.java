@@ -381,7 +381,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		Transform transform = null;
 		transform = new Transform(e.gc.getDevice());
 		transform.translate(bounds.x + bounds.width/2, bounds.y + bounds.height/2);
-		transform.rotate(rotation);
+		transform.rotate(rotationF);
 		if (mirror) {
 			transform.scale(-1, 1);
 		}

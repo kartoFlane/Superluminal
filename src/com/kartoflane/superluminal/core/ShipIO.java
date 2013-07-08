@@ -2517,6 +2517,7 @@ public class ShipIO {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public static void loadShipProject(String path) {
 		ObjectInputStream ois = null;
 		try {
@@ -2557,6 +2558,17 @@ public class ShipIO {
 				for (FTLRoom r : Main.ship.rooms) {
 					r.setBorderThickness(2);
 					r.setBorderMode(PaintBox.BORDER_INSIDE);
+				}
+			}
+			
+			if (Main.ship.version < 14) {
+				for (FTLGib g : Main.ship.gibs) {
+					if (g.getRotation() == 0)
+						g.setRotation(g.getOldRotation()); // get the old, deprecated value and assign it.
+				}
+				for (FTLMount m : Main.ship.mounts) {
+					if (m.getRotation() == 0)
+						m.setRotation(m.getOldRotation()); // get the old, deprecated value and assign it.
 				}
 			}
 
