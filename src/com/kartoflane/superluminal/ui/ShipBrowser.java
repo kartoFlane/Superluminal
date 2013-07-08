@@ -25,6 +25,7 @@ import org.eclipse.swt.widgets.TreeItem;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.elements.FTLShip;
+import org.eclipse.swt.graphics.Point;
 
 public class ShipBrowser {
 	public static Shell shell;
@@ -49,7 +50,8 @@ public class ShipBrowser {
 	public static boolean sortByBlueprint = true;
 
 	public ShipBrowser(Shell sh) {
-		shell = new Shell(sh, SWT.BORDER | SWT.TITLE);
+		shell = new Shell(sh, SWT.BORDER | SWT.RESIZE | SWT.TITLE);
+		shell.setMinimumSize(new Point(350, 250));
 		dialog = new DirectoryDialog(Main.shell, SWT.OPEN);
 		ships = new HashSet<TreeItem>();
 
@@ -72,7 +74,6 @@ public class ShipBrowser {
 	protected void createContents() {
 		shell.setText(Main.APPNAME + " - Ship Browser");
 		shell.setFont(Main.appFont);
-		shell.setSize(400, 400);
 		shell.setLayout(new GridLayout(2, false));
 
 		sortGroup = new Group(shell, SWT.NONE);
