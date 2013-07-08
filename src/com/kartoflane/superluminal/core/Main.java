@@ -369,6 +369,7 @@ public class Main {
 	 *  - the drop-down lists of augments, weapons and drones are now sorted alphabetically, and there's some spacing between the name and the blueprint name of the item to make it easier to read
 	 *  - corrected a dumb design oversight that prevented the editor from being able to use fractional values for gib rotation. Gib animation should now be much more smooth.
 	 *  - weapon mount tool now displays the image of the dummy mount instead of an ambiguous green box, controls are the same
+	 *  - the ship list in Ship Browser can now be sorted either by blueprint names (default), or by class names of ships
 	 */
 
 	// =================================================================================================== //
@@ -492,11 +493,15 @@ public class Main {
 
 		appFont = new Font(Display.getCurrent(), "Monospaced", 9, SWT.NORMAL);
 		if (appFont == null) {
+			debug("Monospaced font not found, loading Serif.");
 			appFont = new Font(shell.getDisplay(), "Serif", 9, SWT.NORMAL);
 		}
 		if (appFont == null) {
+			debug("Serif font not found, loading Courier.");
 			appFont = new Font(shell.getDisplay(), "Courier", 9, SWT.NORMAL);
 		}
+		if (appFont == null)
+			debug("No suitable font was found. We're doomed!");
 
 		// used as a default, "null" transformation to fall back to in order to do regular drawing.
 		currentTransform = new Transform(shell.getDisplay());

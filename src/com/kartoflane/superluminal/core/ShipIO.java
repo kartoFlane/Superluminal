@@ -128,21 +128,60 @@ public class ShipIO {
 		TreeItem blueprint;
 
 		ShipBrowser.clearTrees();
+		
+		final int FORMAT_CHARACTERS = 30;
 
-		for (String s : playerBlueprintNames) {
-			blueprint = new TreeItem(ShipBrowser.trtmPlayer, SWT.NONE);
-			blueprint.setText(playerShipNames.get(s) + " (" + s + ")");
-			ShipBrowser.ships.add(blueprint);
-		}
-		for (String s : enemyBlueprintNames) {
-			blueprint = new TreeItem(ShipBrowser.trtmEnemy, SWT.NONE);
-			blueprint.setText(enemyShipNames.get(s) + " (" + s + ")");
-			ShipBrowser.ships.add(blueprint);
-		}
-		for (String s : otherBlueprintNames) {
-			blueprint = new TreeItem(ShipBrowser.trtmOther, SWT.NONE);
-			blueprint.setText(otherShipNames.get(s) + " (" + s + ")");
-			ShipBrowser.ships.add(blueprint);
+		if (ShipBrowser.sortByBlueprint) {
+			for (String s : playerBlueprintNames) {
+				blueprint = new TreeItem(ShipBrowser.trtmPlayer, SWT.NONE);
+				blueprint.setText(String.format("%-" + FORMAT_CHARACTERS + "s (%s)", playerShipNames.get(s), s));
+				blueprint.setFont(Main.appFont);
+				ShipBrowser.ships.add(blueprint);
+			}
+			for (String s : enemyBlueprintNames) {
+				blueprint = new TreeItem(ShipBrowser.trtmEnemy, SWT.NONE);
+				blueprint.setText(String.format("%-" + FORMAT_CHARACTERS + "s (%s)", enemyShipNames.get(s), s));
+				ShipBrowser.ships.add(blueprint);
+			}
+			for (String s : otherBlueprintNames) {
+				blueprint = new TreeItem(ShipBrowser.trtmOther, SWT.NONE);
+				blueprint.setText(String.format("%-" + FORMAT_CHARACTERS + "s (%s)", otherShipNames.get(s), s));
+				ShipBrowser.ships.add(blueprint);
+			}
+		} else {
+			HashMap<String, String> nameMap = new HashMap<String, String>();
+			TreeSet<String> nameSet = new TreeSet<String>();
+			for (String s : playerBlueprintNames) {
+				nameMap.put(playerShipNames.get(s), String.format("%-" + FORMAT_CHARACTERS + "s (%s)", playerShipNames.get(s), s));
+				nameSet.add(playerShipNames.get(s));
+			}
+			for (String name : nameSet) {
+				blueprint = new TreeItem(ShipBrowser.trtmPlayer, SWT.NONE);
+				blueprint.setText(nameMap.get(name));
+				ShipBrowser.ships.add(blueprint);
+			}
+			nameMap.clear();
+			nameSet.clear();
+			for (String s : enemyBlueprintNames) {
+				nameMap.put(enemyShipNames.get(s), String.format("%-" + FORMAT_CHARACTERS + "s (%s)", enemyShipNames.get(s), s));
+				nameSet.add(enemyShipNames.get(s));
+			}
+			for (String name : nameSet) {
+				blueprint = new TreeItem(ShipBrowser.trtmEnemy, SWT.NONE);
+				blueprint.setText(nameMap.get(name));
+				ShipBrowser.ships.add(blueprint);
+			}
+			nameMap.clear();
+			nameSet.clear();
+			for (String s : otherBlueprintNames) {
+				nameMap.put(otherShipNames.get(s), String.format("%-" + FORMAT_CHARACTERS + "s (%s)", otherShipNames.get(s), s));
+				nameSet.add(otherShipNames.get(s));
+			}
+			for (String name : nameSet) {
+				blueprint = new TreeItem(ShipBrowser.trtmOther, SWT.NONE);
+				blueprint.setText(nameMap.get(name));
+				ShipBrowser.ships.add(blueprint);
+			}
 		}
 	}
 
@@ -240,7 +279,6 @@ public class ShipIO {
 			fr = new FileReader(fileToScan);
 			sc = new Scanner(fr);
 			sc.useDelimiter(Pattern.compile(lineDelimiter));
-			// <shipBlueprint name="PLAYER_SHIP_HARD_2"
 			pattern = Pattern.compile("<shipBlueprint\\s*name\\s*=\\s*\"(.*?)\".*?");
 
 			while (sc.hasNext()) {
