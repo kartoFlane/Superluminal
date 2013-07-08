@@ -132,7 +132,7 @@ public class Main {
 	public static final int MAX_DESCRIPTION_LENGTH = 200;
 
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-06-15";
+	public final static String VERSION = "13-07-08";
 
 	// === Important objects
 	public static Shell shell;
