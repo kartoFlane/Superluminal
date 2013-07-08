@@ -15,7 +15,7 @@ public class ImageBox extends PaintBox implements Serializable {
 	protected String path;
 	protected Image image;
 	protected int alpha = 255;
-	protected int rotation = 0;
+	protected float rotation = 0;
 	protected Rectangle redrawBounds;
 	protected boolean shrinkWrap = false;
 	public Point imageLoc = new Point(0,0);
@@ -63,11 +63,11 @@ public class ImageBox extends PaintBox implements Serializable {
 	/**
 	 * Sets rotation, in degrees counterclockwise.
 	 */
-	public void setRotation(int rotation) {
+	public void setRotation(float rotation) {
 		this.rotation = rotation;
 	}
 	
-	public int getRotation() {
+	public float getRotation() {
 		return rotation;
 	}
 	

@@ -151,7 +151,7 @@ public class FTLGib extends ImageBox implements Serializable, DraggableBox {
 	}
 
 	public void setRotation(float angle) {
-		super.setRotation((int) angle);
+		super.setRotation(angle);
 		animRotation = angle;
 	}
 

@@ -367,6 +367,7 @@ public class Main {
 	 * 	- fixed a crash when closing room properties window when no room was selected
 	 *  - weapon mounts will no longer get snapped to weird positions should they end up outside of visible area
 	 *  - the drop-down lists of augments, weapons and drones are now sorted alphabetically, and there's some spacing between the name and the blueprint name of the item to make it easier to read
+	 *  - corrected a dumb design oversight that prevented the editor from being able to use fractional values for gib rotation. Gib animation should now be much more smooth.
 	 */
 
 	// =================================================================================================== //
