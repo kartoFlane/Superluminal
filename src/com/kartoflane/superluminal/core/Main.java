@@ -132,7 +132,7 @@ public class Main {
 	public static final int MAX_DESCRIPTION_LENGTH = 200;
 
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-07-08";
+	public final static String VERSION = "13-07-11";
 
 	// === Important objects
 	public static Shell shell;
@@ -285,7 +285,6 @@ public class Main {
 	private MenuItem mntmConToPlayer;
 	private MenuItem mntmConToEnemy;
 	public static Font appFont;
-	public static Font monoFontRef;
 	public static Font monoFont;
 	public static ToolItem tltmPointer;
 	public static ToolItem tltmRoom;
@@ -362,19 +361,20 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * 	- rearranged UI - the editor can now be resized down to about 650x350 px
-	 * 	- fixed a bug with undo offset operation (was moving the anchor, but didn't actually update the offset values)
-	 * 	- manually-linked doors are now correctly loaded when loading a ship from ftl archive.
-	 * 	- fixed a crash that would occur if you tried to nudge an object after clicking a button (for example cloak)
-	 * 	- fixed a crash when closing room properties window when no room was selected
-	 *  - weapon mounts will no longer get snapped to weird positions should they end up outside of visible area
-	 *  - the drop-down lists of augments, weapons and drones are now sorted alphabetically, and there's some spacing between the name and the blueprint name of the item to make it easier to read
-	 *  - corrected a dumb design oversight that prevented the editor from being able to use fractional values for gib rotation. Gib animation should now be much more smooth.
-	 *  - weapon mount tool now displays the image of the dummy mount instead of an ambiguous green box, controls are the same
-	 *  - the ship list in Ship Browser can now be sorted either by blueprint names (default), or by class names of ships
-	 *  - the Ship Browser can now be resized
-	 *  - fixed a crash when opening Properties window on enemy ships
-	 *  - fixed a crash when assigning station on enemy ships
+	 * - rearranged UI - the editor can now be resized down to about 650x350 px
+	 * - fixed a bug with undo offset operation (was moving the anchor, but didn't actually update the offset values)
+	 * - manually-linked doors are now correctly loaded when loading a ship from ftl archive.
+	 * - fixed a crash that would occur if you tried to nudge an object after clicking a button (for example cloak)
+	 * - fixed a crash when closing room properties window when no room was selected
+	 * - weapon mounts will no longer get snapped to weird positions should they end up outside of visible area
+	 * - the drop-down lists of augments, weapons and drones are now sorted alphabetically, and there's some spacing between the name and the blueprint name of the item to make it easier to read
+	 * - corrected a dumb design oversight that prevented the editor from being able to use fractional values for gib rotation. Gib animation should now be much more smooth.
+	 * - weapon mount tool now displays the image of the dummy mount instead of an ambiguous green box, controls are the same
+	 * - the ship list in Ship Browser can now be sorted either by blueprint names (default), or by class names of ships
+	 * - the Ship Browser can now be resized
+	 * - fixed a crash when opening Properties window on enemy ships
+	 * - fixed a crash when assigning station on enemy ships
+	 * - some aesthetic modifications to Ship Browser and Ship Choice windows, plus some optimizations in functional code.
 	 */
 
 	// =================================================================================================== //
@@ -496,10 +496,10 @@ public class Main {
 			showTips = ConfigIO.getBoolean("showTips");
 		}
 
-		display.loadFont("UbuntuMono-R.ttf");
-		monoFontRef = new Font(display, "Ubuntu Mono", 10, SWT.NORMAL);
-		monoFont = monoFontRef; // so that we can swap between monofont and appfont without having to create a new instance
 		appFont = new Font(display, "Monospaced", 9, SWT.NORMAL);
+		// https://bugs.eclipse.org/bugs/show_bug.cgi?id=48055 - SWT bug 48055, SWT is unable to operate with logical fonts
+		// using workaround http://stackoverflow.com/questions/221568/swt-os-agnostic-way-to-get-monospaced-font
+		monoFont = loadMonospacedFont(display);
 
 		// used as a default, "null" transformation to fall back to in order to do regular drawing.
 		currentTransform = new Transform(shell.getDisplay());
@@ -4460,5 +4460,23 @@ public class Main {
 			return shieldBox;
 		}
 		return null;
+	}
+
+	private static Font loadMonospacedFont(Display display) {
+		String jreHome = System.getProperty("java.home");
+		File file = new File(jreHome, "/lib/fonts/LucidaTypewriterRegular.ttf");
+		if (!file.exists()) {
+			throw new IllegalStateException(file.toString());
+		}
+		if (!display.loadFont(file.toString())) {
+			throw new IllegalStateException(file.toString());
+		}
+		final Font font = new Font(display, "Lucida Sans Typewriter", 9, SWT.NORMAL);
+		display.addListener(SWT.Dispose, new Listener() {
+			public void handleEvent(Event event) {
+				font.dispose();
+			}
+		});
+		return font;
 	}
 }

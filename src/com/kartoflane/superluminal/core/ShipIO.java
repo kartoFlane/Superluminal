@@ -1413,16 +1413,15 @@ public class ShipIO {
 
 			while (scanner.hasNext()) {
 				s = scanner.next();
-				// regex groups: 2, 4, 6, 8
 				if (ship.imageRect.width == 0 && ship.imageRect.height == 0) {
-					pattern = Pattern.compile("(<img x=\")(.*?)(\" y=\")(.*?)(\" w=\")(.*?)(\" h=\")(.*?)(\"\\s*?/\\s*?>)");
+					pattern = Pattern.compile("^\\s*?<img x=\"(.*?)\" y=\"(.*?)\" w=\"(.*?)\" h=\"(.*?)\"\\s*?/\\s*?>");
 					matcher = pattern.matcher(s);
 					if (matcher.find()) {
 						ship.imageRect = new Rectangle(0, 0, 0, 0);
-						ship.imageRect.x = ship.offset.x * 35 + Integer.valueOf(matcher.group(2));
-						ship.imageRect.y = ship.offset.y * 35 + Integer.valueOf(matcher.group(4));
-						ship.imageRect.width = Integer.valueOf(matcher.group(6));
-						ship.imageRect.height = Integer.valueOf(matcher.group(8));
+						ship.imageRect.x = ship.offset.x * 35 + Integer.valueOf(matcher.group(1));
+						ship.imageRect.y = ship.offset.y * 35 + Integer.valueOf(matcher.group(2));
+						ship.imageRect.width = Integer.valueOf(matcher.group(3));
+						ship.imageRect.height = Integer.valueOf(matcher.group(4));
 						debug("\t\tShip image bounds found: " + ship.imageRect);
 					}
 				} else if (ship.mounts.size() == 0 && s.contains("<weaponMounts>")) {

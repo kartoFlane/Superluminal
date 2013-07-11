@@ -25,7 +25,6 @@ import org.eclipse.swt.widgets.TreeItem;
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.elements.FTLShip;
-import org.eclipse.swt.graphics.Point;
 
 public class ShipBrowser {
 	public static Shell shell;
@@ -51,11 +50,13 @@ public class ShipBrowser {
 
 	public ShipBrowser(Shell sh) {
 		shell = new Shell(sh, SWT.BORDER | SWT.RESIZE | SWT.TITLE);
-		shell.setMinimumSize(new Point(350, 250));
+		shell.setMinimumSize(350, 250);
 		dialog = new DirectoryDialog(Main.shell, SWT.OPEN);
 		ships = new HashSet<TreeItem>();
 
 		createContents();
+		
+		shell.setSize(350, 400);
 
 		Main.shell.setEnabled(false);
 		shell.setLocation(Main.shell.getLocation().x + 100, Main.shell.getLocation().y + 50);
@@ -90,10 +91,7 @@ public class ShipBrowser {
 
 		tree = new Tree(shell, SWT.BORDER);
 		tree.setFont(Main.appFont);
-		GridData gd_tree = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 2);
-		gd_tree.widthHint = 320;
-		gd_tree.heightHint = 250;
-		tree.setLayoutData(gd_tree);
+		tree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 2));
 
 		trtmPlayer = new TreeItem(tree, SWT.NONE);
 		trtmPlayer.setText("Player ships");
@@ -109,7 +107,10 @@ public class ShipBrowser {
 		trtmOther.setFont(Main.appFont);
 
 		Composite composite_1 = new Composite(shell, SWT.NONE);
-		composite_1.setLayout(new GridLayout(2, false));
+		GridLayout gl_composite_1 = new GridLayout(2, false);
+		gl_composite_1.marginWidth = 0;
+		gl_composite_1.marginHeight = 0;
+		composite_1.setLayout(gl_composite_1);
 		composite_1.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));
 
 		btnConfirm = new Button(composite_1, SWT.NONE);
