@@ -20,13 +20,12 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Group;
 
-
 public class GibPropertiesWindow {
 	protected Shell shell;
 	private Button btnOk;
 	private Composite composite;
 	private Group grpVelocity;
-	private FTLGib gib; 
+	private FTLGib currentGib; 
 	private Spinner spVelMin;
 	private Spinner spVelMax;
 	private Spinner spAngMin;
@@ -163,12 +162,12 @@ public class GibPropertiesWindow {
 		
 		btnOk.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				gib.minVel = spVelMin.getSelection()*0.1;
-				gib.maxVel = spVelMax.getSelection()*0.1;
-				gib.minAng = spAngMin.getSelection()*0.1;
-				gib.maxAng = spAngMax.getSelection()*0.1;
-				gib.minDir = scMinDir.getSelection()-360;
-				gib.maxDir = scMaxDir.getSelection()-360;
+				currentGib.minVel = spVelMin.getSelection()*0.1;
+				currentGib.maxVel = spVelMax.getSelection()*0.1;
+				currentGib.minAng = spAngMin.getSelection()*0.1;
+				currentGib.maxAng = spAngMax.getSelection()*0.1;
+				currentGib.minDir = scMinDir.getSelection()-360;
+				currentGib.maxDir = scMaxDir.getSelection()-360;
 				
 				shell.setVisible(false);
 				Main.gibDialog.list.setEnabled(true);
@@ -177,8 +176,8 @@ public class GibPropertiesWindow {
 		
 		btnCancel.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				gib.minDir = oldDir.x;
-				gib.maxDir = oldDir.y;
+				currentGib.minDir = oldDir.x;
+				currentGib.maxDir = oldDir.y;
 
 				shell.setVisible(false);
 				Main.gibDialog.list.setEnabled(true);
@@ -191,8 +190,8 @@ public class GibPropertiesWindow {
 				if (e.detail == SWT.TRAVERSE_ESCAPE) {
 					e.doit = false;
 					
-					gib.minDir = oldDir.x;
-					gib.maxDir = oldDir.y;
+					currentGib.minDir = oldDir.x;
+					currentGib.maxDir = oldDir.y;
 					
 					shell.setVisible(false);
 					Main.gibDialog.list.setEnabled(true);
@@ -203,18 +202,18 @@ public class GibPropertiesWindow {
 		scMinDir.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				gib.minDir = scMinDir.getSelection()-360;
-				Main.canvasRedraw(gib.getBounds(), false);
-				scMinDir.setToolTipText(""+gib.minDir);
+				currentGib.minDir = scMinDir.getSelection()-360;
+				Main.canvasRedraw(currentGib.getBounds(), false);
+				scMinDir.setToolTipText(""+currentGib.minDir);
 			}
 		});
 		
 		scMaxDir.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				gib.maxDir = scMaxDir.getSelection()-360;
-				Main.canvasRedraw(gib.getBounds(), false);
-				scMaxDir.setToolTipText(""+gib.maxDir);
+				currentGib.maxDir = scMaxDir.getSelection()-360;
+				Main.canvasRedraw(currentGib.getBounds(), false);
+				scMaxDir.setToolTipText(""+currentGib.maxDir);
 			}
 		});
 	}
@@ -224,20 +223,20 @@ public class GibPropertiesWindow {
 		shell.open();
 		shell.setVisible(true);
 		
-		gib = Main.selectedGib;
+		currentGib = Main.selectedGib;
 		
-		shell.setText("Gib " + gib.ID);
+		shell.setText("Gib " + currentGib.ID);
 		
-		oldDir.x = gib.minDir; oldDir.y = gib.maxDir;
+		oldDir.x = currentGib.minDir; oldDir.y = currentGib.maxDir;
 		
-		spVelMin.setSelection((int)(gib.minVel*10));
-		spVelMax.setSelection((int)(gib.maxVel*10));
-		spAngMin.setSelection((int)(gib.minAng*10));
-		spAngMax.setSelection((int)(gib.maxAng*10));
-		scMinDir.setSelection(gib.minDir+360);
-		scMaxDir.setSelection(gib.maxDir+360);
-		scMinDir.setToolTipText(""+gib.minDir);
-		scMaxDir.setToolTipText(""+gib.maxDir);
+		spVelMin.setSelection((int)(currentGib.minVel*10));
+		spVelMax.setSelection((int)(currentGib.maxVel*10));
+		spAngMin.setSelection((int)(currentGib.minAng*10));
+		spAngMax.setSelection((int)(currentGib.maxAng*10));
+		scMinDir.setSelection(currentGib.minDir+360);
+		scMaxDir.setSelection(currentGib.maxDir+360);
+		scMinDir.setToolTipText(""+currentGib.minDir);
+		scMaxDir.setToolTipText(""+currentGib.maxDir);
 		
 		Main.gibDialog.list.setEnabled(false);
 	}
@@ -247,9 +246,9 @@ public class GibPropertiesWindow {
 	}
 	
 	public void escape() {
-		if (gib != null && shell.isVisible()) {
-			gib.minDir = oldDir.x;
-			gib.maxDir = oldDir.y;
+		if (currentGib != null && shell.isVisible()) {
+			currentGib.minDir = oldDir.x;
+			currentGib.maxDir = oldDir.y;
 		}
 		
 		shell.setVisible(false);

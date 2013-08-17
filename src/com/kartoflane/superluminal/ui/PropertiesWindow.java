@@ -36,6 +36,8 @@ public class PropertiesWindow {
 
 	private Label lblLevel;
 	private Label lblPower;
+	
+	private FTLRoom currentRoom;
 
 	public PropertiesWindow(Shell parent) {
 		shell = new Shell(parent, SWT.BORDER | SWT.TITLE);
@@ -142,10 +144,9 @@ public class PropertiesWindow {
 				Main.ship.startMap.put(sys, btnAvailable.getSelection());
 				Main.systemsMap.get(sys).setAvailable(btnAvailable.getSelection());
 
-				FTLRoom r = Main.getRoomWithSystem(sys);
-				r.updateColor();
+				currentRoom.updateColor();
 
-				Main.canvasRedraw(r.getBounds(), true);
+				Main.canvasRedraw(currentRoom.getBounds(), true);
 
 				shell.setVisible(false);
 			}
@@ -181,6 +182,8 @@ public class PropertiesWindow {
 	public void open() {
 		if (Main.selectedRoom == null)
 			return;
+		
+		currentRoom = Main.selectedRoom;
 
 		scalePower.setEnabled(false);
 		scaleLevel.setEnabled(false);
@@ -192,14 +195,14 @@ public class PropertiesWindow {
 		shell.setLocation(Main.shell.getLocation().x + 100, Main.shell.getLocation().y + 100);
 		shell.open();
 
-		String s = Main.selectedRoom.getSystem().toString().toLowerCase();
+		String s = currentRoom.getSystem().toString().toLowerCase();
 		s = s.substring(0, 1).toUpperCase() + s.substring(1, s.length());
 		shell.setText(s);
 
 		int level = 0;
 		int power = 0;
 
-		sys = Main.selectedRoom.getSystem();
+		sys = currentRoom.getSystem();
 		if (Main.ship.isPlayer) {
 			level = Main.ship.levelMap.get(sys);
 		} else {

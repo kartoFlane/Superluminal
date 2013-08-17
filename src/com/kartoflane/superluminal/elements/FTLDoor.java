@@ -208,6 +208,10 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 			registerUp(Undoable.MOVE);
 		move = false;
 		Main.cursor.setVisible(true);
+		
+		if (e.count == 2 && bounds.contains(e.x, e.y)) {
+			Main.doorProperties.open();
+		}
 	}
 
 	@Override

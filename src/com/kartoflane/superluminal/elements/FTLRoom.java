@@ -679,6 +679,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		Main.selectedRoom = this;
 		Main.updateCorners(this);
 		Main.canvasRedraw(bounds, false);
+		
+		Main.doorProperties.setId(id);
 	}
 
 	public void deselect() {

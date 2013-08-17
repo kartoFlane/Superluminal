@@ -13,7 +13,6 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Transform;
 
 import com.kartoflane.superluminal.core.Main;
-import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.painter.Cache;
 import com.kartoflane.superluminal.painter.ImageBox;
 import com.kartoflane.superluminal.painter.LayeredPainter;
@@ -66,7 +65,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	public Slide slide;
 	
 	/**
-	 * Gib id to which the weapon is attached when the ship explodes TODO
+	 * Gib id to which the weapon is attached when the ship explodes
 	 */
 	public int gib;
 	
@@ -565,6 +564,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 					registerUp(Undoable.ROTATE);
 				}
 			}
+			Main.mountProperties.refresh();
 		} else if (Main.tltmGib.getSelection() && bounds.contains(e.x, e.y)) {
 			if (e.button == 1) {
 				select();
@@ -609,14 +609,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	
 	public void mouseHover(MouseEvent e) {
 		if (bounds.contains(e.x, e.y)) {
-			Main.tooltip.setText("Mount number: "+(index+1)
-					+ ShipIO.lineDelimiter + "Attached gib: " +gib
-					+ ShipIO.lineDelimiter + "Direction: " + slide.toString().toLowerCase()
-					+ ShipIO.lineDelimiter + (isPowered() ? "Powered" : "Unpowered")
-					+ ((isPinned()) ? (ShipIO.lineDelimiter + "Pinned") : "")
-					+ ((isMirrored()) ? (ShipIO.lineDelimiter + "Mirrored") : ""));
-			Main.tooltip.setLocation(e.x+1, e.y+1);
-			Main.tooltip.setVisible(true);
+			Main.mountProperties.open();
 		}
 	}
 

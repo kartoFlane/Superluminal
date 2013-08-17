@@ -237,22 +237,24 @@ public class CursorBox extends PaintBox implements DraggableBox {
 		if (e.button == 1) {
 			if (Main.tltmRoom.getSelection() && room_canBePlaced) {
 				FTLRoom r = null;
-				if (Main.modShift) {
+				if (Main.modShift || !Main.roomToolCreate) {
 					r = Main.getRoomContainingRect(bounds);
 					FTLRoom newr = null;
 
-					r.registerDown(Undoable.SPLIT);
-					if (bounds.width > 20) {
-						newr = r.split((bounds.y - r.getBounds().y) / 35 + 1, AxisFlag.X);
-					} else {
-						newr = r.split((bounds.x - r.getBounds().x) / 35 + 1, AxisFlag.Y);
+					if (r != null) {
+						r.registerDown(Undoable.SPLIT);
+						if (bounds.width > 20) {
+							newr = r.split((bounds.y - r.getBounds().y) / 35 + 1, AxisFlag.X);
+						} else {
+							newr = r.split((bounds.x - r.getBounds().x) / 35 + 1, AxisFlag.Y);
+						}
+						if (r.ume != null)
+							((UndoableSplitEdit) r.ume).setNewRoom(newr);
+						r.registerUp(Undoable.SPLIT);
+	
+						room_canBePlaced = !Main.isDoorAtWall(bounds);
+						Main.canvas.redraw();
 					}
-					if (r.ume != null)
-						((UndoableSplitEdit) r.ume).setNewRoom(newr);
-					r.registerUp(Undoable.SPLIT);
-
-					room_canBePlaced = !Main.isDoorAtWall(bounds);
-					Main.canvas.redraw();
 				} else {
 					r = new FTLRoom(Main.fixRect(bounds));
 
@@ -300,35 +302,44 @@ public class CursorBox extends PaintBox implements DraggableBox {
 				}
 
 			} else if (Main.tltmSystem.getSelection()) {
-				if (Main.modShift) {
-					if (Main.ship.slotMap.get(slot_sys) != -2) {
-						registerDown(Undoable.DIRECTION);
-						Slide tempSlide = Main.ship.slotDirMap.get(slot_sys);
-						tempSlide = ((tempSlide.equals(Slide.UP))
-								? (Slide.RIGHT)
-								: (tempSlide.equals(Slide.RIGHT))
-										? (Slide.DOWN)
-										: (tempSlide.equals(Slide.DOWN))
-												? (Slide.LEFT)
-												: (tempSlide.equals(Slide.LEFT))
-														? (Slide.UP)
-														: (tempSlide));
+				if (Main.sysToolPlace) {
+					if (Main.modShift) {
+						if (Main.ship.slotMap.get(slot_sys) != -2) {
+							registerDown(Undoable.DIRECTION);
+							Slide tempSlide = Main.ship.slotDirMap.get(slot_sys);
+							tempSlide = ((tempSlide.equals(Slide.UP))
+									? (Slide.RIGHT)
+									: (tempSlide.equals(Slide.RIGHT))
+											? (Slide.DOWN)
+											: (tempSlide.equals(Slide.DOWN))
+													? (Slide.LEFT)
+													: (tempSlide.equals(Slide.LEFT))
+															? (Slide.UP)
+															: (tempSlide));
 
-						Main.ship.slotDirMap.put(slot_sys, tempSlide);
+							Main.ship.slotDirMap.put(slot_sys, tempSlide);
 
-						registerUp(Undoable.DIRECTION);
-						Main.canvasRedraw(Main.getRoomWithSystem(slot_sys).getBounds(), false);
+							registerUp(Undoable.DIRECTION);
+							Main.canvasRedraw(Main.getRoomWithSystem(slot_sys).getBounds(), false);
+						}
+					} else {
+						if (slot_canBePlaced) {
+							registerDown(Undoable.SLOT);
+							
+							Main.ship.slotMap.put(slot_sys, Main.getStationFromRect(Main.getRectAt(e.x, e.y)));
+							Main.getRoomWithSystem(slot_sys).slot = Main.ship.slotMap.get(slot_sys);
+
+							registerUp(Undoable.SLOT);
+							Main.canvasRedraw(Main.getRoomWithSystem(slot_sys).getBounds(), false);
+						}
 					}
 				} else {
-					if (slot_canBePlaced) {
-						registerDown(Undoable.SLOT);
-						
-						Main.ship.slotMap.put(slot_sys, Main.getStationFromRect(Main.getRectAt(e.x, e.y)));
-						Main.getRoomWithSystem(slot_sys).slot = Main.ship.slotMap.get(slot_sys);
+					registerDown(Undoable.SLOT);
+					Main.ship.slotMap.put(slot_sys, -2);
+					Main.getRoomWithSystem(slot_sys).slot = Main.ship.slotMap.get(slot_sys);
 
-						registerUp(Undoable.SLOT);
-						Main.canvasRedraw(Main.getRoomWithSystem(slot_sys).getBounds(), false);
-					}
+					registerUp(Undoable.SLOT);
+					Main.canvasRedraw(Main.getRoomWithSystem(slot_sys).getBounds(), false);
 				}
 			}
 
@@ -364,6 +375,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					Main.canvas.redraw(bounds.x - 3, bounds.y - 3, bounds.width + 6, bounds.height + 6, false);
 					Main.canvas.redraw(oldBounds.x - 3, oldBounds.y - 3, oldBounds.width + 6, oldBounds.height + 6, false);
 				}
+				Main.mountProperties.refresh();
 
 			} else if (Main.tltmSystem.getSelection()) {
 				registerDown(Undoable.SLOT);
@@ -401,6 +413,10 @@ public class CursorBox extends PaintBox implements DraggableBox {
 
 			Main.selectedDoor.deselect();
 			Main.selectedDoor = null;
+		}
+		
+		if (Main.tltmPointer.getSelection() && Main.doorProperties.isVisible() && Main.selectedRoom == null) {
+			Main.doorProperties.setId(-1);
 		}
 	}
 
@@ -455,7 +471,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			} else if (Main.tltmRoom.getSelection()) {
 				setVisible(true);
 
-				if (Main.modShift) {
+				if (Main.modShift || !Main.roomToolCreate) {
 					temp = Main.getDoorRectAt(e.x, e.y);
 					if (temp != null) {
 						FTLRoom r = Main.getRoomContainingRect(temp);
