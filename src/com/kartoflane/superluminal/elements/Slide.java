@@ -3,15 +3,14 @@ package com.kartoflane.superluminal.elements;
 import org.eclipse.swt.graphics.Point;
 
 public enum Slide {
-	UP,
-	DOWN,
-	LEFT, 
-	RIGHT,
-	
 	/**
 	 * Used for artillery
 	 */
-	NO;
+	NO,
+	UP,
+	RIGHT,
+	DOWN, 
+	LEFT;
 	
 	public Point getVector() {
 		Point p = new Point(0,0);
