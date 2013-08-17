@@ -89,11 +89,13 @@ import com.kartoflane.superluminal.painter.LayeredPainter;
 import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.ui.AboutWindow;
 import com.kartoflane.superluminal.ui.DirectoriesWindow;
+import com.kartoflane.superluminal.ui.DoorPropertiesWindow;
 import com.kartoflane.superluminal.ui.ErrorDialog;
 import com.kartoflane.superluminal.ui.ExportDialog;
 import com.kartoflane.superluminal.ui.GibDialog;
 import com.kartoflane.superluminal.ui.GibPropertiesWindow;
 import com.kartoflane.superluminal.ui.GlowWindow;
+import com.kartoflane.superluminal.ui.MountPropertiesWindow;
 import com.kartoflane.superluminal.ui.NewShipDialog;
 import com.kartoflane.superluminal.ui.PropertiesWindow;
 import com.kartoflane.superluminal.ui.RenameGibDialog;
@@ -101,6 +103,7 @@ import com.kartoflane.superluminal.ui.ShipBrowser;
 import com.kartoflane.superluminal.ui.ShipChoiceDialog;
 import com.kartoflane.superluminal.ui.ShipPropertiesWindow;
 import com.kartoflane.superluminal.ui.TipWindow;
+import com.kartoflane.superluminal.ui.ToolSettingsWindow;
 import com.kartoflane.superluminal.undo.UEListener;
 import com.kartoflane.superluminal.undo.Undoable;
 import com.kartoflane.superluminal.undo.UndoableDeleteEdit;
@@ -132,7 +135,7 @@ public class Main {
 	public static final int MAX_DESCRIPTION_LENGTH = 200;
 
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-07-11";
+	public final static String VERSION = "13-08-15";
 
 	// === Important objects
 	public static Shell shell;
@@ -153,6 +156,9 @@ public class Main {
 	public static ShipChoiceDialog choiceDialog;
 	public static GlowWindow glowWindow;
 	public static TipWindow tipWindow;
+	public static MountPropertiesWindow mountProperties;
+	public static DoorPropertiesWindow doorProperties;
+	public static ToolSettingsWindow toolSettings;
 
 	// === Preferences
 	public static boolean forbidBossLoading = true;
@@ -219,6 +225,12 @@ public class Main {
 	public static Slide mountToolSlide = Slide.UP;
 	public static boolean mountToolMirror = false;
 	public static boolean mountToolHorizontal = true;
+	
+	// === Flags for Room tool
+	public static boolean roomToolCreate = true;
+	// === Flags for system tool
+	public static boolean sysToolPlace = true;
+	public static Slide sysToolDir = Slide.UP;
 
 	// === Image holders
 	public static Image hullImage = null;
@@ -357,61 +369,58 @@ public class Main {
 	 * - fix (ie. implement...) weapon mount animation?
 	 * 
 	 * == LOW PRIO: (optional tweaks)
-	 * - port to Apache zip
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * - rearranged UI - the editor can now be resized down to about 650x350 px
-	 * - fixed a bug with undo offset operation (was moving the anchor, but didn't actually update the offset values)
-	 * - manually-linked doors are now correctly loaded when loading a ship from ftl archive.
-	 * - fixed a crash that would occur if you tried to nudge an object after clicking a button (for example cloak)
-	 * - fixed a crash when closing room properties window when no room was selected
-	 * - weapon mounts will no longer get snapped to weird positions should they end up outside of visible area
-	 * - the drop-down lists of augments, weapons and drones are now sorted alphabetically, and there's some spacing between the name and the blueprint name of the item to make it easier to read
-	 * - corrected a dumb design oversight that prevented the editor from being able to use fractional values for gib rotation. Gib animation should now be much more smooth.
-	 * - weapon mount tool now displays the image of the dummy mount instead of an ambiguous green box, controls are the same
-	 * - the ship list in Ship Browser can now be sorted either by blueprint names (default), or by class names of ships
-	 * - the Ship Browser can now be resized
-	 * - fixed a crash when opening Properties window on enemy ships
-	 * - fixed a crash when assigning station on enemy ships
-	 * - some aesthetic modifications to Ship Browser and Ship Choice windows, plus some optimizations in functional code.
+	 * - added more debug messages on startup
+	 * - fixed loading room IDs (obsolete links will always be removed)
+	 * - fixed a bug that would cause the ship's manually linked rooms to become inproperly linked if you've deleted any room.
+	 * - added mount properties window - double-click on mount with the pointer tool to open
+	 * - added door properties window - only usable to link doors in a slightly easier manner - double-click on door with pointer tool to open.
+	 * - added a Tool Settings dialog that opens when Room, Mount or System tool is selected.
+	 * - fixed an issue that prevented the editor from starting even though it should
 	 */
 
 	// =================================================================================================== //
 
 	public static void main(String[] args) {
-		boolean enableCommandLine = true;
-		if (enableCommandLine) {
-			ArrayList<String> argsList = new ArrayList<String>();
-			for (String arg : args) {
-				argsList.add(arg);
-			}
+		debug("Superluminal started");
+		ArrayList<String> argsList = new ArrayList<String>();
+		for (String arg : args)
+			argsList.add(arg);
 
-			debug = argsList.contains("-debug");
-			ShipIO.IOdebug = argsList.contains("-IOdebug");
-			log = !argsList.contains("-nolog");
-		}
+		debug = argsList.contains("-debug");
+		ShipIO.IOdebug = argsList.contains("-IOdebug");
+		log = !argsList.contains("-nolog"); // -nolog means all info will be displayed in console instead of debug.log/crash.log
 
 		if (log)
 			try {
 				System.setOut(new PrintStream(new FileOutputStream("debug.log")));
 				System.setErr(new PrintStream(new FileOutputStream("debug.log")));
+				debug("Logging set up successfully");
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
 
+		// apparently the SWT.isLoadable() is not reliable, returns false even if the lib can be loaded
+		// instead of preventing the editor from launching, just log some info messages explaining what's going on
+		if (SWT.isLoadable()) {
+			debug("SWT: " + SWT.getPlatform() + ", version: " + SWT.getVersion());
+			debug("OS: " + System.getProperty("os.name") + ", arch: " + getRealArch());
+		} else {
+			log("ERROR: It appears that SWT cannot be loaded.");
+			log("SWT: " + SWT.getPlatform() + ", version: " + SWT.getVersion());
+			log("OS: " + System.getProperty("os.name") + ", arch: " + getRealArch());
+			log("This error means that you may have downloaded a wrong version of Superluminal for your system.");
+			log("The editor still MAY launch successfully, but if it doesn't, try another version of the program.");
+		}
+
 		try {
+			debug("Instantiating main window...");
 			Main window = new Main();
+			debug("Opening main window...");
 			window.open();
-		} catch (Exception e) {
-			MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
-			box.setMessage("Superluminal has encountered an unexpected error and must close." + ShipIO.lineDelimiter + "Your active project will be saved to Superluminal's directory if possible."
-					+ ShipIO.lineDelimiter + ShipIO.lineDelimiter + "Please find crash.log file in Superluminal's directory and post its contents in the thread at FTL forums (link in About window).");
-			box.open();
-
-			if (Main.ship != null)
-				ShipIO.saveShipProject("crash_save.shp");
-
+		} catch (Throwable t) {
 			try {
 				if (log) {
 					System.setOut(new PrintStream(new FileOutputStream("crash.log")));
@@ -420,18 +429,41 @@ public class Main {
 			} catch (FileNotFoundException ex) {
 			}
 
-			e.printStackTrace();
+			Shell shelltemp = shell;
+			try {
+				if (shelltemp == null) {
+					log("The exception occured before main window shell was instantiated.");
+					shelltemp = new Shell();
+				}
+
+				MessageBox box = new MessageBox(shelltemp, SWT.ICON_ERROR);
+				box.setMessage("Superluminal has encountered an unexpected error and must close." + ShipIO.lineDelimiter + "Your active project will be saved to Superluminal's directory if possible."
+						+ ShipIO.lineDelimiter + ShipIO.lineDelimiter + "Please find crash.log file in Superluminal's directory and post its contents in the thread at FTL forums (link in About window).");
+				box.open();
+			} catch (Throwable th) {
+				log("Failed to create message box.");
+			}
+
+			t.printStackTrace();
+
+			if (Main.ship != null)
+				ShipIO.saveShipProject("crash_save.shp");
+
+			if (shelltemp != null)
+				shelltemp.dispose();
 		}
 	}
 
-	public void open() throws Exception {
+	public void open() throws Throwable {
 		final Display display = Display.getDefault();
 
+		debug("Instantiating shell...");
 		shell = new Shell(SWT.SHELL_TRIM | SWT.BORDER);
 		shell.setLayout(new GridLayout(2, false));
 		shell.setText(APPNAME + " - Ship Editor");
 		shell.setLocation(100, 50);
 
+		debug("Loading icons...");
 		Image smallIcon = Cache.checkOutImage(shell, "/img/Superluminal-2_16.png");
 		Image mediumIcon = Cache.checkOutImage(shell, "/img/Superluminal-2_32.png");
 		Image largeIcon = Cache.checkOutImage(shell, "/img/Superluminal-2_64.png");
@@ -445,6 +477,7 @@ public class Main {
 		GRID_W = (GRID_W > GRID_W_MAX) ? GRID_W_MAX : (GRID_W < 18) ? 18 : GRID_W;
 		GRID_H = (GRID_H > GRID_H_MAX) ? GRID_H_MAX : (GRID_H < 7) ? 7 : GRID_H;
 
+		debug("Loading config...");
 		if (!ConfigIO.configExists())
 			ConfigIO.saveConfig();
 
@@ -496,6 +529,7 @@ public class Main {
 			showTips = ConfigIO.getBoolean("showTips");
 		}
 
+		debug("Loading fonts...");
 		appFont = new Font(display, "Monospaced", 9, SWT.NORMAL);
 		// https://bugs.eclipse.org/bugs/show_bug.cgi?id=48055 - SWT bug 48055, SWT is unable to operate with logical fonts
 		// using workaround http://stackoverflow.com/questions/221568/swt-os-agnostic-way-to-get-monospaced-font
@@ -504,6 +538,7 @@ public class Main {
 		// used as a default, "null" transformation to fall back to in order to do regular drawing.
 		currentTransform = new Transform(shell.getDisplay());
 
+		debug("Instantiating child windows...");
 		sysDialog = new PropertiesWindow(shell);
 		shipDialog = new ShipPropertiesWindow(shell);
 		erDialog = new ErrorDialog(shell);
@@ -514,6 +549,9 @@ public class Main {
 		choiceDialog = new ShipChoiceDialog(shell);
 		glowWindow = new GlowWindow(shell);
 		GibDialog.gibRename = new RenameGibDialog(gibDialog.getShell());
+		mountProperties = new MountPropertiesWindow(shell);
+		doorProperties = new DoorPropertiesWindow(shell);
+		toolSettings = new ToolSettingsWindow(shell);
 
 		tipsList = new ArrayList<String>();
 		tipsList.add("You can quickly switch between tools using Q, W, E, R, T and G keys.");
@@ -548,14 +586,15 @@ public class Main {
 		tipWindow.updateButtons();
 		tipWindow.setLocation(shell.getLocation().x + 300, shell.getLocation().y + 200);
 
+		debug("Creating contents of main shell...");
 		createContents();
 
 		// undoManager.setLimit(200);
 
 		shell.setFont(appFont);
-
 		shell.setEnabled(true);
 
+		debug("Checking archive availability...");
 		if (ShipIO.isNull(dataPath) || ShipIO.isNull(resPath) || !(new File("archives")).exists()) {
 			dataPath = null;
 			resPath = null;
@@ -572,6 +611,7 @@ public class Main {
 
 		if (!ShipIO.isNull(dataPath) && !ShipIO.isNull(resPath))
 			ShipIO.fetchShipNames();
+
 		if (ShipIO.errors.size() > 0) {
 			erDialog.printErrors(ShipIO.errors);
 			erDialog.open();
@@ -581,10 +621,10 @@ public class Main {
 		shell.setMinimumSize(19 * 35, 12 * 35);
 		shell.open();
 
-		if (showTips && !dirWindow.shell.isVisible()) {
+		if (showTips && !dirWindow.shell.isVisible())
 			tipWindow.open();
-		}
 
+		debug("Registering listeners...");
 		shell.addControlListener(new ControlAdapter() {
 			@Override
 			public void controlMoved(ControlEvent e) {
@@ -707,6 +747,7 @@ public class Main {
 			}
 		});
 
+		debug("Beginning main program loop...");
 		while (!shell.isDisposed()) {
 			if (!display.readAndDispatch()) {
 				display.sleep();
@@ -729,7 +770,6 @@ public class Main {
 		tempImage = Cache.checkOutImage(shell, "/img/gib.png");
 		toolsMap.put("gib", tempImage);
 
-		// pinImage = Cache.checkOutImage(shell, "/img/pin.png");
 		tickImage = Cache.checkOutImage(shell, "/img/check.png");
 		crossImage = Cache.checkOutImage(shell, "/img/cross.png");
 
@@ -909,28 +949,6 @@ public class Main {
 		mntmShowStations.setText("Show Stations\t7");
 		mntmShowStations.setSelection(showStations);
 
-		/*
-		 * new MenuItem(menu_view, SWT.SEPARATOR);
-		 * 
-		 * // === View -> load floor
-		 * final MenuItem mntmLoadFloorGraphic = new MenuItem(menu_view, SWT.CHECK);
-		 * mntmLoadFloorGraphic.setText("Load Floor Graphic");
-		 * mntmLoadFloorGraphic.setSelection(loadFloor);
-		 * mntmLoadFloorGraphic.setEnabled(false);
-		 * 
-		 * // === View -> load shield
-		 * final MenuItem mntmLoadShieldGraphic = new MenuItem(menu_view, SWT.CHECK);
-		 * mntmLoadShieldGraphic.setText("Load Shield Graphic");
-		 * mntmLoadShieldGraphic.setSelection(loadShield);
-		 * mntmLoadShieldGraphic.setEnabled(false);
-		 * 
-		 * // === View -> load system graphic
-		 * MenuItem mntmLoadSystem = new MenuItem(menu_view, SWT.CHECK);
-		 * mntmLoadSystem.setText("Load System Graphics");
-		 * mntmLoadSystem.setSelection(loadSystem);
-		 * mntmLoadSystem.setEnabled(false);
-		 */
-
 		// === About menu
 
 		MenuItem mntmAbout = new MenuItem(menu, SWT.NONE);
@@ -958,51 +976,51 @@ public class Main {
 		tltmPointer.setImage(toolsMap.get("pointer"));
 		tltmPointer.setWidth(60);
 		tltmPointer.setSelection(true);
-		tltmPointer.setToolTipText("Selection Tool [Q]"
-				+ ShipIO.lineDelimiter + " -Click to selet an object"
-				+ ShipIO.lineDelimiter + " -Click and hold to move the object around"
-				+ ShipIO.lineDelimiter + " -For rooms, click on a corner and drag to resize the room"
-				+ ShipIO.lineDelimiter + " -Right-click on a room to assign a system to it"
-				+ ShipIO.lineDelimiter + " -Double click on a room to set its system's level"
-				+ ShipIO.lineDelimiter + " -Double click on a mount to view its details"
-				+ ShipIO.lineDelimiter + " -Press down Ctrl for precision mode"
-				+ ShipIO.lineDelimiter + " -Press down Shift to move the object along a single axis");
+		tltmPointer.setToolTipText("Selection Tool [Q]\n"
+				+ " -Click to selet an object\n"
+				+ " -Click and hold to move the object around\n"
+				+ " -For rooms, click on a corner and drag to resize the room\n"
+				+ " -Right-click on a room to assign a system to it\n"
+				+ " -Double click on a room to set its system's level\n"
+				+ " -Double click on a mount to view its details\n"
+				+ " -Press down Ctrl for precision mode\n"
+				+ " -Press down Shift to move the object along a single axis");
 
 		// === Container -> Tools -> Room creation
 		tltmRoom = new ToolItem(toolBar, SWT.RADIO);
 		tltmRoom.setWidth(60);
-		tltmRoom.setToolTipText("Room Creation Tool [W]"
-				+ ShipIO.lineDelimiter + " -Click and drag to create a room"
-				+ ShipIO.lineDelimiter + " -Hold down Shift and click to split rooms");
+		tltmRoom.setToolTipText("Room Creation Tool [W]\n"
+				+ " -Click and drag to create a room\n"
+				+ " -Hold down Shift and click to split rooms");
 		tltmRoom.setImage(toolsMap.get("room"));
 
 		// === Container -> Tools -> Door creation
 		tltmDoor = new ToolItem(toolBar, SWT.RADIO);
 		tltmDoor.setWidth(60);
-		tltmDoor.setToolTipText("Door Creation Tool [E]"
-				+ ShipIO.lineDelimiter + " - Hover over an edge of a room and click to place door"
-				+ ShipIO.lineDelimiter + " - Hold down shift and left/right click on a door to select it, then drag the mouse"
-				+ ShipIO.lineDelimiter + "(while holding the button down) over to a room to link the door to it.");
+		tltmDoor.setToolTipText("Door Creation Tool [E]\n"
+				+ " - Hover over an edge of a room and click to place door\n"
+				+ " - Hold down shift and left/right click on a door to select it, then drag the mouse\n"
+				+ "(while holding the button down) over to a room to link the door to it.");
 		tltmDoor.setImage(toolsMap.get("door"));
 
 		// === Container -> Tools -> Weapon mounting
 		tltmMount = new ToolItem(toolBar, SWT.RADIO);
 		tltmMount.setWidth(60);
-		tltmMount.setToolTipText("Weapon Mounting Tool [R]"
-				+ ShipIO.lineDelimiter + " -Click to place a weapon mount"
-				+ ShipIO.lineDelimiter + " -Right-click to change the mount's rotation"
-				+ ShipIO.lineDelimiter + " -Alt-right-click to mirror the mount along its axis"
-				+ ShipIO.lineDelimiter + " -Shift-right-click to change the direction in which the weapon opens"
-				+ ShipIO.lineDelimiter + " (already placed mounts can be edited with the Selection Tool)");
+		tltmMount.setToolTipText("Weapon Mounting Tool [R]\n"
+				+ " -Click to place a weapon mount\n"
+				+ " -Right-click to change the mount's rotation\n"
+				+ " -Alt-right-click to mirror the mount along its axis\n"
+				+ " -Shift-right-click to change the direction in which the weapon opens\n"
+				+ " (already placed mounts can be edited with the Selection Tool)");
 		tltmMount.setImage(toolsMap.get("mount"));
 
 		// === Container -> Tools -> System operating slot
 		tltmSystem = new ToolItem(toolBar, SWT.RADIO);
 		tltmSystem.setWidth(60);
-		tltmSystem.setToolTipText("System Station Tool [T]"
-				+ ShipIO.lineDelimiter + " - Click to place an operating station (only mannable systems + medbay)"
-				+ ShipIO.lineDelimiter + " - Right-click to reset the station to default"
-				+ ShipIO.lineDelimiter + " - Shift-click to change facing of the station");
+		tltmSystem.setToolTipText("System Station Tool [T]\n"
+				+ " - Click to place an operating station (only mannable systems + medbay)\n"
+				+ " - Right-click to reset the station to default\n"
+				+ " - Shift-click to change facing of the station");
 		tltmSystem.setImage(toolsMap.get("system"));
 
 		tltmGib = new ToolItem(toolBar, SWT.RADIO);
@@ -1016,6 +1034,7 @@ public class Main {
 				+ " -Pressing H hides currently selected gib.\n"
 				+ " -Use Move Up/Move Down buttons to change the layering order.");
 		tltmGib.setImage(toolsMap.get("gib"));
+
 		tltmPointer.setEnabled(false);
 		tltmRoom.setEnabled(false);
 		tltmDoor.setEnabled(false);
@@ -1596,8 +1615,6 @@ public class Main {
 				String path = dialog.open();
 
 				if (!ShipIO.isNull(path) && new File(path).exists()) {
-					// if (ShipIO.isDefaultResource(new File(path)))
-					// Main.ship.shieldOverride = path;
 					shieldBox.registerDown(Undoable.IMAGE);
 
 					ship.shieldPath = path;
@@ -1784,6 +1801,7 @@ public class Main {
 		btnShipProperties.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				shell.setEnabled(false);
+
 				shipDialog.open();
 
 				shell.setEnabled(true);
@@ -2030,8 +2048,6 @@ public class Main {
 					} else if (e.stateMask == SWT.NONE && Main.ship != null && (e.keyCode == 'q' || e.keyCode == 'w' || e.keyCode == 'e' || e.keyCode == 'r' || e.keyCode == 't' || e.keyCode == 'g')) {
 						deselectAll();
 						updateSelectedPosText();
-						boolean prevGib = tltmGib.getSelection();
-						boolean prevMount = tltmMount.getSelection();
 
 						tltmPointer.setSelection(e.keyCode == 'q');
 						tltmRoom.setSelection(e.keyCode == 'w');
@@ -2040,13 +2056,11 @@ public class Main {
 						tltmSystem.setSelection(e.keyCode == 't');
 						tltmGib.setSelection(e.keyCode == 'g');
 
-						gibDialog.setVisible(tltmGib.getSelection());
-						if (prevGib && !tltmGib.getSelection())
-							gibWindow.escape();
+						getSelectedTool().notifyListeners(SWT.Selection, null);
 
 						btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath) && !tltmGib.getSelection());
-						if (prevGib || prevMount || tltmGib.getSelection())
-							canvas.redraw();
+
+						canvas.redraw();
 
 						// === nudge function
 					} else if ((e.keyCode == SWT.ARROW_UP || e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_LEFT || e.keyCode == SWT.ARROW_RIGHT)
@@ -2070,25 +2084,34 @@ public class Main {
 			public void widgetSelected(SelectionEvent e) {
 				deselectAll();
 				updateSelectedPosText();
-				if (gibDialog.isVisible()) {
+				if (gibDialog.isVisible() && e.widget != tltmGib) {
 					gibDialog.setVisible(false);
 					btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath));
 					canvas.redraw();
+				} else if (!gibDialog.isVisible() && e.widget == tltmGib) {
+					gibDialog.setVisible(true);
+					btnCloaked.setEnabled(false);
+					canvas.redraw();
 				}
+
+				// close and reopen if needed
+				if (mountProperties.isVisible())
+					mountProperties.close();
+				if (e.widget == tltmMount || e.widget == tltmRoom || e.widget == tltmSystem)
+					toolSettings.open();
+				else
+					toolSettings.close();
+				
+				if (doorProperties.isVisible())
+					doorProperties.close();
 			}
 		};
+		tltmPointer.addSelectionListener(adapter);
 		tltmRoom.addSelectionListener(adapter);
 		tltmDoor.addSelectionListener(adapter);
 		tltmMount.addSelectionListener(adapter);
 		tltmSystem.addSelectionListener(adapter);
-
-		tltmGib.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				gibDialog.setVisible(true);
-				btnCloaked.setEnabled(false);
-				canvas.redraw();
-			}
-		});
+		tltmGib.addSelectionListener(adapter);
 
 		// === SYSTEM CONTEXT MENU
 
@@ -3230,32 +3253,6 @@ public class Main {
 				about = null;
 			}
 		});
-
-		/*
-		 * mntmLoadFloorGraphic.addSelectionListener(new SelectionAdapter() {
-		 * public void widgetSelected(SelectionEvent e) {
-		 * loadFloor = ((MenuItem) e.widget).getSelection();
-		 * ConfigIO.saveConfig();
-		 * canvas.redraw();
-		 * }
-		 * });
-		 * 
-		 * mntmLoadShieldGraphic.addSelectionListener(new SelectionAdapter() {
-		 * public void widgetSelected(SelectionEvent e) {
-		 * loadShield = ((MenuItem) e.widget).getSelection();
-		 * ConfigIO.saveConfig();
-		 * canvas.redraw();
-		 * }
-		 * });
-		 * 
-		 * mntmLoadSystem.addSelectionListener(new SelectionAdapter() {
-		 * public void widgetSelected(SelectionEvent e) {
-		 * loadSystem = ((MenuItem) e.widget).getSelection();
-		 * ConfigIO.saveConfig();
-		 * canvas.redraw();
-		 * }
-		 * });
-		 */
 	}
 
 	// ======================================================
@@ -3586,9 +3583,8 @@ public class Main {
 	public static int getLowestId() {
 		int i = -1;
 		idList.add(-1);
-		while (i < GRID_W * GRID_H && idList.contains(i)) {
+		while (i < GRID_W * GRID_H && idList.contains(i))
 			i++;
-		}
 		return i;
 	}
 
@@ -3599,9 +3595,8 @@ public class Main {
 		for (FTLMount m : ship.mounts)
 			indexList.add(m.index);
 
-		while (i < MAX_MOUNTS && indexList.contains(i)) {
+		while (i < MAX_MOUNTS && indexList.contains(i))
 			i++;
-		}
 
 		return i;
 	}
@@ -4032,6 +4027,10 @@ public class Main {
 			System.out.println("" + msg);
 	}
 
+	public static void log(Object msg) {
+		System.out.println("" + msg);
+	}
+
 	public static void unpackFTL(String path) {
 		if (!ShipIO.isNull(path) && new File(path).exists()) {
 			ftlLoadPath = new String(path);
@@ -4324,14 +4323,13 @@ public class Main {
 	}
 
 	public static void recreateObject(PaintBox box) {
-		if (!(box instanceof FTLRoom || box instanceof FTLDoor || box instanceof FTLMount || box instanceof FTLGib)) {
+		if (!(box instanceof FTLRoom || box instanceof FTLDoor || box instanceof FTLMount || box instanceof FTLGib))
 			throw new IllegalArgumentException("Not an instance of creatable object.");
-		}
 
 		Rectangle redrawBounds = null;
 		// register back and show
 		if (box instanceof FTLRoom) {
-			((FTLRoom) box).id = getLowestId();
+			// ((FTLRoom) box).id = getLowestId();
 			((FTLRoom) box).add(ship);
 			((FTLRoom) box).assignSystem(((FTLRoom) box).sysBox);
 
@@ -4392,7 +4390,6 @@ public class Main {
 			r.dispose();
 			ship.rooms.remove(r);
 			removeUnalignedDoors();
-			ship.reassignID();
 			r = null;
 
 			if (Main.ship != null) {
@@ -4462,14 +4459,33 @@ public class Main {
 		return null;
 	}
 
+	public static ToolItem getSelectedTool() {
+		if (tltmPointer.getSelection()) {
+			return tltmPointer;
+		} else if (tltmRoom.getSelection()) {
+			return tltmRoom;
+		} else if (tltmDoor.getSelection()) {
+			return tltmDoor;
+		} else if (tltmMount.getSelection()) {
+			return tltmMount;
+		} else if (tltmSystem.getSelection()) {
+			return tltmSystem;
+		} else if (tltmGib.getSelection()) {
+			return tltmGib;
+		}
+
+		return null;
+	}
+
 	private static Font loadMonospacedFont(Display display) {
 		String jreHome = System.getProperty("java.home");
 		File file = new File(jreHome, "/lib/fonts/LucidaTypewriterRegular.ttf");
-		if (!file.exists()) {
-			throw new IllegalStateException(file.toString());
-		}
+		if (!file.exists())
+			file = new File("./LucidaTypewriterRegular.ttf");
+		if (!file.exists())
+			debug("Font file could not be found: " + file.toString());
 		if (!display.loadFont(file.toString())) {
-			throw new IllegalStateException(file.toString());
+			debug("Font could not be loaded: " + file.toString());
 		}
 		final Font font = new Font(display, "Lucida Sans Typewriter", 9, SWT.NORMAL);
 		display.addListener(SWT.Dispose, new Listener() {
@@ -4478,5 +4494,16 @@ public class Main {
 			}
 		});
 		return font;
+	}
+
+	public static String getRealArch() {
+		String arch = System.getenv("PROCESSOR_ARCHITECTURE");
+		String wow64Arch = System.getenv("PROCESSOR_ARCHITEW6432");
+
+		String realArch = arch.endsWith("64")
+				|| wow64Arch != null && wow64Arch.endsWith("64")
+				? "64" : "32";
+
+		return realArch;
 	}
 }
