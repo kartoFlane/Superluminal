@@ -59,10 +59,6 @@ import com.kartoflane.superluminal.painter.PaintBox;
 import com.kartoflane.superluminal.ui.IncludeAskDialog;
 import com.kartoflane.superluminal.ui.ShipBrowser;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.zip.*;
-import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream.UnicodeExtraFieldPolicy;
-
 public class ShipIO {
 	public static Set<String> errors = new HashSet<String>();
 
@@ -90,7 +86,7 @@ public class ShipIO {
 
 	public static FTLShip shipBeingLoaded;
 	public static String pathDelimiter = System.getProperty("file.separator");
-	public static String lineDelimiter = System.getProperty("line.separator");
+	public static String lineDelimiter = "\n";
 	static boolean namesFetched = false;
 
 	public static boolean createFtl = false;
@@ -1873,10 +1869,6 @@ public class ShipIO {
 		destination.mkdirs();
 		deleteFolderContents(destination);
 
-		// temporarily change the default line delimiter - since apparently FTL uses windows-like CRLF in its files even on Macs
-		String oldLineDelim = new String(lineDelimiter);
-		lineDelimiter = "\r\n";
-
 		// ===============
 		// === Copy images
 
@@ -2173,26 +2165,25 @@ public class ShipIO {
 			fw.write("<weaponMounts>" + lineDelimiter);
 			FTLMount mt = null;
 			int count = 0;
-			for (FTLMount m : Main.ship.mounts) {
-				if (!m.slide.equals(Slide.NO)) {
-					if (count < Main.ship.weaponSlots) {
-						fw.write("\t");
-						fw.write("<mount x=\"" + m.pos.x + "\" ");
-						fw.write("y=\"" + m.pos.y + "\" ");
-						fw.write("rotate=\"" + m.isRotated() + "\" ");
-						fw.write("mirror=\"" + m.mirror + "\" ");
-						fw.write("gib=\"" + m.gib + "\" ");
-						fw.write("slide=\"" + m.slide.toString().toLowerCase() + "\"/>");
-						fw.write(lineDelimiter);
-						count++;
-					}
-				} else if (mt == null && Main.isSystemAssigned(Systems.ARTILLERY)) {
+			for (int i = 0; i < Main.ship.mounts.size(); i++) {
+				FTLMount m = Main.ship.getMountWithIndex(i);
+
+				if (count < Main.ship.weaponSlots) {
+					fw.write("\t");
+					fw.write("<mount x=\"" + m.pos.x + "\" ");
+					fw.write("y=\"" + m.pos.y + "\" ");
+					fw.write("rotate=\"" + m.isRotated() + "\" ");
+					fw.write("mirror=\"" + m.mirror + "\" ");
+					fw.write("gib=\"" + m.gib + "\" ");
+					fw.write("slide=\"" + m.slide.toString().toLowerCase() + "\"/>");
+					fw.write(lineDelimiter);
+					count++;
+				} else if (count == Main.ship.weaponSlots) {
 					mt = m;
 				}
 			}
 
-			// Slide.NO is associated with artillery, has to be written as the last one on the list
-			// otherwise, normal weapons use that mount
+			// (weapon slots)th mount is associated with artillery, has to be written as the last one on the list
 			if (mt != null) {
 				fw.write("\t");
 				fw.write("<mount x=\"" + mt.pos.x + "\" ");
@@ -2467,8 +2458,6 @@ public class ShipIO {
 		exp.shell.dispose();
 		exp = null;
 
-		lineDelimiter = oldLineDelim;
-
 		if (createFtl) {
 			// apacheZipToFTL(path, Main.ship.shipClass);
 			zipToFTL(path, Main.ship.shipClass);
@@ -2499,26 +2488,7 @@ public class ShipIO {
 			}
 		}
 	}
-
-	public static void apacheZipToFTL(String path, String fileName) {
-		try {
-			FileOutputStream fos = new FileOutputStream((path + "/" + fileName + ".ftl"));
-			ZipArchiveOutputStream zos = new ZipArchiveOutputStream(fos);
-
-			zos.setCreateUnicodeExtraFields(UnicodeExtraFieldPolicy.NEVER);
-
-			path = path + "/" + Main.ship.blueprintName;
-
-			apacheZipDir(path, zos);
-
-			zos.close();
-		} catch (FileNotFoundException e) {
-			Main.erDialog.add("Error: apache ZipToFTL - file not found.");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
+	
 	public static void zipToFTL(String path, String fileName) {
 		try {
 			FileOutputStream fos = new FileOutputStream((path + pathDelimiter + fileName + ".ftl"));
@@ -2612,6 +2582,15 @@ public class ShipIO {
 					if (m.getRotation() == 0)
 						m.setRotation(m.getOldRotation()); // get the old, deprecated value and assign it.
 				}
+				if (!Main.ship.isPlayer) {
+					Main.ship.crewMap.put("random", 0);
+					Main.ship.crewMaxMap.put("random", 0);
+					
+					for (Systems sys : Main.ship.slotDirMap.keySet()) {
+						if (Main.ship.slotDirMap.get(sys) == null)
+							Main.ship.slotDirMap.put(sys, Slide.UP);
+					}
+				}
 			}
 
 			debug("\tloading linked ship images...");
@@ -2676,6 +2655,7 @@ public class ShipIO {
 				if (ois != null)
 					ois.close();
 			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 	}
@@ -2995,7 +2975,7 @@ public class ShipIO {
 		try {
 			fr = new FileReader(Main.dataPath + pathDelimiter + "autoBlueprints.xml");
 			sc = new Scanner(fr);
-			sc.useDelimiter(Pattern.compile(lineDelimiter));
+			sc.useDelimiter("\n");
 
 			scan: while (sc.hasNext()) {
 				s = sc.next();
@@ -3023,7 +3003,7 @@ public class ShipIO {
 			try {
 				fr = new FileReader(Main.dataPath + pathDelimiter + "blueprints.xml");
 				sc = new Scanner(fr);
-				sc.useDelimiter(Pattern.compile(lineDelimiter));
+				sc.useDelimiter("\n");
 
 				scan: while (sc.hasNext()) {
 					s = sc.next();
@@ -3082,7 +3062,6 @@ public class ShipIO {
 	 *            file that is to be scanned; when set to null, performs the scan on Superluminal's own extracted archives
 	 */
 	public static void loadDeclarationsFromFile(File fileToScan) {
-		FileReader fr;
 		Scanner sc = null;
 		String s;
 		Pattern pattern;
@@ -3126,10 +3105,17 @@ public class ShipIO {
 		try {
 			if (scanDefault)
 				fileToScan = new File(Main.dataPath + pathDelimiter + "autoBlueprints.xml");
+			InputStream is = new FileInputStream(fileToScan);
+			String contents = convertStreamToString(is);
+			try {
+				is.close();
+			} catch (IOException e) {
+			}
+			
+			contents.replaceAll("(?s)<!--.*?-->", "");
 
-			fr = new FileReader(fileToScan);
-			sc = new Scanner(fr);
-			sc.useDelimiter(Pattern.compile(lineDelimiter));
+			sc = new Scanner(contents);
+			sc.useDelimiter("\n");
 
 			Main.debug("Load declarations - scanning as autoBlueprints.xml...", IOdebug);
 			while (sc.hasNext()) {
@@ -3202,10 +3188,17 @@ public class ShipIO {
 		try {
 			if (scanDefault)
 				fileToScan = new File(Main.dataPath + pathDelimiter + "blueprints.xml");
+			InputStream is = new FileInputStream(fileToScan);
+			String contents = convertStreamToString(is);
+			try {
+				is.close();
+			} catch (IOException e) {
+			}
+			
+			contents.replaceAll("(?s)<!--.*?-->", "");
 
-			fr = new FileReader(fileToScan);
-			sc = new Scanner(fr);
-			sc.useDelimiter(Pattern.compile(lineDelimiter));
+			sc = new Scanner(contents);
+			sc.useDelimiter("\n");
 
 			Main.debug("Load declarations - scanning as blueprints.xml...", IOdebug);
 			while (sc.hasNext()) {
@@ -3401,48 +3394,6 @@ public class ShipIO {
 		}
 	}
 
-	public static void apacheZipDir(String source, ZipArchiveOutputStream zos) {
-		FileInputStream fis = null;
-		ArchiveEntry ze = null;
-		File zipDir, file = null;
-
-		try {
-			zipDir = new File(source);
-
-			String[] dirList = zipDir.list();
-			byte[] readBuffer = new byte[2156];
-			int bytesIn = 0;
-
-			for (int i = 0; i < dirList.length; i++) {
-				file = new File(zipDir, dirList[i]);
-				if (file.isDirectory()) {
-					String filePath = file.getPath();
-					apacheZipDir(filePath, zos);
-					continue;
-				}
-
-				fis = new FileInputStream(file);
-				file = new File(file.getPath().substring(file.getPath().indexOf(Main.ship.blueprintName) + Main.ship.blueprintName.length() + 1));
-				ze = new ZipArchiveEntry(file.getPath());
-				zos.putArchiveEntry(ze);
-
-				while ((bytesIn = fis.read(readBuffer)) != -1) {
-					zos.write(readBuffer, 0, bytesIn);
-				}
-
-				fis.close();
-			}
-		} catch (Exception e) {
-		} finally {
-			if (fis != null) {
-				try {
-					fis.close();
-				} catch (IOException e) {
-				}
-			}
-		}
-	}
-
 	public static void unzipFileToDirectory(ZipFile zipFile, File destinationDir) {
 		Enumeration<? extends ZipEntry> files = zipFile.entries();
 		File f = null;
@@ -3512,10 +3463,24 @@ public class ShipIO {
 		for (FTLDoor d : shipBeingLoaded.doors) {
 			l = shipBeingLoaded.findLeftRoom(d);
 			r = shipBeingLoaded.findRightRoom(d);
-			if (d.leftId == l)
+			// reset whenever the door is linked to any adjacent room
+			// normally we'd reset leftId only if it was equal to l,
+			// but FTL itself is very inconsistent in this regard
+			// (rightId links to left room, leftId links to right room...)
+			if (d.leftId == l || d.leftId == r || d.leftId == -1)
 				d.leftId = -2;
-			if (d.rightId == r)
+			if (d.rightId == l || d.rightId == r || d.rightId == -1)
 				d.rightId = -2;
 		}
+	}
+	
+	/**
+	 * http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
+	 * The stream the function receives is closed later on.
+	 */
+	@SuppressWarnings("resource")
+	public static String convertStreamToString(InputStream is) {
+		Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+		return s.hasNext() ? s.next() : "";
 	}
 }
