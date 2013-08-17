@@ -282,39 +282,34 @@ public class FTLShip implements Serializable {
 	public Point findHighBounds() {
 		int x = 0, y = 0;
 		for (FTLRoom r : rooms) {
-			if (r != null && r.getBounds().x + r.getBounds().width >= x) {
+			if (r != null && r.getBounds().x + r.getBounds().width >= x)
 				x = r.getBounds().x + r.getBounds().width;
-			}
-			if (r != null && r.getBounds().y + r.getBounds().height >= y) {
+			if (r != null && r.getBounds().y + r.getBounds().height >= y)
 				y = r.getBounds().y + r.getBounds().height;
-			}
 		}
 		return new Point(x, y);
 	}
 
 	public int findLeftRoom(FTLDoor d) {
 		for (FTLRoom r : rooms) {
-			if (r.getBounds().intersects(d.getBounds()) && ((d.horizontal && r.getBounds().y < d.getBounds().y) || (!d.horizontal && r.getBounds().x < d.getBounds().x))) {
+			if (r.getBounds().intersects(d.getBounds()) && ((d.horizontal && r.getBounds().y < d.getBounds().y) || (!d.horizontal && r.getBounds().x < d.getBounds().x)))
 				return r.id;
-			}
 		}
 		return -1;
 	}
 
 	public int findRightRoom(FTLDoor d) {
 		for (FTLRoom r : rooms) {
-			if (r.getBounds().intersects(d.getBounds()) && ((d.horizontal && r.getBounds().y > d.getBounds().y) || (!d.horizontal && r.getBounds().x > d.getBounds().x))) {
+			if (r.getBounds().intersects(d.getBounds()) && ((d.horizontal && r.getBounds().y > d.getBounds().y) || (!d.horizontal && r.getBounds().x > d.getBounds().x)))
 				return r.id;
-			}
 		}
 		return -1;
 	}
 
 	public FTLRoom getRoomWithId(int id) {
 		for (FTLRoom r : rooms) {
-			if (r != null && id != -1 && r.id == id) {
+			if (r != null && id != -1 && r.id == id)
 				return r;
-			}
 		}
 		return null;
 	}
@@ -325,15 +320,5 @@ public class FTLShip implements Serializable {
 				return m;
 
 		return null;
-	}
-
-	public void reassignID() {
-		Main.idList.clear();
-		int i = 0;
-		for (FTLRoom r : rooms) {
-			r.id = i;
-			Main.idList.add(i);
-			i++;
-		}
 	}
 }
