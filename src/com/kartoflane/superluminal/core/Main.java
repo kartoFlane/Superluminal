@@ -373,14 +373,6 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 * - added more debug messages on startup
-	 * - fixed loading room IDs (obsolete links will always be removed)
-	 * - fixed a bug that would cause the ship's manually linked rooms to become inproperly linked if you've deleted any room.
-	 * - added mount properties window - double-click on mount with the pointer tool to open
-	 * - added door properties window - only usable to link doors in a slightly easier manner - double-click on door with pointer tool to open.
-	 * - added a Tool Settings dialog that opens when Room, Mount or System tool is selected.
-	 * - fixed an issue that prevented the editor from starting even though it should
-	 * - room, mount and door properties can also be opened by selecting the object and pressing Enter.
 	 */
 
 	// =================================================================================================== //

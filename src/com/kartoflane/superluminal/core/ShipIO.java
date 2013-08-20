@@ -2183,7 +2183,7 @@ public class ShipIO {
 					fw.write("slide=\"" + m.slide.toString().toLowerCase() + "\"/>");
 					fw.write(lineDelimiter);
 					count++;
-				} else if (count == Main.ship.weaponSlots) {
+				} else if (count == Main.ship.weaponSlots && Main.isSystemAssigned(Systems.ARTILLERY)) {
 					mt = m;
 				}
 			}
