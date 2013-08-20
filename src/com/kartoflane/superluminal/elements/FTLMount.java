@@ -36,7 +36,8 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	private Point offset = null;
 	private int frameW = 0;
 	private Rectangle redrawBounds;
-	private boolean powered = true;
+	
+	public boolean powered = true;
 	
 	public int index = -1;
 	
@@ -51,7 +52,7 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	 * True means the weapons are oriented horizontally, while false means they're oriented vertically
 	 * (Bascially true for player ships, false for enemy ships)
 	 */
-	private boolean rotate;
+	public boolean rotate;
 	
 	/**
 	 * When set to true, mirrors the weapon's graphic along vertical or horizontal axis.<br>
