@@ -4,19 +4,20 @@ import javax.swing.event.UndoableEditEvent;
 import javax.swing.undo.AbstractUndoableEdit;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 
 import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.elements.FTLDoor;
 import com.kartoflane.superluminal.undo.Undoable;
-import com.kartoflane.superluminal.undo.UndoableLinkEdit;
-
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
+import com.kartoflane.superluminal.undo.UndoableDoorPropertiesEdit;
 
 public class DoorPropertiesWindow {
 	protected Shell shell;
@@ -145,18 +146,25 @@ public class DoorPropertiesWindow {
 		btnOk.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (currentDoor.leftId != fid)
-					registerDown(Undoable.LINK_LEFT);
+				if (currentDoor.leftId != fid || currentDoor.rightId != sid)
+					registerDown(Undoable.DOOR_PROP);
 				currentDoor.leftId = fid;
-				registerUp(Undoable.LINK_LEFT);
-				
-				if (currentDoor.rightId != sid)
-					registerDown(Undoable.LINK_RIGHT);
 				currentDoor.rightId = sid;
-				registerUp(Undoable.LINK_RIGHT);
+				
+				registerUp(Undoable.DOOR_PROP);
 				
 				currentDoor.selectNoMove();
 				close();
+			}
+		});
+		
+		shell.addListener(SWT.Traverse, new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+				if (e.detail == SWT.TRAVERSE_ESCAPE) {
+					e.doit = false;
+					close();
+				}
 			}
 		});
 	}
@@ -214,29 +222,18 @@ public class DoorPropertiesWindow {
 	}
 	
 	private void registerDown(int undoable) {
-		if (undoable == Undoable.LINK_LEFT) {
-			ume = new UndoableLinkEdit(currentDoor, true);
-			currentDoor.undoListener.undoableEditHappened(new UndoableEditEvent(currentDoor, ume));
-		} else if (undoable == Undoable.LINK_RIGHT) {
-			ume = new UndoableLinkEdit(currentDoor, false);
+		if (undoable == Undoable.DOOR_PROP) {
+			ume = new UndoableDoorPropertiesEdit(currentDoor);
 			currentDoor.undoListener.undoableEditHappened(new UndoableEditEvent(currentDoor, ume));
 		}
 	}
 	
 	private void registerUp(int undoable) {
 		if (ume != null) {
-			if (undoable == Undoable.LINK_LEFT) {
-				int temp = ((UndoableLinkEdit) ume).getOldValue();
-				if (temp != ((FTLDoor) currentDoor).leftId) {
-					((UndoableLinkEdit) ume).setCurrentValue(((FTLDoor) currentDoor).leftId);
-					Main.addEdit(ume);
-				}
-			} else if (undoable == Undoable.LINK_RIGHT) {
-				int temp = ((UndoableLinkEdit) ume).getOldValue();
-				if (temp != ((FTLDoor) currentDoor).rightId) {
-					((UndoableLinkEdit) ume).setCurrentValue(((FTLDoor) currentDoor).rightId);
-					Main.addEdit(ume);
-				}
+			if (undoable == Undoable.DOOR_PROP) {
+				((UndoableDoorPropertiesEdit) ume).setCurrentValue(true, ((FTLDoor) currentDoor).leftId);
+				((UndoableDoorPropertiesEdit) ume).setCurrentValue(false, ((FTLDoor) currentDoor).rightId);
+				Main.addEdit(ume);
 			}
 		}
 		ume = null;

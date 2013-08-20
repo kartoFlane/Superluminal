@@ -1,5 +1,8 @@
 package com.kartoflane.superluminal.ui;
 
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.undo.AbstractUndoableEdit;
+
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -12,9 +15,14 @@ import com.kartoflane.superluminal.core.Main;
 import com.kartoflane.superluminal.core.ShipIO;
 import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.elements.Slide;
+import com.kartoflane.superluminal.undo.Undoable;
+import com.kartoflane.superluminal.undo.UndoableMountPropertiesEdit;
+
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 
 public class MountPropertiesWindow {
 	protected Shell shell;
@@ -29,6 +37,7 @@ public class MountPropertiesWindow {
 	private Button btnCancel;
 	
 	private boolean toolMode = false;
+	AbstractUndoableEdit ume = null;
 
 	public MountPropertiesWindow(Shell parent) {
 		shell = new Shell(parent, SWT.BORDER | SWT.TITLE);
@@ -142,12 +151,18 @@ public class MountPropertiesWindow {
 
 		btnOk.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
+				if (currentMount.index != spNumber.getSelection() - 1 || currentMount.gib != spGib.getSelection() ||
+						currentMount.mirror != btnMirrored.getSelection() || currentMount.rotate != btnRotated.getSelection() ||
+						currentMount.powered != btnPowered.getSelection() || currentMount.slide != Slide.values()[comboDir.getSelectionIndex()])
+					registerDown(Undoable.MOUNT_PROP);
+				
 				int oldIndex = currentMount.index;
 				int newIndex = spNumber.getSelection() - 1;
 				if (oldIndex != newIndex) {
 					FTLMount m = Main.ship.getMountWithIndex(newIndex);
 					currentMount.index = newIndex;
-					m.index = oldIndex;
+					if (m != null)
+						m.index = oldIndex;
 				}
 				
 				currentMount.gib = spGib.getSelection();
@@ -164,8 +179,20 @@ public class MountPropertiesWindow {
 				ShipIO.loadWeaponImages(Main.ship);
 				ShipIO.remapMountsToWeapons();
 				Main.canvasRedraw(currentMount.getBounds(), true);
+				
+				registerUp(Undoable.MOUNT_PROP);
 
 				close();
+			}
+		});
+		
+		shell.addListener(SWT.Traverse, new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+				if (e.detail == SWT.TRAVERSE_ESCAPE) {
+					e.doit = false;
+					close();
+				}
 			}
 		});
 	}
@@ -196,22 +223,6 @@ public class MountPropertiesWindow {
 		toolMode = false;
 	}
 	
-	public void openTool() {
-		shell.open();
-		
-		btnMirrored.setSelection(Main.mountToolMirror);
-		btnRotated.setSelection(Main.mountToolHorizontal);
-		comboDir.select(Main.mountToolSlide.ordinal());
-		
-		btnPowered.setEnabled(false);
-		btnOk.setEnabled(false);
-		btnCancel.setEnabled(false);
-		spNumber.setEnabled(false);
-		spGib.setEnabled(false);
-		
-		toolMode = true;
-	}
-	
 	public Shell getShell() {
 		return shell;
 	}
@@ -236,5 +247,30 @@ public class MountPropertiesWindow {
 			btnPowered.setSelection(currentMount.isPowered());
 			comboDir.select(currentMount.slide.ordinal());
 		}
+	}
+	
+	private void registerDown(int undoable) {
+		if (undoable == Undoable.MOUNT_PROP) {
+			ume = new UndoableMountPropertiesEdit(currentMount);
+			currentMount.undoListener.undoableEditHappened(new UndoableEditEvent(currentMount, ume));
+		}
+	}
+	
+	private void registerUp(int undoable) {
+		if (ume != null) {
+			if (undoable == Undoable.MOUNT_PROP) {
+				FTLMount current = new FTLMount();
+				current.index = currentMount.index;
+				current.gib = currentMount.gib;
+				current.rotate = currentMount.rotate;
+				current.mirror = currentMount.mirror;
+				current.powered = currentMount.powered;
+				current.slide = currentMount.slide;
+				
+				((UndoableMountPropertiesEdit) ume).setCurrentValue(current);
+				Main.addEdit(ume);
+			}
+		}
+		ume = null;
 	}
 }

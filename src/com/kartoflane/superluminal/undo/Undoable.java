@@ -40,5 +40,8 @@ public class Undoable {
 	public static final int CREATE_GIB = 19;
 	/** Room splitting */
 	public static final int SPLIT = 20;
+	
+	public static final int DOOR_PROP = 21;
+	public static final int MOUNT_PROP = 22;
 	// TODO list all feasible undoable edits
 }
