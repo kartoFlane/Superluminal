@@ -2168,6 +2168,11 @@ public class ShipIO {
 			for (int i = 0; i < Main.ship.mounts.size(); i++) {
 				FTLMount m = Main.ship.getMountWithIndex(i);
 
+				if (m == null) {
+					Main.erDialog.add("No weapon mount found for index " + (i + 1));
+					continue;
+				}
+				
 				if (count < Main.ship.weaponSlots) {
 					fw.write("\t");
 					fw.write("<mount x=\"" + m.pos.x + "\" ");
@@ -2590,6 +2595,17 @@ public class ShipIO {
 						if (Main.ship.slotDirMap.get(sys) == null)
 							Main.ship.slotDirMap.put(sys, Slide.UP);
 					}
+				}
+			}
+			
+			if (Main.ship.version < 15) {
+				int i = 0;
+				for (FTLMount m : Main.ship.mounts) {
+					for (FTLMount mt : Main.ship.mounts) {
+						if (m != mt && m.index == mt.index)
+							mt.index = i;
+					}
+					i++;
 				}
 			}
 

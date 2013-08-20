@@ -111,7 +111,7 @@ import com.kartoflane.superluminal.undo.UndoableDeleteEdit;
 public class Main {
 	// === CONSTANTS
 	/**
-	 * Frequency of canvas redrawing (if constantRedraw == true)
+	 * Frequency of canvas redrawing during gib animation (in ms)
 	 */
 	private final static int INTERVAL = 25;
 	/**
@@ -135,7 +135,7 @@ public class Main {
 	public static final int MAX_DESCRIPTION_LENGTH = 200;
 
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-08-15";
+	public final static String VERSION = "13-08-20";
 
 	// === Important objects
 	public static Shell shell;
@@ -363,6 +363,7 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
+	 * - check if there are any discrepancies between weapon mount coordinates exported from editor, and the coordinates in photoshop
 	 * 
 	 * == MEDIUM PRIO: (new features)
 	 * - multiple systems for the same room for enemy ships
@@ -379,6 +380,7 @@ public class Main {
 	 * - added door properties window - only usable to link doors in a slightly easier manner - double-click on door with pointer tool to open.
 	 * - added a Tool Settings dialog that opens when Room, Mount or System tool is selected.
 	 * - fixed an issue that prevented the editor from starting even though it should
+	 * - room, mount and door properties can also be opened by selecting the object and pressing Enter.
 	 */
 
 	// =================================================================================================== //
@@ -1925,6 +1927,23 @@ public class Main {
 				}
 			}
 		});
+		
+		shell.addTraverseListener(new TraverseListener() {
+			@Override
+			public void keyTraversed(TraverseEvent e) {
+				e.doit = false;
+				if (e.detail == SWT.TRAVERSE_RETURN) {
+					if (selectedRoom != null)
+						Main.sysDialog.open();
+					else if (selectedDoor != null)
+						Main.doorProperties.open();
+					else if (selectedMount != null)
+						Main.mountProperties.open();
+					else if (selectedGib != null)
+						Main.gibWindow.open();
+				}
+			}
+		});
 
 		shell.getDisplay().addFilter(SWT.KeyDown, new Listener() {
 			@Override
@@ -1943,7 +1962,7 @@ public class Main {
 				}
 
 				// check to make sure that the hotkeys won't be triggered while the user is modifying fields in another window
-				if (shell.isEnabled() && !txtX.isFocusControl() && !txtY.isFocusControl() && !gibWindow.isVisible() && !GibDialog.gibRename.isVisible()) {
+				if (shell.isEnabled() && !txtX.isFocusControl() && !txtY.isFocusControl() && !gibWindow.isVisible() && !GibDialog.gibRename.isVisible() && !mountProperties.isVisible()) {
 
 					// === element deletion
 					if ((selectedMount != null || selectedRoom != null || selectedDoor != null || selectedGib != null) && (e.keyCode == SWT.DEL || (e.stateMask == SWT.SHIFT && e.keyCode == 'd'))) {
@@ -1974,7 +1993,7 @@ public class Main {
 							hullBox.deselect();
 						if (shieldBox.isSelected())
 							shieldBox.deselect();
-
+						
 						// === file menu options
 					} else if (e.stateMask == SWT.CTRL && e.keyCode == 's' && mntmSaveShip.getEnabled()) {
 						mntmSaveShip.notifyListeners(SWT.Selection, null);

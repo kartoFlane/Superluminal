@@ -21,7 +21,7 @@ public class FTLShip implements Serializable {
 	final static public int ANCHOR = 12;
 
 	/** The most recent designation */
-	final public static int VERSION = 14;
+	final public static int VERSION = 15;
 	/** Ship's own designation */
 	public int version = 0;
 
