@@ -135,7 +135,7 @@ public class Main {
 	public static final int MAX_DESCRIPTION_LENGTH = 200;
 
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-08-20";
+	public final static String VERSION = "13-08-21";
 
 	// === Important objects
 	public static Shell shell;
@@ -373,6 +373,8 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
+	 *  - fixed an issue with weapon mounts sometimes having incorrect positions when their assigned weapon was changed.
+	 *  - fixed an oversight in mount properties undo/redo, the other mount's index would not be redone
 	 */
 
 	// =================================================================================================== //
@@ -550,7 +552,7 @@ public class Main {
 		tipsList = new ArrayList<String>();
 		tipsList.add("You can quickly switch between tools using Q, W, E, R, T and G keys.");
 		tipsList.add("Each tool has a tooltip detailing its functions - hover over an icon to show the tooltip.");
-		tipsList.add("Selection Tool (Q) also allows you to modify (rotate, change direction, etc) already placed weapon mounts.");
+		tipsList.add("You can double click on a room, mount or door with the Selection Tool to open its properties.");
 		tipsList.add("You can use arrow keys to nudge any selected object (except for doors).");
 		tipsList.add("You can individually hide various elements of the ship (like hull, shield, rooms) using options in the View menu");
 		tipsList.add("You can pin down objects by pressing ~ (tilde) or Spacebar, preventing them from being accidentally moved.");
@@ -3894,8 +3896,8 @@ public class Main {
 		}
 
 		if (selectedMount != null) {
-			txtX.setText("" + (selectedMount.getBounds().x + selectedMount.getBounds().width / 2));
-			txtY.setText("" + (selectedMount.getBounds().y + selectedMount.getBounds().height / 2));
+			txtX.setText("" + selectedMount.getPosition().x);
+			txtY.setText("" + selectedMount.getPosition().y);
 		} else if (selectedDoor != null) {
 			txtX.setText("" + (selectedDoor.getBounds().x / 35 + 1));
 			txtY.setText("" + (selectedDoor.getBounds().y / 35 + 1));
@@ -3931,10 +3933,6 @@ public class Main {
 					x = GRID_W * 35 - 15;
 				if (y >= GRID_H * 35)
 					y = GRID_H * 35 - 15;
-				if (x <= -selectedMount.getBounds().width)
-					x = 15 - selectedMount.getBounds().width;
-				if (y <= -selectedMount.getBounds().height)
-					y = 15 - selectedMount.getBounds().height;
 
 				selectedMount.setLocation(x, y);
 			} else if (selectedDoor != null && (!selectedDoor.isPinned() || arbitraryPosOverride)) {

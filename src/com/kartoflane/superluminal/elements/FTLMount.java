@@ -185,6 +185,19 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		return redrawBounds;
 	}
 	
+	/**
+	 * Set location of the mount's center relative to the anchor.
+	 */
+	public void setPositionRelative(int x, int y) {
+		x += Main.ship.imageRect.x;
+		y += Main.ship.imageRect.y;
+		setLocation(x, y);
+	}
+	
+	/**
+	 * Set location of the mount (center)
+	 * X, Y - new center of the mount
+	 */
 	public void setLocation(int x, int y) {
 		Point oldLoc = new Point(bounds.x, bounds.y);
 		bounds.x = x - bounds.width/2;
@@ -194,13 +207,18 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 			pos.y = y - Main.ship.imageRect.y;
 		}
 
-		updateRedrawBounds(); 
+		updateRedrawBounds();
 		
 		redrawLoc(oldLoc.x, oldLoc.y);
 		
 		Main.updateSelectedPosText();
 	}
 	
+	/**
+	 * Set location of the mount (top-left corner)
+	 * X, Y - new top-left corner of the mount
+	 * 
+	 */
 	public void setLocationAbsolute(int x, int y) {
 		Point oldLoc = new Point(bounds.x, bounds.y);
 		
@@ -277,6 +295,20 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	
 	public Point getLocationAbsolute() {
 		return new Point(bounds.x, bounds.y);
+	}
+	
+	/**
+	 * @return Location of the center of the mount, relative to the canvas.
+	 */
+	public Point getPosition() {
+		return new Point(pos.x + Main.ship.imageRect.x, pos.y + Main.ship.imageRect.y);
+	}
+	
+	/**
+	 * @return Location of the center of the mount, relative to the anchor.
+	 */
+	public Point getPositionRelative() {
+		return new Point(pos.x, pos.y);
 	}
 	
 	public Rectangle getBounds() {
@@ -468,10 +500,20 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 		Main.layeredPainter.add(this, LayeredPainter.MOUNT);
 	}
 	
+	/**
+	 * Update the pos field to reflect the current location.
+	 */
 	public void updatePos() {
 		Point loc = getLocation();
 		pos.x = loc.x - Main.ship.imageRect.x;
 		pos.y = loc.y - Main.ship.imageRect.y; 
+	}
+	
+	/**
+	 * Update the current location to reflect the pos field.
+	 */
+	public void updatePosition() {
+		setPositionRelative(pos.x, pos.y);
 	}
 	
 	@Override

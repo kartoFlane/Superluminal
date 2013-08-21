@@ -47,7 +47,10 @@ public class UndoableMountPropertiesEdit extends AbstractUndoableEdit {
 	public void undo() throws CannotUndoException {
 		super.undo();
 		
+		FTLMount other = Main.ship.getMountWithIndex(old.index);
+		other.index = mount.index;
 		mount.index = old.index;
+		
 		mount.gib = old.gib;
 		if (mount.rotate != old.rotate)
 			mount.setRotated(old.rotate);
@@ -59,13 +62,17 @@ public class UndoableMountPropertiesEdit extends AbstractUndoableEdit {
 
 		ShipIO.loadWeaponImages(Main.ship);
 		ShipIO.remapMountsToWeapons();
+		mount.updatePosition();
 		mount.redrawLoc(current.slide);
 	}
 
 	public void redo() throws CannotRedoException {
 		super.redo();
-		
+
+		FTLMount other = Main.ship.getMountWithIndex(current.index);
+		other.index = mount.index;
 		mount.index = current.index;
+		
 		mount.gib = current.gib;
 		if (mount.rotate != current.rotate)
 			mount.setRotated(current.rotate);
@@ -77,6 +84,7 @@ public class UndoableMountPropertiesEdit extends AbstractUndoableEdit {
 
 		ShipIO.loadWeaponImages(Main.ship);
 		ShipIO.remapMountsToWeapons();
+		mount.updatePosition();
 		mount.redrawLoc(old.slide);
 	}
 }

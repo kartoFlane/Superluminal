@@ -158,11 +158,12 @@ public class MountPropertiesWindow {
 				
 				int oldIndex = currentMount.index;
 				int newIndex = spNumber.getSelection() - 1;
+				FTLMount otherMount = null;
 				if (oldIndex != newIndex) {
-					FTLMount m = Main.ship.getMountWithIndex(newIndex);
+					otherMount = Main.ship.getMountWithIndex(newIndex);
 					currentMount.index = newIndex;
-					if (m != null)
-						m.index = oldIndex;
+					if (otherMount != null)
+						otherMount.index = oldIndex;
 				}
 				
 				currentMount.gib = spGib.getSelection();
@@ -176,9 +177,14 @@ public class MountPropertiesWindow {
 					currentMount.slide = Slide.values()[index];
 					currentMount.redrawLoc(slideOld);
 				}
+				
 				ShipIO.loadWeaponImages(Main.ship);
 				ShipIO.remapMountsToWeapons();
-				Main.canvasRedraw(currentMount.getBounds(), true);
+				
+				currentMount.setPositionRelative(currentMount.pos.x, currentMount.pos.y);
+				if (otherMount != null)
+					otherMount.setPositionRelative(otherMount.pos.x, otherMount.pos.y);
+				//Main.canvasRedraw(currentMount.getBounds(), true);
 				
 				registerUp(Undoable.MOUNT_PROP);
 

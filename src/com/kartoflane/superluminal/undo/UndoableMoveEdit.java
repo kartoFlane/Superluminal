@@ -53,6 +53,7 @@ public class UndoableMoveEdit extends AbstractUndoableEdit {
 		super.undo();
 		if (box instanceof FTLMount) {
 			((FTLMount) box).setLocationAbsolute(oldPos.x, oldPos.y);
+			((FTLMount) box).updatePosition();
 		} else if (box instanceof FTLDoor) {
 			((FTLDoor) box).setLocationAbsolute(oldPos.x + 15, oldPos.y); // is shifted one grid cell to the left otherwise
 		} else if (box instanceof FTLGib) {
@@ -67,6 +68,7 @@ public class UndoableMoveEdit extends AbstractUndoableEdit {
 		super.redo();
 		if (box instanceof FTLMount) {
 			((FTLMount) box).setLocationAbsolute(currentPos.x, currentPos.y);
+			((FTLMount) box).updatePosition();
 		} else if (box instanceof FTLDoor) {
 			((FTLDoor) box).setLocationAbsolute(currentPos.x + 15, currentPos.y); // is shifted one grid cell to the left otherwise
 		} else if (box instanceof FTLGib) {

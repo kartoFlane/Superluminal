@@ -321,4 +321,9 @@ public class FTLShip implements Serializable {
 
 		return null;
 	}
+	
+	public void refreshMountPositions() {
+		for(FTLMount m : Main.ship.mounts)
+			m.updatePosition();
+	}
 }

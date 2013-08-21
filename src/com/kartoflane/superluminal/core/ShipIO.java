@@ -1684,16 +1684,6 @@ public class ShipIO {
 				if (wpn != null)
 					mountWeaponMap.put(Main.ship.getMountWithIndex(i), wpn);
 			}
-			/*
-			 * for (FTLMount m : Main.ship.mounts) {
-			 * i++;
-			 * if (i < Main.ship.weaponSet.size() && m.index == i) {
-			 * wpn = Main.ship.weaponSet.get(i);
-			 * if (wpn != null)
-			 * mountWeaponMap.put(m, wpn);
-			 * }
-			 * }
-			 */
 		}
 	}
 
@@ -1822,7 +1812,7 @@ public class ShipIO {
 							mt.setImage(path, Main.weaponFrameWidthMap.get(blue));
 						}
 					} else {
-						Main.erDialog.add("Warning: load weapon images - tried to load " + blue + ", but returned no weapon art file name. [weapon's art declaration not found in animations.xml]");
+						Main.erDialog.add("Warning: load weapon images - tried to get mount with index " + index + ", but returned null.");
 					}
 				} else if (wpn != null) {
 					Main.erDialog.add("Warning: load weapon images - tried to load " + blue + " as weapon, has no associated image. [weaponArt property in weapon's declaration points to an image that doesn't exist]");

@@ -1506,6 +1506,7 @@ public class ShipPropertiesWindow extends Dialog {
 
 				ShipIO.loadWeaponImages(Main.ship);
 				ShipIO.remapMountsToWeapons();
+				Main.ship.refreshMountPositions();
 
 				shell.setVisible(false);
 			}
