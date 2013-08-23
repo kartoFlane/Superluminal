@@ -1855,7 +1855,6 @@ public class ShipIO {
 		FileWriter fw = null;
 		File destination = new File(pathDir);
 		File source;
-		// File res = new File(Main.resPath);
 		destination.mkdirs();
 		deleteFolderContents(destination);
 
@@ -2056,6 +2055,8 @@ public class ShipIO {
 		// ====================
 		// === Write layout.txt
 
+		lineDelimiter = "\r\n";
+		
 		try {
 			destination = new File(pathDir + pathDelimiter + "data");
 			destination.mkdirs();
@@ -2134,7 +2135,7 @@ public class ShipIO {
 
 		// ====================
 		// === Write layout.xml
-
+		
 		try {
 			fw = new FileWriter(pathDir + pathDelimiter + "data" + pathDelimiter + fileName + ".xml", false);
 
@@ -2144,8 +2145,8 @@ public class ShipIO {
 			fw.write(lineDelimiter);
 
 			// hull image positioning
-			fw.write("<img x=\"" + (Main.ship.imageRect.x - Main.ship.anchor.x - Main.ship.offset.x * 35)
-					+ "\" y=\"" + (Main.ship.imageRect.y - Main.ship.anchor.y - Main.ship.offset.y * 35)
+			fw.write("<img x=\"" + (Main.hullBox.getLocation().x - Main.ship.anchor.x - Main.ship.offset.x * 35)
+					+ "\" y=\"" + (Main.hullBox.getLocation().y - Main.ship.anchor.y - Main.ship.offset.y * 35)
 					+ "\" w=\"" + Main.ship.imageRect.width
 					+ "\" h=\"" + Main.ship.imageRect.height + "\"/>" + lineDelimiter);
 
@@ -2452,6 +2453,7 @@ public class ShipIO {
 
 		exp.shell.dispose();
 		exp = null;
+		lineDelimiter = "\n";
 
 		if (createFtl) {
 			// apacheZipToFTL(path, Main.ship.shipClass);
