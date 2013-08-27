@@ -3692,9 +3692,13 @@ public class Main {
 
 	public static Rectangle getRectFromStation(FTLRoom r) {
 		r.slot = Main.ship.slotMap.get(r.getSystem());
-		int w = r.getBounds().width / 35;
-		int y = (int) Math.floor(r.slot / w);
-		int x = r.slot - y * w;
+		int x = 0, y = 0;
+		
+		if (r.getBounds().width > 0 && r.getBounds().height > 0) {
+			int w = r.getBounds().width / 35;
+			y = (int) Math.floor(r.slot / w);
+			x = r.slot - y * w;
+		}
 
 		return new Rectangle(r.getBounds().x + x * 35, r.getBounds().y + y * 35, 35, 35);
 	}
