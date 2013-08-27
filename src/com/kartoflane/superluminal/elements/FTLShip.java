@@ -326,4 +326,22 @@ public class FTLShip implements Serializable {
 		for(FTLMount m : Main.ship.mounts)
 			m.updatePosition();
 	}
+	
+	public void refreshRoomIds() {
+		int index = 0;
+		for (FTLRoom r : rooms) {
+			if (r.id != index) {
+				for (FTLDoor d : doors) {
+					if (d.leftId == r.id)
+						d.leftId = index;
+					if (d.rightId == r.id)
+						d.rightId = index;
+				}
+				Main.idList.remove(r.id);
+				Main.idList.add(index);
+				r.id = index;
+			}
+			index++;
+		}
+	}
 }

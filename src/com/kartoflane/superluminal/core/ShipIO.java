@@ -2089,6 +2089,7 @@ public class ShipIO {
 			fw.write(Main.ship.ellipse.x + lineDelimiter);
 			fw.write(Main.ship.ellipse.y + lineDelimiter);
 
+			Main.ship.refreshRoomIds();
 			SortedSet<FTLRoom> set = new TreeSet<FTLRoom>();
 			set.addAll(Main.ship.rooms);
 			for (FTLRoom r : set) {
