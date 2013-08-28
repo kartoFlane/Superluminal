@@ -1366,7 +1366,7 @@ public class ShipIO {
 
 					// horizontal / vertical
 					x = scanner.nextInt();
-					door.horizontal = (x == 0) ? true : false;
+					door.horizontal = x == 0;
 
 					Point p = door.getLocation();
 					if (door.horizontal) {

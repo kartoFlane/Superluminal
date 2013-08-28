@@ -292,7 +292,7 @@ public class FTLShip implements Serializable {
 
 	public int findLeftRoom(FTLDoor d) {
 		for (FTLRoom r : rooms) {
-			if (r.getBounds().intersects(d.getBounds()) && ((d.horizontal && r.getBounds().y < d.getBounds().y) || (!d.horizontal && r.getBounds().x < d.getBounds().x)))
+			if (!r.isZeroRoom() && r.getBounds().intersects(d.getBounds()) && ((d.horizontal && r.getBounds().y < d.getBounds().y) || (!d.horizontal && r.getBounds().x < d.getBounds().x)))
 				return r.id;
 		}
 		return -1;
@@ -300,7 +300,7 @@ public class FTLShip implements Serializable {
 
 	public int findRightRoom(FTLDoor d) {
 		for (FTLRoom r : rooms) {
-			if (r.getBounds().intersects(d.getBounds()) && ((d.horizontal && r.getBounds().y > d.getBounds().y) || (!d.horizontal && r.getBounds().x > d.getBounds().x)))
+			if (!r.isZeroRoom() && r.getBounds().intersects(d.getBounds()) && ((d.horizontal && r.getBounds().y > d.getBounds().y) || (!d.horizontal && r.getBounds().x > d.getBounds().x)))
 				return r.id;
 		}
 		return -1;

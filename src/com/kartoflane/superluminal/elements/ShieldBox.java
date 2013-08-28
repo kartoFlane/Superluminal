@@ -315,7 +315,8 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 		
 		Main.canvasRedraw(bounds, false);
 	}
-	
+
+	@Override
 	public void deselect() {
 		selected = false;
 		move = false;
@@ -343,5 +344,12 @@ public class ShieldBox extends ImageBox implements DraggableBox {
 	@Override
 	public Point getOffset() {
 		return offset;
+	}
+	
+	public void reset() {
+		selected = false;
+		move = false;
+		resize = false;
+		setBorderColor(null);
 	}
 }

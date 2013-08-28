@@ -46,6 +46,7 @@ public class ConfigIO {
 			properties.setProperty("forbidBossLoading", new Boolean(Main.forbidBossLoading).toString());
 			properties.setProperty("shownIncludeWarning", new Boolean(Main.shownIncludeWarning).toString());
 			properties.setProperty("showTips", new Boolean(Main.showTips).toString());
+			properties.setProperty("enableZeroRooms", new Boolean(Main.enableZeroRooms).toString());
 			
 			try {
 				fw = new FileWriter("superluminal.ini");
@@ -76,6 +77,7 @@ public class ConfigIO {
 			// === edit
 				out.write("removeDoor = " + Main.removeDoor + ShipIO.lineDelimiter);
 				out.write("arbitraryPosOverride = " + Main.arbitraryPosOverride + ShipIO.lineDelimiter);
+				out.write("enableZeroRooms = " + Main.enableZeroRooms + ShipIO.lineDelimiter);
 			// === view
 				out.write("forbidBossLoading = " + Main.forbidBossLoading + ShipIO.lineDelimiter);
 				out.write("shownIncludeWarning = " + Main.shownIncludeWarning + ShipIO.lineDelimiter);

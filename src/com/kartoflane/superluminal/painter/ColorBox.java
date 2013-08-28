@@ -42,7 +42,7 @@ public class ColorBox extends PaintBox implements Serializable {
 	public void paintControl(PaintEvent e) {
 		super.paintControl(e);
 		
-		if (color != null) {
+		if (color != null && !color.isDisposed()) {
 			Color prevBgColor = e.gc.getBackground();
 			int prevAlpha = e.gc.getAlpha();
 			
@@ -56,6 +56,10 @@ public class ColorBox extends PaintBox implements Serializable {
 			e.gc.setBackground(prevBgColor);
 			e.gc.setAlpha(prevAlpha);
 		}
+	}
+	
+	@Override
+	public void deselect() {
 	}
 
 	@Override

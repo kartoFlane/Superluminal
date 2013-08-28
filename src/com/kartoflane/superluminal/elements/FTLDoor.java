@@ -254,7 +254,8 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 		select();
 		move = false;
 	}
-	
+
+	@Override
 	public void deselect() {
 		selected = false;
 		move = false;

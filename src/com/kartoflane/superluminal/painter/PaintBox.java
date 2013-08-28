@@ -184,7 +184,7 @@ public class PaintBox implements Serializable {
 	}
 
 	protected void paintBorder(PaintEvent e) {
-		if (borderColor != null) {
+		if (borderColor != null && !borderColor.isDisposed()) {
 			Color prevColor = e.gc.getForeground();
 			int prevLineWidth = e.gc.getLineWidth();
 			int prevAlpha = e.gc.getAlpha();
@@ -254,5 +254,9 @@ public class PaintBox implements Serializable {
 				}
 			}
 		}
+	}
+
+	public void deselect() {
+		Main.debug("That should not get called.");
 	}
 }

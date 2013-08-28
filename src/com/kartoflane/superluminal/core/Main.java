@@ -171,6 +171,7 @@ public class Main {
 	public static boolean snapMounts = true;
 	public static boolean snapMountsToHull = true;
 	public static boolean arbitraryPosOverride = true;
+	public static boolean enableZeroRooms = false;
 	// view menu
 	public static boolean showGrid = true;
 	public static boolean showAnchor = true;
@@ -375,6 +376,10 @@ public class Main {
 	 * CHANGELOG:
 	 *  - fixed an issue with weapon mounts sometimes having incorrect positions when their assigned weapon was changed.
 	 *  - fixed an oversight in mount properties undo/redo, the other mount's index would not be redone
+	 *  - fixed a bug with undo/redo that would cause layout.txt to have holes in its room indexing, causing FTL to crash whenever ship was selected in hangar
+	 *  - fixed a crash when loading/creating a new ship while an object was selected
+	 *  - added rudimentary 0x0 room editing
+	 *  - some minor code tweaks
 	 */
 
 	// =================================================================================================== //
@@ -504,6 +509,7 @@ public class Main {
 			arbitraryPosOverride = Boolean.valueOf(properties.getProperty("arbitraryPosOverride"));
 			forbidBossLoading = Boolean.valueOf(properties.getProperty("forbidBossLoading"));
 			showTips = Boolean.valueOf(properties.getProperty("showTips"));
+			enableZeroRooms = Boolean.valueOf(properties.getProperty("enableZeroRooms"));
 		} else {
 			// create config file if it doesn't exist already
 			if (!ConfigIO.configExists())
@@ -519,6 +525,7 @@ public class Main {
 			// edit
 			removeDoor = ConfigIO.getBoolean("removeDoor");
 			arbitraryPosOverride = ConfigIO.getBoolean("arbitraryPosOverride");
+			enableZeroRooms = ConfigIO.getBoolean("enableZeroRooms");
 			// view
 			forbidBossLoading = ConfigIO.getBoolean("forbidBossLoading");
 			shownIncludeWarning = ConfigIO.getBoolean("shownIncludeWarning");
@@ -861,6 +868,11 @@ public class Main {
 		MenuItem mntmArbitraryPositionOverride = new MenuItem(menu_edit, SWT.CHECK);
 		mntmArbitraryPositionOverride.setText("Arbitrary Position Overrides Pin");
 		mntmArbitraryPositionOverride.setSelection(arbitraryPosOverride);
+
+		// === Edit -> Enable Zero Rooms
+		MenuItem mntmEnableZeroRooms = new MenuItem(menu_edit, SWT.CHECK);
+		mntmEnableZeroRooms.setText("Enable Zero Rooms");
+		mntmEnableZeroRooms.setSelection(enableZeroRooms);
 
 		new MenuItem(menu_edit, SWT.SEPARATOR);
 
@@ -2398,6 +2410,7 @@ public class Main {
 				if (create != 0) {
 					mntmClose.notifyListeners(SWT.Selection, null);
 
+					debug("Creating new ship...");
 					ship = new FTLShip();
 					ship.isPlayer = create == 1;
 					anchor.setLocation(140, 140);
@@ -2408,6 +2421,7 @@ public class Main {
 
 					print("New ship created.");
 
+					debug("Preparing UI...");
 					anchor.setVisible(true);
 
 					tltmPointer.setEnabled(true);
@@ -2427,6 +2441,7 @@ public class Main {
 					btnShipProperties.setEnabled(true);
 					updateButtonImg();
 
+					debug("Placing shield...");
 					if (!ship.isPlayer) {
 						ship.shieldPath = resPath + ShipIO.pathDelimiter + "img" + ShipIO.pathDelimiter + "ship" + ShipIO.pathDelimiter + "enemy_shields.png";
 						// ShipIO.loadImage(ship.shieldPath, "shields");
@@ -2434,6 +2449,7 @@ public class Main {
 						shieldBox.setLocation(anchor.getLocation().x, anchor.getLocation().y);
 					}
 
+					debug("Enabling buttons...");
 					mntmSaveShip.setEnabled(true);
 					mntmSaveShipAs.setEnabled(true);
 					mntmExport.setEnabled(true);
@@ -2958,6 +2974,12 @@ public class Main {
 
 		mntmClose.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
+				PaintBox selectedBox = getSelected();
+				if (selectedBox != null) {
+					debug(selectedBox.getClass().getSimpleName());
+					selectedBox.deselect();
+				}
+				
 				if (!askedChoice) {
 					askSaveChoice();
 					askedChoice = false;
@@ -2974,9 +2996,11 @@ public class Main {
 					}
 				}
 
+				debug("Discarding edits...");
 				undoManager.discardAllEdits();
 
 				if (ship != null) {
+					debug("Disposing gib popup menu items...");
 					for (MenuItem mntm : menuGibItems) {
 						if (!mntm.isDisposed())
 							mntm.dispose();
@@ -2984,29 +3008,35 @@ public class Main {
 					}
 					menuGibItems.clear();
 
+					debug("Clearing systemBox interiors...");
 					for (SystemBox sb : systemsMap.values())
 						sb.clearInterior();
+					debug("Disposing rooms...");
 					for (FTLRoom r : ship.rooms)
 						r.dispose();
+					debug("Disposing doors...");
 					for (FTLDoor d : ship.doors)
 						d.dispose();
+					debug("Disposing mounts...");
 					for (FTLMount m : ship.mounts)
 						m.dispose();
+					debug("Disposing gibs...");
 					for (FTLGib g : ship.gibs)
 						g.dispose();
 
+					debug("Clearing lists...");
 					ship.rooms.clear();
 					ship.doors.clear();
 					ship.mounts.clear();
 					ship.gibs.clear();
+					gibDialog.clearList();
+					gibDialog.letters.clear();
 
+					debug("Setting ship images to null, disposing...");
 					hullBox.setHullImage(null);
 					hullBox.setFloorImage(null);
 					hullBox.setCloakImage(null);
 					shieldBox.setImage(null, true);
-
-					gibDialog.clearList();
-					gibDialog.letters.clear();
 				}
 
 				if (temporaryFiles != null && !temporaryFilesInUse) {
@@ -3019,17 +3049,15 @@ public class Main {
 					temporaryFilesInUse = false;
 				}
 
-				shieldBox.deselect();
-				hullBox.deselect();
+				debug("Resetting hull and shield...");
+				shieldBox.reset();
+				hullBox.reset();
+
+				debug("Nulling variables...");
 				selectedRoom = null;
 				selectedDoor = null;
 				selectedMount = null;
 				selectedGib = null;
-
-				btnCloaked.setEnabled(false);
-				idList.clear();
-				clearButtonImg();
-				currentPath = null;
 
 				shieldEllipse.x = 0;
 				shieldEllipse.y = 0;
@@ -3041,8 +3069,14 @@ public class Main {
 				shieldBox.setLocation(0, 0);
 				shieldBox.setSize(0, 0);
 
+				debug("Resetting UI...");
 				anchor.setVisible(false);
-
+				
+				idList.clear();
+				clearButtonImg();
+				currentPath = null;
+				
+				btnCloaked.setEnabled(false);
 				tltmPointer.setEnabled(false);
 				tltmRoom.setEnabled(false);
 				tltmDoor.setEnabled(false);
@@ -3070,13 +3104,14 @@ public class Main {
 				mntmConToPlayer.setEnabled(false);
 				mntmCalculateOptimalOffset.setEnabled(false);
 
+				debug("Resetting miscellaneous variables...");
 				ship = null;
 				askedChoice = false;
 				askSaveChoice = 0;
 				savedSinceAction = true;
 				shell.setText(APPNAME + " - Ship Editor");
 
-				canvas.redraw();
+				//canvas.redraw();
 			}
 		});
 
@@ -3115,6 +3150,14 @@ public class Main {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				arbitraryPosOverride = ((MenuItem) e.widget).getSelection();
+				ConfigIO.saveConfig();
+			}
+		});
+
+		mntmEnableZeroRooms.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				enableZeroRooms = ((MenuItem) e.widget).getSelection();
 				ConfigIO.saveConfig();
 			}
 		});
@@ -3417,9 +3460,8 @@ public class Main {
 	 */
 	public static boolean doesRectOverlap(Rectangle rect, Rectangle treatAs) {
 		for (FTLRoom r : ship.rooms) {
-			if (rect.intersects(r.getBounds()) && ((treatAs != null && r.getBounds() != treatAs) || (treatAs == null && r.getBounds() != rect))) {
+			if (!r.isZeroRoom() && rect.intersects(r.getBounds()) && ((treatAs != null && r.getBounds() != treatAs) || (treatAs == null && r.getBounds() != rect)))
 				return true;
-			}
 		}
 		return false;
 	}
@@ -3437,9 +3479,8 @@ public class Main {
 			for (int y = 0; y < GRID_H; y++) {
 				tempRect.x = x * 35;
 				tempRect.y = y * 35;
-				if (tempRect.contains(mousePosLastClick)) {
+				if (tempRect.contains(mousePosLastClick))
 					return tempRect;
-				}
 			}
 		}
 		return null;

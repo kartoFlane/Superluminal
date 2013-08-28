@@ -34,10 +34,10 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	public Point[] corners = new Point[4];
 	private Point selectedCorner;
 	private Point offset;
-	private Systems sys;
-	public SystemBox sysBox;
+	private Systems sys = null;
+	public SystemBox sysBox = null;
 	public int slot;
-	public Slide dir;
+	public Slide dir = null;
 
 	/**
 	 * Path to the interior image; kept for compatibility
@@ -45,7 +45,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	public String img;
 	public FTLInterior interiorData = null;
 
-	private Color grid_color;
+	private Color gridColor;
 	private Rectangle origin;
 	private Color slotColor;
 	private RGB slot_rgb;
@@ -54,7 +54,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	private boolean resize = false;
 
 	public void stripUnserializable() {
-		grid_color = null;
+		gridColor = null;
 		Cache.checkInColor(this, slot_rgb);
 		slotColor = null;
 		if (sysBox != null) {
@@ -69,7 +69,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	}
 
 	public void loadUnserializable() {
-		grid_color = Main.grid.getCellAt(1, 1).getGridColor();
+		gridColor = Main.grid.getCellAt(1, 1).getGridColor();
 		slotColor = Cache.checkOutColor(this, slot_rgb);
 		sysBox = Main.systemsMap.get(sys);
 		if (sysBox != null) {
@@ -104,7 +104,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		this.sys = Systems.EMPTY;
 		this.slot = -2;
 		this.dir = Slide.UP;
-		grid_color = Main.grid.getCellAt(1, 1).getGridColor();
+		gridColor = Main.grid.getCellAt(1, 1).getGridColor();
 		slot_rgb = new RGB(128, 0, 128);
 		slotColor = Cache.checkOutColor(this, slot_rgb);
 	}
@@ -219,7 +219,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		if (temp != null) {
 			temp.width = bounds.width;
 			temp.height = bounds.height;
-			if (Main.ship != null && !Main.doesRectOverlap(temp, bounds)) {
+			if (Main.ship != null && (!Main.doesRectOverlap(temp, bounds) || isZeroRoom())) {
 				if (temp.x >= Main.ship.anchor.x && temp.x + temp.width <= Main.GRID_W * 35)
 					bounds.x = temp.x;
 				if (temp.y >= Main.ship.anchor.y && temp.y + temp.height <= Main.GRID_H * 35)
@@ -298,6 +298,13 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			oldLow.y = oldLow.y + (oldHigh.y - oldLow.y) / 2;
 		}
 
+		if (Main.enableZeroRooms) {
+			if (Math.abs(w) - (resize ? 15 : 0) < 35)
+				w = 0;
+			if (Math.abs(h) - (resize ? 15 : 0) < 35)
+				h = 0;
+		}
+
 		w = Main.roundToGrid(w);
 		h = Main.roundToGrid(h);
 
@@ -328,11 +335,11 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 
 			if (temp.x >= Main.ship.anchor.x && temp.x + temp.width < Main.GRID_W * 35 + 35 && !Main.doesRectOverlap(temp, bounds)) {
 				bounds.x = temp.x;
-				bounds.width = (temp.width == 0) ? 35 : temp.width;
+				bounds.width = (temp.width == 0) ? 25 : temp.width;
 			}
 			if (temp.y >= Main.ship.anchor.y && temp.y + temp.height < Main.GRID_H * 35 + 35 && !Main.doesRectOverlap(temp, bounds)) {
 				bounds.y = temp.y;
-				bounds.height = (temp.height == 0) ? 35 : temp.height;
+				bounds.height = (temp.height == 0) ? 25 : temp.height;
 			}
 
 			Main.updateCorners(this);
@@ -361,16 +368,31 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 
 			p = Main.shieldBox.getLocation();
 			Main.shieldBox.setLocation(p.x + pt.x, p.y + pt.y);
-		}
-
-		if (Main.ship != null) {
-			Point p = Main.ship.findLowBounds();
+			
+			p = Main.ship.findLowBounds();
 			Main.ship.offset.x = (p.x - Main.ship.anchor.x + 10) / 35;
 			Main.ship.offset.y = (p.y - Main.ship.anchor.y + 10) / 35;
 		}
 
 		if (sysBox != null)
 			sysBox.updateLocation();
+
+		if (resize) {
+			if (isZeroRoom()) {
+				Main.layeredPainter.removeAll(this);
+				Main.layeredPainter.add(this, LayeredPainter.ZERO_ROOM);
+			} else {
+				Main.layeredPainter.removeAll(this);
+				Main.layeredPainter.add(this, LayeredPainter.ROOM);
+			}
+		}
+
+		if (Main.ship == null && sys != null && isZeroRoom()) {
+			bounds.width = 25;
+			bounds.height = 25;
+			Main.layeredPainter.removeAll(this);
+			Main.layeredPainter.add(this, LayeredPainter.ZERO_ROOM);
+		}
 	}
 
 	public static int getDefaultSlot(Systems sys) {
@@ -460,7 +482,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	@Override
 	public void paintControl(PaintEvent e) {
 		drawBorder = !Main.tltmGib.getSelection();
-		if (!Main.tltmGib.getSelection()) {
+		if (!Main.tltmGib.getSelection() && gridColor != null && !gridColor.isDisposed()) {
 
 			setAlpha(Main.btnCloaked.getSelection() ? 255 / 3 : 255);
 			if (sysBox != null)
@@ -469,18 +491,22 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 			int prevAlpha = e.gc.getAlpha();
 			int prevWidth = e.gc.getLineWidth();
 			Color prevBg = e.gc.getForeground();
+			// draw backdrop
 			super.paintControl(e);
 
 			e.gc.setAlpha(alpha);
 			e.gc.setLineWidth(1);
-			e.gc.setForeground(grid_color);
+			e.gc.setForeground(gridColor);
 
 			// inner grid
-			for (int i = 1; i < bounds.width / 35; i++)
-				e.gc.drawLine(bounds.x + i * 35, bounds.y, bounds.x + i * 35, bounds.y + bounds.height);
-			for (int i = 1; i < bounds.height / 35; i++)
-				e.gc.drawLine(bounds.x, bounds.y + i * 35, bounds.x + bounds.width, bounds.y + i * 35);
+			if (bounds.width / 35 > 0)
+				for (int i = 1; i < bounds.width / 35; i++)
+					e.gc.drawLine(bounds.x + i * 35, bounds.y, bounds.x + i * 35, bounds.y + bounds.height);
+			if (bounds.height / 35 > 0)
+				for (int i = 1; i < bounds.height / 35; i++)
+					e.gc.drawLine(bounds.x, bounds.y + i * 35, bounds.x + bounds.width, bounds.y + i * 35);
 
+			// draw interior image
 			if (sysBox != null && sysBox.interior != null)
 				e.gc.drawImage(sysBox.interior, 0, 0, sysBox.interior.getBounds().width, sysBox.interior.getBounds().height, bounds.x, bounds.y, bounds.width, bounds.height);
 
@@ -507,7 +533,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 				 */
 			}
 			// working stations
-			if (Main.ship != null && Main.ship.slotMap.keySet().contains(sys) && Main.ship.slotMap.get(getSystem()) != -2 && Main.showStations) {
+			if (Main.ship != null && Main.ship.slotMap.keySet().contains(sys) && Main.ship.slotMap.get(getSystem()) != -2 && Main.showStations && !isZeroRoom()) {
 				e.gc.setAlpha(Main.btnCloaked.getSelection() ? 80 : 160);
 				e.gc.setBackground(slotColor);
 
@@ -679,10 +705,11 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		Main.selectedRoom = this;
 		Main.updateCorners(this);
 		Main.canvasRedraw(bounds, false);
-		
+
 		Main.doorProperties.setId(id);
 	}
 
+	@Override
 	public void deselect() {
 		selected = false;
 		move = false;
@@ -819,7 +846,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		Main.canvas.redraw(bounds.x - 2, bounds.y - 2, bounds.width + 4, bounds.height + 4, false);
 
 		super.dispose();
-		grid_color = null;
+		gridColor = null;
 		img = null;
 	}
 
@@ -834,5 +861,9 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	@Override
 	public Point getOffset() {
 		return offset;
+	}
+
+	public boolean isZeroRoom() {
+		return bounds.width / 35 == 0 || bounds.height / 35 == 0;
 	}
 }
