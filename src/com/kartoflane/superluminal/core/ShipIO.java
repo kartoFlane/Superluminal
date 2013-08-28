@@ -2313,14 +2313,6 @@ public class ShipIO {
 					fw.write("\t" + "<aug name=\"" + aug + "\"/>" + lineDelimiter);
 				}
 
-				// overrides
-				/*
-				 * if (!isNull(Main.ship.shieldOverride))
-				 * fw.write("\t"+"<shieldImage>"+Main.ship.shieldOverride+"</shieldImage>" + lineDelimiter);
-				 * if (!isNull(Main.ship.cloakOverride))
-				 * fw.write("\t"+"<cloakImage>"+Main.ship.cloakOverride+"</cloakImage>" + lineDelimiter);
-				 */
-
 				fw.write("</shipBlueprint>");
 
 				// === Enemy Ship
@@ -2365,6 +2357,9 @@ public class ShipIO {
 					}
 				}
 				fw.write("\t" + "</systemList>" + lineDelimiter);
+
+				fw.write("\t" + "<weaponSlots>" + Main.ship.weaponSlots + "</weaponSlots>" + lineDelimiter);
+				fw.write("\t" + "<droneSlots>" + Main.ship.droneSlots + "</droneSlots>" + lineDelimiter);
 
 				// weapons
 				if (Main.ship.weaponSet.size() > 0) {
@@ -2420,16 +2415,6 @@ public class ShipIO {
 				for (String aug : Main.ship.augmentSet) {
 					fw.write("\t" + "<aug name=\"" + aug + "\"/>" + lineDelimiter);
 				}
-
-				// overrides
-				/*
-				 * if (!isNull(Main.ship.shieldOverride))
-				 * fw.write("\t"+"<shieldImage>"+Main.ship.shieldOverride.substring(Main.ship.shieldOverride.lastIndexOf(ShipIO.pathDelimiter)+1,
-				 * Main.ship.shieldOverride.lastIndexOf("_"))+"</shieldImage>" + lineDelimiter);
-				 * if (!isNull(Main.ship.cloakOverride))
-				 * fw.write("\t"+"<cloakImage>"+Main.ship.cloakOverride.substring(Main.ship.cloakOverride.lastIndexOf(ShipIO.pathDelimiter)+1, Main.ship.cloakOverride.lastIndexOf("_"))+"</cloakImage>"
-				 * + lineDelimiter);
-				 */
 
 				fw.write("</shipBlueprint>");
 			}
