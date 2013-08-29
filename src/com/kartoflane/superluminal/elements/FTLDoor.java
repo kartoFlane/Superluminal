@@ -29,6 +29,9 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 	private RGB door_rgb = null;
 	private boolean move = false;
 	
+	public FTLRoom leftRoom = null;
+	public FTLRoom rightRoom = null;
+	
 	public int leftId = -2;
 	public int rightId = -2;
 	
@@ -158,40 +161,30 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 				RGB tempRGB = null;
 				FTLRoom r = null;
 				
-				if (leftId != -2) {
+				if (leftRoom != null && leftRoom != Main.spaceRoom) {
 					tempRGB = new RGB(128, 0, 128); // magenta
 					tempColor = Cache.checkOutColor(this, tempRGB);
-					r = Main.ship.getRoomWithId(leftId);
+					r = leftRoom;
 					
-					if (r != null) {
-						e.gc.setForeground(tempColor);
-						e.gc.drawLine(bounds.x + bounds.width/2, bounds.y + bounds.height/2,
-								r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+					e.gc.setForeground(tempColor);
+					e.gc.drawLine(bounds.x + bounds.width/2, bounds.y + bounds.height/2,
+							r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
 						
-						Cache.checkInColor(this, tempRGB);
-						tempColor = null;
-					} else {
-						//Main.erDialog.add("Error - draw door: selected door is linked to a non-existing room.");
-						leftId = -2;
-					}
+					Cache.checkInColor(this, tempRGB);
+					tempColor = null;
 				}
 				
-				if (rightId != -2) {
+				if (rightRoom != null && rightRoom != Main.spaceRoom) {
 					tempRGB = new RGB(0, 128, 128); // teal
 					tempColor = Cache.checkOutColor(this, tempRGB);
-					r = Main.ship.getRoomWithId(rightId);
+					r = rightRoom;
 					
-					if (r != null) {
 						e.gc.setForeground(tempColor);
 						e.gc.drawLine(bounds.x + bounds.width/2, bounds.y + bounds.height/2,
 								r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
 						
 						Cache.checkInColor(this, tempRGB);
 						tempColor = null;
-					} else {
-						//Main.erDialog.add("Error - draw door: selected door is linked to a non-existing room.");
-						rightId = -2;
-					}
 				}
 			}
 			
@@ -277,35 +270,25 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 	private void redrawIdLines() {
 		FTLRoom r;
 		Point temp;
-		if (leftId != -2) {
-			r = Main.ship.getRoomWithId(leftId);
-			if (r != null) {
-				temp = new Point(r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
-				
-				Main.canvas.redraw(Math.min(temp.x, bounds.x + bounds.width/2) -5,
-						Math.min(temp.y, bounds.y + bounds.height/2) -5,
-						Math.max(temp.x, bounds.x + bounds.width/2) + 10,
-						Math.max(temp.y, bounds.y + bounds.height/2) + 10,
-						false);
-			} else {
-				//Main.erDialog.add("Error - redraw door ID links: selected door is linked to a non-existing room.");
-				leftId = -2;
-			}
+		if (leftRoom != null) {
+			r = leftRoom;
+			temp = new Point(r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+			
+			Main.canvas.redraw(Math.min(temp.x, bounds.x + bounds.width/2) -5,
+					Math.min(temp.y, bounds.y + bounds.height/2) -5,
+					Math.max(temp.x, bounds.x + bounds.width/2) + 10,
+					Math.max(temp.y, bounds.y + bounds.height/2) + 10,
+					false);
 		}
-		if (rightId != -2) {
-			r = Main.ship.getRoomWithId(rightId);
-			if (r != null) {
-				temp = new Point(r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
-				
-				Main.canvas.redraw(Math.min(temp.x, bounds.x + bounds.width/2) -5,
-						Math.min(temp.y, bounds.y + bounds.height/2) -5,
-						Math.max(temp.x, bounds.x + bounds.width/2) + 10,
-						Math.max(temp.y, bounds.y + bounds.height/2) + 10,
-						false);
-			} else {
-				//Main.erDialog.add("Error - redraw door ID links: selected door is linked to a non-existing room.");
-				rightId = -2;
-			}
+		if (rightRoom != null) {
+			r = rightRoom;
+			temp = new Point(r.getBounds().x + r.getBounds().width/2, r.getBounds().y + r.getBounds().height/2);
+			
+			Main.canvas.redraw(Math.min(temp.x, bounds.x + bounds.width/2) -5,
+					Math.min(temp.y, bounds.y + bounds.height/2) -5,
+					Math.max(temp.x, bounds.x + bounds.width/2) + 10,
+					Math.max(temp.y, bounds.y + bounds.height/2) + 10,
+					false);
 		}
 	}
 

@@ -213,15 +213,15 @@ public class CursorBox extends PaintBox implements DraggableBox {
 					Main.addEdit(ume);
 				}
 			} else if (undoable == Undoable.LINK_LEFT && editBox != null) {
-				int temp = ((UndoableLinkEdit) ume).getOldValue();
-				if (temp != ((FTLDoor) editBox).leftId) {
-					((UndoableLinkEdit) ume).setCurrentValue(((FTLDoor) editBox).leftId);
+				FTLRoom temp = ((UndoableLinkEdit) ume).getOldValue();
+				if (temp != ((FTLDoor) editBox).leftRoom) {
+					((UndoableLinkEdit) ume).setCurrentValue(((FTLDoor) editBox).leftRoom);
 					Main.addEdit(ume);
 				}
 			} else if (undoable == Undoable.LINK_RIGHT && editBox != null) {
-				int temp = ((UndoableLinkEdit) ume).getOldValue();
-				if (temp != ((FTLDoor) editBox).rightId) {
-					((UndoableLinkEdit) ume).setCurrentValue(((FTLDoor) editBox).rightId);
+				FTLRoom temp = ((UndoableLinkEdit) ume).getOldValue();
+				if (temp != ((FTLDoor) editBox).rightRoom) {
+					((UndoableLinkEdit) ume).setCurrentValue(((FTLDoor) editBox).rightRoom);
 					Main.addEdit(ume);
 				}
 			}
@@ -395,12 +395,12 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			if (e.button == 1) {
 				editBox = Main.selectedDoor;
 				registerDown(Undoable.LINK_LEFT);
-				Main.selectedDoor.leftId = (r == null ? -2 : r.id);
+				Main.selectedDoor.leftRoom = r;
 				registerUp(Undoable.LINK_LEFT);
 			} else if (e.button == 3) {
 				editBox = Main.selectedDoor;
 				registerDown(Undoable.LINK_RIGHT);
-				Main.selectedDoor.rightId = (r == null ? -2 : r.id);
+				Main.selectedDoor.rightRoom = r;
 				registerUp(Undoable.LINK_RIGHT);
 			}
 
@@ -416,7 +416,7 @@ public class CursorBox extends PaintBox implements DraggableBox {
 		}
 		
 		if (Main.tltmPointer.getSelection() && Main.doorProperties.isVisible() && Main.selectedRoom == null) {
-			Main.doorProperties.setId(-1);
+			Main.doorProperties.setId(Main.spaceRoom);
 		}
 	}
 

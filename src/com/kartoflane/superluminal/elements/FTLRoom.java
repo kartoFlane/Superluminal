@@ -113,6 +113,11 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		this(rect.x, rect.y, rect.width, rect.height);
 	}
 
+	public FTLRoom() {
+		super(new RGB(230, 225, 220));
+		setVisible(false);
+	}
+
 	public void updateCorners() {
 		this.corners[0] = new Point(this.getBounds().x, this.getBounds().y);
 		this.corners[1] = new Point(this.getBounds().x + this.getBounds().width, this.getBounds().y);
@@ -706,7 +711,7 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 		Main.updateCorners(this);
 		Main.canvasRedraw(bounds, false);
 
-		Main.doorProperties.setId(id);
+		Main.doorProperties.setId(this);
 	}
 
 	@Override

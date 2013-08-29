@@ -109,9 +109,8 @@ public class ShipIO {
 	}
 
 	public static void debug(String msg) {
-		if (IOdebug) {
+		if (IOdebug)
 			System.out.println(msg);
-		}
 	}
 
 	// =======================
@@ -1383,6 +1382,7 @@ public class ShipIO {
 				}
 			}
 
+			ship.applyLinksFromIDs();
 			resetUnnecessaryLinkIds();
 
 			ship.offset.x = Math.max(ship.offset.x, 0);
@@ -2110,8 +2110,8 @@ public class ShipIO {
 
 				fw.write(x + lineDelimiter);
 				fw.write(y + lineDelimiter);
-				x = (d.leftId == -2) ? Main.ship.findLeftRoom(d) : d.leftId;
-				y = (d.rightId == -2) ? Main.ship.findRightRoom(d) : d.rightId;
+				x = (d.leftRoom == null) ? Main.ship.findLeftRoom(d).id : d.leftRoom.id;
+				y = (d.rightRoom == null) ? Main.ship.findRightRoom(d).id : d.rightRoom.id;
 				fw.write(((x == -1) ? y : x) + lineDelimiter);
 				fw.write(((x != -1) ? y : x) + lineDelimiter);
 				fw.write((d.horizontal ? 0 : 1) + lineDelimiter);
@@ -3453,7 +3453,7 @@ public class ShipIO {
 	private static void resetUnnecessaryLinkIds() {
 		if (shipBeingLoaded == null)
 			return;
-		int l, r;
+		FTLRoom l, r;
 		for (FTLDoor d : shipBeingLoaded.doors) {
 			l = shipBeingLoaded.findLeftRoom(d);
 			r = shipBeingLoaded.findRightRoom(d);
@@ -3461,10 +3461,10 @@ public class ShipIO {
 			// normally we'd reset leftId only if it was equal to l,
 			// but FTL itself is very inconsistent in this regard
 			// (rightId links to left room, leftId links to right room...)
-			if (d.leftId == l || d.leftId == r || d.leftId == -1)
-				d.leftId = -2;
-			if (d.rightId == l || d.rightId == r || d.rightId == -1)
-				d.rightId = -2;
+			if (d.leftRoom == l || d.leftRoom == r || d.leftRoom == Main.spaceRoom)
+				d.leftRoom = null;
+			if (d.rightRoom == l || d.rightRoom == r || d.rightRoom == Main.spaceRoom)
+				d.rightRoom = null;
 		}
 	}
 	

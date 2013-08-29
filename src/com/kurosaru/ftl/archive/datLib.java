@@ -15,7 +15,6 @@ import java.util.Formatter;
 import java.util.Hashtable;
 
 import com.kartoflane.superluminal.core.Main;
-import com.kartoflane.superluminal.core.ShipIO;
 
 /**
  * datLib : FTL .dat lib
@@ -161,9 +160,9 @@ public class datLib {
 			datItem II = this.ItemIndex.get(key);
 
 			if (II.Filename.contains(Path)) {
-				this.mkdir(new File(ExtractPath + ShipIO.pathDelimiter + II.Filename).getParent());
+				this.mkdir(new File(ExtractPath + "/" + II.Filename).getParent());
 				try {
-					FileOutputStream out = new FileOutputStream(ExtractPath + ShipIO.pathDelimiter + II.Filename, true);
+					FileOutputStream out = new FileOutputStream(ExtractPath + "/" + II.Filename, true);
 					try {
 						FileChannel ch = out.getChannel();
 						ch.write(this.Read(II.DataOffset, II.DataSize));
