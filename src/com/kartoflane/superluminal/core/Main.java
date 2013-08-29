@@ -135,7 +135,7 @@ public class Main {
 	public static final int MAX_DESCRIPTION_LENGTH = 200;
 
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-08-21";
+	public final static String VERSION = "13-08-29";
 
 	// === Important objects
 	public static Shell shell;
@@ -357,6 +357,11 @@ public class Main {
 	public static boolean askedChoice = false;
 
 	public static UndoManager undoManager = new UndoManager();
+	
+	/**
+	 * Dummy room serving to mark that a door is linked to empty space, and serves as an airlock.
+	 */
+	public static FTLRoom spaceRoom = null;
 
 	// =================================================================================================== //
 
@@ -364,7 +369,6 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
-	 * - check if there are any discrepancies between weapon mount coordinates exported from editor, and the coordinates in photoshop
 	 * 
 	 * == MEDIUM PRIO: (new features)
 	 * - multiple systems for the same room for enemy ships
@@ -380,6 +384,7 @@ public class Main {
 	 *  - fixed a crash when loading/creating a new ship while an object was selected
 	 *  - added rudimentary 0x0 room editing
 	 *  - some minor code tweaks
+	 *  - fixed weapon and drone slots not being exported for enemy ships
 	 */
 
 	// =================================================================================================== //
@@ -555,6 +560,9 @@ public class Main {
 		mountProperties = new MountPropertiesWindow(shell);
 		doorProperties = new DoorPropertiesWindow(shell);
 		toolSettings = new ToolSettingsWindow(shell);
+		
+		spaceRoom = new FTLRoom();
+		spaceRoom.id = -1;
 
 		tipsList = new ArrayList<String>();
 		tipsList.add("You can quickly switch between tools using Q, W, E, R, T and G keys.");
@@ -1929,7 +1937,8 @@ public class Main {
 						&& e.stateMask != SWT.CTRL && e.stateMask != SWT.ALT) {
 					arrowDown = false;
 					PaintBox box = getSelected();
-					box.registerUp(Undoable.MOVE);
+					if (box != null)
+						box.registerUp(Undoable.MOVE);
 				}
 			}
 		});
@@ -2093,7 +2102,8 @@ public class Main {
 						if (!arrowDown) {
 							arrowDown = true;
 							PaintBox box = getSelected();
-							box.registerDown(Undoable.MOVE);
+							if (box != null)
+								box.registerDown(Undoable.MOVE);
 						}
 						nudgeSelected(e.keyCode);
 					} else if (tltmGib.getSelection() && e.keyCode == 'h') {
@@ -4554,9 +4564,13 @@ public class Main {
 		String arch = System.getenv("PROCESSOR_ARCHITECTURE");
 		String wow64Arch = System.getenv("PROCESSOR_ARCHITEW6432");
 
-		String realArch = arch.endsWith("64")
-				|| wow64Arch != null && wow64Arch.endsWith("64")
-				? "64" : "32";
+		String realArch = null;
+		
+		realArch = arch == null
+				? System.getProperty("os.arch") 
+				: (arch.endsWith("64") || wow64Arch != null && wow64Arch.endsWith("64")
+						? "64"
+						: "32");
 
 		return realArch;
 	}
