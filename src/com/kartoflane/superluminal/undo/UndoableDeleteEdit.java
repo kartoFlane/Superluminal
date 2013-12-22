@@ -40,6 +40,7 @@ public class UndoableDeleteEdit extends AbstractUndoableEdit {
 		deleteOnDie = true;
 	}
 	
+	@Override
 	public void die() {
 		super.die();
 		if (deleteOnDie)

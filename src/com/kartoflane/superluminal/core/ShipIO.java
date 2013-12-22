@@ -1,6 +1,5 @@
 package com.kartoflane.superluminal.core;
 
-import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,7 +9,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
@@ -31,7 +29,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,6 +42,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.TreeItem;
+
 import com.kartoflane.superluminal.elements.ExportProgress;
 import com.kartoflane.superluminal.elements.FTLDoor;
 import com.kartoflane.superluminal.elements.FTLGib;
@@ -81,8 +79,6 @@ public class ShipIO {
 	public static Map<String, FTLItem> oldAugMap = new HashMap<String, FTLItem>();
 	public static Map<String, HashSet<String>> oldWeaponSetMap = new HashMap<String, HashSet<String>>();
 	public static Map<String, HashSet<String>> oldDroneSetMap = new HashMap<String, HashSet<String>>();
-
-	public static Map<FTLMount, String> mountWeaponMap = new HashMap<FTLMount, String>();
 
 	public static FTLShip shipBeingLoaded;
 	public static String pathDelimiter = System.getProperty("file.separator");
@@ -336,7 +332,8 @@ public class ShipIO {
 
 				Main.debug("Load ship - scanning " + fileToScan.getName() + " for " + blueprintName + "...", IOdebug);
 
-				ship: while (sc.hasNext()) {
+				ship:
+				while (sc.hasNext()) {
 					s = sc.next();
 
 					ignoreNextTag = isCommentedOut(s);
@@ -707,7 +704,8 @@ public class ShipIO {
 
 				pattern = Pattern.compile("(.*?)(<shipBlueprint name\\s*?=\\s*?\")(" + blueprintName + ")(\".*)"); // (\\s*?layout\\s*?=\\s*?\")(.*?)(\"\\s*?img\\s*?=\\s*?\")(.*?)(\">)
 				// ("(<shipBlueprint name\\s*?=\\s*?\")(.*?)(\"\\s*?layout\\s*?=\\s*?\")(.*?)(\"\\s*?img\\s*?=\\s*?\")(.*?)(\">)");
-				scan: while (sc.hasNext()) {
+				scan:
+				while (sc.hasNext()) {
 					s = sc.next();
 					ignoreNextTag = isCommentedOut(s);
 
@@ -1117,8 +1115,12 @@ public class ShipIO {
 			for (FTLMount m : Main.ship.mounts)
 				m.setLocation(Main.ship.imageRect.x + m.pos.x, Main.ship.imageRect.y + m.pos.y);
 
+			if (Main.isSystemAssigned(Systems.ARTILLERY) && Main.ship.mounts.size() > Main.ship.weaponSlots) {
+				Main.ship.artilleryMount = Main.ship.mounts.get(Main.ship.weaponSlots);
+				Main.ship.artilleryMount.isArtillery = true;
+			}
+
 			if (!Main.ship.weaponsBySet) {
-				remapMountsToWeapons();
 				loadWeaponImages(Main.ship);
 			}
 
@@ -1383,6 +1385,7 @@ public class ShipIO {
 			}
 
 			ship.applyLinksFromIDs();
+
 			resetUnnecessaryLinkIds();
 
 			ship.offset.x = Math.max(ship.offset.x, 0);
@@ -1674,23 +1677,9 @@ public class ShipIO {
 		Main.updatePainter();
 	}
 
-	public static void remapMountsToWeapons() {
-		String wpn = null;
-		if (!Main.ship.weaponsBySet) {
-			mountWeaponMap.clear();
-
-			for (int i = 0; i < Main.ship.weaponSet.size(); i++) {
-				wpn = Main.ship.weaponSet.get(i);
-				if (wpn != null)
-					mountWeaponMap.put(Main.ship.getMountWithIndex(i), wpn);
-			}
-		}
-	}
-
 	/**
 	 * Returns name of the image the weapon uses ingame.
 	 * 
-	 * @param weaponName
 	 * @return
 	 */
 	private static String getWeaponArtFileName(FTLMount m, FTLItem weapon) {
@@ -1803,13 +1792,13 @@ public class ShipIO {
 						if (path != null) {
 							String temppath = "sprlmnl_tmp" + pathDelimiter + "img" + pathDelimiter + path;
 							if (new File(temppath).exists()) {
+								// if file exists in mod files...
 								mt.setImage(temppath, Main.weaponFrameWidthMap.get(blue));
-								continue;
+							} else {
+								// if not, use default unpacked archives...
+								path = Main.resPath + pathDelimiter + "img" + pathDelimiter + path;
+								mt.setImage(path, Main.weaponFrameWidthMap.get(blue));
 							}
-
-							path = Main.resPath + pathDelimiter + "img" + pathDelimiter + path;
-
-							mt.setImage(path, Main.weaponFrameWidthMap.get(blue));
 						}
 					} else {
 						Main.erDialog.add("Warning: load weapon images - tried to get mount with index " + index + ", but returned null.");
@@ -1818,6 +1807,27 @@ public class ShipIO {
 					Main.erDialog.add("Warning: load weapon images - tried to load " + blue + " as weapon, has no associated image. [weaponArt property in weapon's declaration points to an image that doesn't exist]");
 				} else {
 					Main.erDialog.add("Warning: load weapon images - tried to get item from blueprint " + blue + ", returned null. [item declaration was not loaded from the blueprints.xml]");
+				}
+			}
+			if (Main.isSystemAssigned(Systems.ARTILLERY)) {
+				if (Main.ship.artilleryMount == null)
+					Main.ship.artilleryMount = Main.ship.mounts.get(Main.ship.weaponSlots);
+
+				wpn = getItem("ARTILLERY_FED");
+				path = getWeaponArtFileName(Main.ship.artilleryMount, wpn);
+
+				if (path.equals("weapons/blank.png")) {
+					Main.ship.artilleryMount.setImage(null);
+				} else {
+					String temppath = "sprlmnl_tmp" + pathDelimiter + "img" + pathDelimiter + path;
+					if (new File(temppath).exists()) {
+						// if file exists in mod files...
+						Main.ship.artilleryMount.setImage(temppath, Main.weaponFrameWidthMap.get(wpn.blueprint));
+					} else {
+						// if not, use default unpacked archives...
+						path = Main.resPath + pathDelimiter + "img" + pathDelimiter + path;
+						Main.ship.artilleryMount.setImage(path, Main.weaponFrameWidthMap.get(wpn.blueprint));
+					}
 				}
 			}
 		}
@@ -1855,7 +1865,7 @@ public class ShipIO {
 		FileWriter fw = null;
 		File destination = new File(pathDir);
 		File source;
-		destination.mkdirs();
+		destination.getParentFile().mkdirs();
 		deleteFolderContents(destination);
 
 		// ===============
@@ -1866,7 +1876,7 @@ public class ShipIO {
 			source = new File(Main.ship.imagePath);
 			destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_base.png");
 			if (source.exists()) {
-				destination.mkdirs();
+				destination.getParentFile().mkdirs();
 				java.nio.file.Files.copy(Paths.get(Main.ship.imagePath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			} else if (!source.exists()) {
 				Main.erDialog.add("Error: export - hull image not found.");
@@ -1888,7 +1898,7 @@ public class ShipIO {
 				source = new File(Main.ship.shieldPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_shields1.png");
 				if (source.exists()) {
-					destination.mkdirs();
+					destination.getParentFile().mkdirs();
 					if (!isNull(Main.ship.shieldPath)) {
 						java.nio.file.Files.copy(Paths.get(Main.ship.shieldPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 					}
@@ -1913,7 +1923,7 @@ public class ShipIO {
 				source = new File(Main.ship.floorPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_floor.png");
 				if (source.exists()) {
-					destination.mkdirs();
+					destination.getParentFile().mkdirs();
 					java.nio.file.Files.copy(Paths.get(Main.ship.floorPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				} else if (!source.exists()) {
 					Main.erDialog.add("Error: export - floor image not found.");
@@ -1936,7 +1946,7 @@ public class ShipIO {
 				source = new File(Main.ship.cloakPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_cloak.png");
 				if (source.exists()) {
-					destination.mkdirs();
+					destination.getParentFile().mkdirs();
 					if (!isNull(Main.ship.cloakPath)) {
 						java.nio.file.Files.copy(Paths.get(Main.ship.cloakPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 					}
@@ -1961,7 +1971,7 @@ public class ShipIO {
 				source = new File(Main.ship.miniPath);
 				destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "customizeUI" + pathDelimiter + "miniship_" + Main.ship.imageName + ".png");
 				if (source.exists()) {
-					destination.mkdirs();
+					destination.getParentFile().mkdirs();
 					java.nio.file.Files.copy(Paths.get(Main.ship.miniPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				} else if (!source.exists()) {
 					Main.erDialog.add("Error: export - miniship image not found.");
@@ -1980,33 +1990,32 @@ public class ShipIO {
 
 		// interior images
 		if (Main.ship.rooms.size() > 0) {
-			try {
-				double d = 10 / Main.ship.rooms.size();
-				double progress = 0;
-				String img;
-				for (FTLRoom r : Main.ship.rooms) {
+			double d = 10 / Main.ship.rooms.size();
+			double progress = 0;
+			String img;
+			for (FTLRoom r : Main.ship.rooms) {
+				try {
 					if (!r.getSystem().equals(Systems.EMPTY) && !r.getSystem().equals(Systems.TELEPORTER) && r.sysBox != null && !isNull(r.interiorData.interiorPath)) {
 						img = r.interiorData.interiorPath.substring(r.interiorData.interiorPath.lastIndexOf(pathDelimiter));
 						source = new File(r.interiorData.interiorPath);
 						destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + img);
-						// destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + "interior" + pathDelimiter + Main.ship.imageName + "_room_" +
-						// r.getSystem().toString().toLowerCase() + ".png");
 
-						destination.mkdirs();
+						destination.getParentFile().mkdirs();
 						java.nio.file.Files.copy(Paths.get(r.interiorData.interiorPath), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-						String tempDest = destination.getAbsolutePath().replace(".png", "");
 
+						// glow images
+						String glowDest = destination.getAbsolutePath().replace(".png", "");
 						try {
 							if (r.sysBox.getSystemName().equals(Systems.CLOAKING)) {
 								if (!isNull(r.interiorData.glowPath1))
-									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath1), Paths.get(tempDest + "_glow.png"), StandardCopyOption.REPLACE_EXISTING);
+									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath1), Paths.get(glowDest + "_glow.png"), StandardCopyOption.REPLACE_EXISTING);
 							} else {
 								if (!isNull(r.interiorData.glowPath1))
-									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath1), Paths.get(tempDest + "_glow1.png"), StandardCopyOption.REPLACE_EXISTING);
+									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath1), Paths.get(glowDest + "_glow1.png"), StandardCopyOption.REPLACE_EXISTING);
 								if (!isNull(r.interiorData.glowPath2))
-									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath2), Paths.get(tempDest + "_glow2.png"), StandardCopyOption.REPLACE_EXISTING);
+									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath2), Paths.get(glowDest + "_glow2.png"), StandardCopyOption.REPLACE_EXISTING);
 								if (!isNull(r.interiorData.glowPath3))
-									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath3), Paths.get(tempDest + "_glow3.png"), StandardCopyOption.REPLACE_EXISTING);
+									java.nio.file.Files.copy(Paths.get(r.interiorData.glowPath3), Paths.get(glowDest + "_glow3.png"), StandardCopyOption.REPLACE_EXISTING);
 							}
 						} catch (FileNotFoundException e) {
 							Main.erDialog.add("Warning: export - one of the glow images for " + source.getName() + " was not found.");
@@ -2014,40 +2023,41 @@ public class ShipIO {
 							Main.erDialog.add("Warning: export - one of the glow images for " + source.getName() + " was not found.");
 						}
 					}
-					progress += d;
-					exp.progressBar.setSelection(50 + (int) progress);
+				} catch (FileNotFoundException e) {
+					Main.erDialog.add("Error: export - one of room interior images was not found.");
+				} catch (IOException e) {
+					Main.erDialog.add("Error: export - interior images - general IO error - details logged in debug.log");
+					e.printStackTrace();
+					System.out.println("");
+				} catch (NullPointerException e) {
+					Main.erDialog.add("Error: export - " + r.getSystem() + " interior image has not been set up.");
+					e.printStackTrace();
 				}
-			} catch (FileNotFoundException e) {
-				Main.erDialog.add("Error: export - one of room interior images was not found.");
-			} catch (IOException e) {
-				Main.erDialog.add("Error: export - interior images - general IO error - details logged in debug.log");
-				e.printStackTrace();
-				System.out.println("");
-			} catch (NullPointerException e) {
-				Main.erDialog.add("Error: export - one of system interior images has not been set up.");
+				progress += d;
+				exp.progressBar.setSelection(50 + (int) progress);
 			}
 		}
 		exp.progressBar.setSelection(60);
 
 		// gibs
 		if (Main.ship.gibs.size() > 0) {
-			try {
-				double d = 10 / Main.ship.gibs.size();
-				double progress = 0;
-				for (FTLGib g : Main.ship.gibs) {
+			double d = 10 / Main.ship.gibs.size();
+			double progress = 0;
+			for (FTLGib g : Main.ship.gibs) {
+				try {
 					source = new File(g.getPath());
 					destination = new File(pathDir + pathDelimiter + "img" + pathDelimiter + "ship" + pathDelimiter + Main.ship.imageName + "_gib" + g.number + ".png");
-					if (source.exists()/* && (dontCheck || !isDefaultResource(source)) */) {
-						destination.mkdirs();
+					if (source.exists()) {
+						destination.getParentFile().mkdirs();
 						java.nio.file.Files.copy(Paths.get(g.getPath()), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
 					}
-					progress += d;
-					exp.progressBar.setSelection(60 + (int) progress);
+				} catch (IOException e) {
+					Main.erDialog.add("Error: export - gibs images - general IO error - details logged in debug.log");
+					e.printStackTrace();
+					System.out.println("");
 				}
-			} catch (IOException e) {
-				Main.erDialog.add("Error: export - gibs images - general IO error - details logged in debug.log");
-				e.printStackTrace();
-				System.out.println("");
+				progress += d;
+				exp.progressBar.setSelection(60 + (int) progress);
 			}
 		}
 		exp.progressBar.setSelection(70);
@@ -2056,7 +2066,7 @@ public class ShipIO {
 		// === Write layout.txt
 
 		lineDelimiter = "\r\n";
-		
+
 		try {
 			destination = new File(pathDir + pathDelimiter + "data");
 			destination.mkdirs();
@@ -2090,9 +2100,7 @@ public class ShipIO {
 			fw.write(Main.ship.ellipse.y + lineDelimiter);
 
 			Main.ship.refreshRoomIds();
-			SortedSet<FTLRoom> set = new TreeSet<FTLRoom>();
-			set.addAll(Main.ship.rooms);
-			for (FTLRoom r : set) {
+			for (FTLRoom r : Main.ship.rooms) {
 				fw.write("ROOM" + lineDelimiter);
 				fw.write(r.id + lineDelimiter);
 
@@ -2105,15 +2113,21 @@ public class ShipIO {
 			int x, y;
 			for (FTLDoor d : Main.ship.doors) {
 				fw.write("DOOR" + lineDelimiter);
+
+				// position
 				x = (d.getBounds().x - Main.ship.anchor.x - Main.ship.offset.x * 35 + (d.horizontal ? -2 : 3)) / 35;
 				y = (d.getBounds().y - Main.ship.anchor.y - Main.ship.offset.y * 35 + (d.horizontal ? 3 : -2)) / 35;
-
 				fw.write(x + lineDelimiter);
 				fw.write(y + lineDelimiter);
+
+				// linked rooms
 				x = (d.leftRoom == null) ? Main.ship.findLeftRoom(d).id : d.leftRoom.id;
 				y = (d.rightRoom == null) ? Main.ship.findRightRoom(d).id : d.rightRoom.id;
+				// airlock has to be the second ID for it to work properly, IIRC...
 				fw.write(((x == -1) ? y : x) + lineDelimiter);
-				fw.write(((x != -1) ? y : x) + lineDelimiter);
+				fw.write(((x == -1) ? x : y) + lineDelimiter);
+
+				// horizontal/vertical
 				fw.write((d.horizontal ? 0 : 1) + lineDelimiter);
 			}
 
@@ -2125,7 +2139,8 @@ public class ShipIO {
 			e.printStackTrace();
 		} finally {
 			try {
-				fw.close();
+				if (fw != null)
+					fw.close();
 			} catch (IOException e) {
 				Main.debug("IO Exception while closing export stream:");
 				e.printStackTrace();
@@ -2136,7 +2151,7 @@ public class ShipIO {
 
 		// ====================
 		// === Write layout.xml
-		
+
 		try {
 			fw = new FileWriter(pathDir + pathDelimiter + "data" + pathDelimiter + fileName + ".xml", false);
 
@@ -2155,41 +2170,36 @@ public class ShipIO {
 
 			// weapon mounts
 			fw.write("<weaponMounts>" + lineDelimiter);
-			FTLMount mt = null;
-			int count = 0;
-			for (int i = 0; i < Main.ship.mounts.size(); i++) {
+			int i = 0;
+
+			for (i = 0; i < Main.ship.mounts.size(); i++) {
 				FTLMount m = Main.ship.getMountWithIndex(i);
 
 				if (m == null) {
 					Main.erDialog.add("No weapon mount found for index " + (i + 1));
 					continue;
 				}
-				
-				if (count < Main.ship.weaponSlots) {
-					fw.write("\t");
-					fw.write("<mount x=\"" + m.pos.x + "\" ");
-					fw.write("y=\"" + m.pos.y + "\" ");
-					fw.write("rotate=\"" + m.isRotated() + "\" ");
-					fw.write("mirror=\"" + m.mirror + "\" ");
-					fw.write("gib=\"" + m.gib + "\" ");
-					fw.write("slide=\"" + m.slide.toString().toLowerCase() + "\"/>");
-					fw.write(lineDelimiter);
-					count++;
-				} else if (count == Main.ship.weaponSlots && Main.isSystemAssigned(Systems.ARTILLERY)) {
-					mt = m;
-				}
+
+				fw.write("\t");
+				fw.write("<mount x=\"" + m.pos.x + "\" ");
+				fw.write("y=\"" + m.pos.y + "\" ");
+				fw.write("rotate=\"" + m.isRotated() + "\" ");
+				fw.write("mirror=\"" + m.mirror + "\" ");
+				fw.write("gib=\"" + m.gib + "\" ");
+				fw.write("slide=\"" + m.slide.toString().toLowerCase() + "\"/>");
+
+				if (i == 4 && Main.isSystemAssigned(Systems.ARTILLERY))
+					fw.write(" <!-- artillery mount -->");
+
+				fw.write(lineDelimiter);
 			}
 
-			// (weapon slots)th mount is associated with artillery, has to be written as the last one on the list
-			if (mt != null) {
+			if (i < 5 && Main.isSystemAssigned(Systems.ARTILLERY)) {
 				fw.write("\t");
-				fw.write("<mount x=\"" + mt.pos.x + "\" ");
-				fw.write("y=\"" + mt.pos.y + "\" ");
-				fw.write("rotate=\"" + mt.isRotated() + "\" ");
-				fw.write("mirror=\"" + mt.mirror + "\" ");
-				fw.write("gib=\"" + mt.gib + "\" ");
-				fw.write("slide=\"" + mt.slide.toString().toLowerCase() + "\"/>");
+				fw.write("<!-- missing artillery mount! -->");
 				fw.write(lineDelimiter);
+
+				Main.erDialog.add("Artillery system is assigned, but the ship has less than 5 weapon mounts (5th weapon mount is always assigned to artillery)");
 			}
 
 			fw.write("</weaponMounts>" + lineDelimiter);
@@ -2218,7 +2228,8 @@ public class ShipIO {
 			e.printStackTrace();
 		} finally {
 			try {
-				fw.close();
+				if (fw != null)
+					fw.close();
 			} catch (IOException e) {
 				Main.debug("IO Exception while closing export stream:");
 				e.printStackTrace();
@@ -2428,7 +2439,8 @@ public class ShipIO {
 			e.printStackTrace();
 		} finally {
 			try {
-				fw.close();
+				if (fw != null)
+					fw.close();
 			} catch (IOException e) {
 				Main.debug("IO Exception while closing export stream:");
 				e.printStackTrace();
@@ -2471,7 +2483,7 @@ public class ShipIO {
 			}
 		}
 	}
-	
+
 	public static void zipToFTL(String path, String fileName) {
 		try {
 			FileOutputStream fos = new FileOutputStream((path + pathDelimiter + fileName + ".ftl"));
@@ -2568,14 +2580,14 @@ public class ShipIO {
 				if (!Main.ship.isPlayer) {
 					Main.ship.crewMap.put("random", 0);
 					Main.ship.crewMaxMap.put("random", 0);
-					
+
 					for (Systems sys : Main.ship.slotDirMap.keySet()) {
 						if (Main.ship.slotDirMap.get(sys) == null)
 							Main.ship.slotDirMap.put(sys, Slide.UP);
 					}
 				}
 			}
-			
+
 			if (Main.ship.version < 15) {
 				int i = 0;
 				for (FTLMount m : Main.ship.mounts) {
@@ -2587,16 +2599,34 @@ public class ShipIO {
 				}
 			}
 
+			if (Main.ship.version < 16) {
+				Main.ship.applyLinksFromIDs();
+			}
+
+			if (Main.ship.version < 17) {
+				for (FTLRoom r : Main.ship.rooms) {
+					r.leftDoors = new ArrayList<FTLDoor>();
+					r.rightDoors = new ArrayList<FTLDoor>();
+				}
+				for (FTLDoor d : Main.ship.doors) {
+					d.setLeftRoom(d.leftRoom);
+					d.setRightRoom(d.rightRoom);
+				}
+			}
+
+			if (Main.ship.version < 18) {
+				if (Main.isSystemAssigned(Systems.ARTILLERY) && Main.ship.mounts.size() > Main.ship.weaponSlots) {
+					Main.ship.artilleryMount = Main.ship.mounts.get(Main.ship.weaponSlots);
+					Main.ship.artilleryMount.isArtillery = true;
+				}
+			}
+
 			debug("\tloading linked ship images...");
 			loadShipImages(Main.ship, null);
 			debug("\t\tdone");
 
 			debug("\tloading weapon images...");
 			loadWeaponImages(Main.ship);
-			debug("\t\tdone");
-
-			debug("\tremapping mounts to weapons...");
-			remapMountsToWeapons();
 			debug("\t\tdone");
 
 			debug("\tloading unserializable data...");
@@ -2916,7 +2946,8 @@ public class ShipIO {
 			sc = new Scanner(fr);
 			sc.useDelimiter(Pattern.compile(lineDelimiter));
 
-			scan: while (sc.hasNext()) {
+			scan:
+			while (sc.hasNext()) {
 				s = sc.next();
 				pattern = Pattern.compile(".*?(<shipBlueprint name=\")" + blueprintName + "(\".*?)");
 				matcher = pattern.matcher(s);
@@ -2926,7 +2957,8 @@ public class ShipIO {
 						boolean nClass = false;
 						boolean nName = false;
 
-						name: while (sc.hasNext() && !s.contains("</shipBlueprint>")) {
+						name:
+						while (sc.hasNext() && !s.contains("</shipBlueprint>")) {
 							s = sc.next();
 							pattern = Pattern.compile(".*?<class>(.*?)</class>");
 							matcher = pattern.matcher(s);
@@ -2971,7 +3003,8 @@ public class ShipIO {
 			sc = new Scanner(fr);
 			sc.useDelimiter("\n");
 
-			scan: while (sc.hasNext()) {
+			scan:
+			while (sc.hasNext()) {
 				s = sc.next();
 				pattern = Pattern.compile("(<shipBlueprint name=\")" + blueprintName + "(\".*?)");
 				matcher = pattern.matcher(s);
@@ -2999,12 +3032,14 @@ public class ShipIO {
 				sc = new Scanner(fr);
 				sc.useDelimiter("\n");
 
-				scan: while (sc.hasNext()) {
+				scan:
+				while (sc.hasNext()) {
 					s = sc.next();
 					pattern = Pattern.compile("(<shipBlueprint name=\")(.*?)(\" layout=\")(.*?)(\" img=\")(.*?)(\">)");
 					matcher = pattern.matcher(s);
 					if (matcher.find() && s.contains(blueprintName)) {
-						seek: while (sc.hasNext() && !s.contains("</blueprintList>")) {
+						seek:
+						while (sc.hasNext() && !s.contains("</blueprintList>")) {
 							s = sc.next();
 							pattern = Pattern.compile(".*?(<name>)(.*?)(</name>)");
 							matcher = pattern.matcher(s);
@@ -3105,7 +3140,7 @@ public class ShipIO {
 				is.close();
 			} catch (IOException e) {
 			}
-			
+
 			contents.replaceAll("(?s)<!--.*?-->", "");
 
 			sc = new Scanner(contents);
@@ -3188,7 +3223,7 @@ public class ShipIO {
 				is.close();
 			} catch (IOException e) {
 			}
-			
+
 			contents.replaceAll("(?s)<!--.*?-->", "");
 
 			sc = new Scanner(contents);
@@ -3201,7 +3236,7 @@ public class ShipIO {
 				// weapons
 				pattern = Pattern.compile("(<weaponBlueprint name=\")(.*?)(\">)");
 				matcher = pattern.matcher(s);
-				if (matcher.find() && !matcher.group(2).equals("CRYSTAL_1") && !matcher.group(2).equals("ARTILLERY_FED")) { // the two are not intended to be loaded, they have no images
+				if (matcher.find() && !matcher.group(2).equals("CRYSTAL_1")) { // crystal_1 has no images
 					debug("\tfound a weapon blueprint tag: " + matcher.group(2));
 					tempItem = new FTLItem();
 					tempItem.blueprint = matcher.group(2);
@@ -3431,25 +3466,6 @@ public class ShipIO {
 		}
 	}
 
-	public static void readZip(String zipFile) {
-		try {
-			ZipFile zf = new ZipFile(zipFile);
-			Enumeration<? extends ZipEntry> entries = zf.entries();
-
-			while (entries.hasMoreElements()) {
-				ZipEntry ze = (ZipEntry) entries.nextElement();
-				long size = ze.getSize();
-				if (size > 0) {
-					BufferedReader br = new BufferedReader(new InputStreamReader(zf.getInputStream(ze)));
-					br.close();
-				}
-			}
-			zf.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
 	private static void resetUnnecessaryLinkIds() {
 		if (shipBeingLoaded == null)
 			return;
@@ -3461,13 +3477,15 @@ public class ShipIO {
 			// normally we'd reset leftId only if it was equal to l,
 			// but FTL itself is very inconsistent in this regard
 			// (rightId links to left room, leftId links to right room...)
-			if (d.leftRoom == l || d.leftRoom == r || d.leftRoom == Main.spaceRoom)
-				d.leftRoom = null;
-			if (d.rightRoom == l || d.rightRoom == r || d.rightRoom == Main.spaceRoom)
-				d.rightRoom = null;
+			if (d.leftRoom == l || d.leftRoom == r || d.leftRoom == Main.spaceRoom) {
+				d.setLeftRoom(null);
+			}
+			if (d.rightRoom == l || d.rightRoom == r || d.rightRoom == Main.spaceRoom) {
+				d.setRightRoom(null);
+			}
 		}
 	}
-	
+
 	/**
 	 * http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
 	 * The stream the function receives is closed later on.

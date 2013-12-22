@@ -177,12 +177,19 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	@Override
 	public void registerDown(int undoable) {
 		if (undoListener != null) {
+			FTLRoom r = Main.getRoomWithSystem(slot_sys);
+			if (r == null)
+				return;
 			if (undoable == Undoable.DIRECTION) {
-				ume = new UndoableDirectionEdit(slot_sys);
-				undoListener.undoableEditHappened(new UndoableEditEvent(Main.getRoomWithSystem(slot_sys).sysBox, ume));
+				if (r.sysBox != null) {
+					ume = new UndoableDirectionEdit(slot_sys);
+					undoListener.undoableEditHappened(new UndoableEditEvent(r.sysBox, ume));
+				}
 			} else if (undoable == Undoable.SLOT) {
-				ume = new UndoableSlotEdit(Main.getRoomWithSystem(slot_sys).sysBox);
-				undoListener.undoableEditHappened(new UndoableEditEvent(Main.getRoomWithSystem(slot_sys).sysBox, ume));
+				if (r.sysBox != null) {
+					ume = new UndoableSlotEdit(r.sysBox);
+					undoListener.undoableEditHappened(new UndoableEditEvent(r.sysBox, ume));
+				}
 			} else if (undoable == Undoable.LINK_LEFT && editBox != null) {
 				ume = new UndoableLinkEdit(editBox, true);
 				undoListener.undoableEditHappened(new UndoableEditEvent(editBox, ume));
@@ -200,13 +207,14 @@ public class CursorBox extends PaintBox implements DraggableBox {
 	@Override
 	public void registerUp(int undoable) {
 		if (ume != null) {
-			if (undoable == Undoable.DIRECTION && ume instanceof UndoableDirectionEdit) {
+			PaintBox sysBox = Main.getRoomWithSystem(slot_sys).sysBox;
+			if (undoable == Undoable.DIRECTION && ume instanceof UndoableDirectionEdit && sysBox != null) {
 				Slide temp = ((UndoableDirectionEdit) ume).getOldSlide();
 				if (temp != Main.ship.slotDirMap.get(slot_sys)) {
 					((UndoableDirectionEdit) ume).setCurrentSlide(Main.ship.slotDirMap.get(slot_sys));
 					Main.addEdit(ume);
 				}
-			} else if (undoable == Undoable.SLOT) {
+			} else if (undoable == Undoable.SLOT && sysBox != null) {
 				int temp = ((UndoableSlotEdit) ume).getOldValue();
 				if (temp != Main.ship.slotMap.get(slot_sys)) {
 					((UndoableSlotEdit) ume).setCurrentValue(Main.ship.slotMap.get(slot_sys));
@@ -395,12 +403,12 @@ public class CursorBox extends PaintBox implements DraggableBox {
 			if (e.button == 1) {
 				editBox = Main.selectedDoor;
 				registerDown(Undoable.LINK_LEFT);
-				Main.selectedDoor.leftRoom = r;
+				Main.selectedDoor.setLeftRoom(r);
 				registerUp(Undoable.LINK_LEFT);
 			} else if (e.button == 3) {
 				editBox = Main.selectedDoor;
 				registerDown(Undoable.LINK_RIGHT);
-				Main.selectedDoor.rightRoom = r;
+				Main.selectedDoor.setRightRoom(r);
 				registerUp(Undoable.LINK_RIGHT);
 			}
 

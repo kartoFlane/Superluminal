@@ -1243,6 +1243,7 @@ public class ShipPropertiesWindow extends Dialog {
 		spMaxWeapons.setFont(Main.appFont);
 		spMaxWeapons.setSize(35, 22);
 		spMaxWeapons.setMaximum(spSlots.getSelection());
+		spMaxWeapons.setEnabled(false);
 
 		Group grpPresetDefinition = new Group(weaponsC, SWT.NONE);
 		grpPresetDefinition.setFont(Main.appFont);
@@ -1344,6 +1345,7 @@ public class ShipPropertiesWindow extends Dialog {
 		spMaxDrones.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, true, 1, 1));
 		spMaxDrones.setSize(35, 22);
 		spMaxDrones.setMaximum(spSlotsDr.getSelection());
+		spMaxDrones.setEnabled(false);
 
 		Group grpPresetDefinitionDr = new Group(dronesC, SWT.NONE);
 		grpPresetDefinitionDr.setFont(Main.appFont);
@@ -1473,15 +1475,15 @@ public class ShipPropertiesWindow extends Dialog {
 				Main.ship.dronesBySet = btnUseSetDr.getSelection();
 
 				Main.ship.weaponSlots = spSlots.getSelection();
-				Main.ship.weaponCount = spMaxWeapons.getSelection();
 				Main.ship.droneSlots = spSlotsDr.getSelection();
-				Main.ship.droneCount = spMaxDrones.getSelection();
 
 				Main.ship.weaponSet.clear();
 
 				if (Main.ship.weaponsBySet) {
 					Main.ship.weaponSet.add(presets.getText());
+					Main.ship.weaponCount = spMaxWeapons.getSelection();
 				} else {
+					Main.ship.weaponCount = listWeapons.getItemCount();
 					for (String s : listWeapons.getItems()) {
 						s = s.substring(s.lastIndexOf("(") + 1, s.lastIndexOf(")"));
 						Main.ship.weaponSet.add(s);
@@ -1491,7 +1493,9 @@ public class ShipPropertiesWindow extends Dialog {
 				Main.ship.droneSet.clear();
 				if (Main.ship.dronesBySet) {
 					Main.ship.droneSet.add(presetsDr.getText());
+					Main.ship.droneCount = spMaxDrones.getSelection();
 				} else {
+					Main.ship.droneCount = listDrones.getItemCount();
 					for (String s : listDrones.getItems()) {
 						s = s.substring(s.lastIndexOf("(") + 1, s.lastIndexOf(")"));
 						Main.ship.droneSet.add(s);
@@ -1505,7 +1509,6 @@ public class ShipPropertiesWindow extends Dialog {
 				}
 
 				ShipIO.loadWeaponImages(Main.ship);
-				ShipIO.remapMountsToWeapons();
 				Main.ship.refreshMountPositions();
 
 				shell.setVisible(false);

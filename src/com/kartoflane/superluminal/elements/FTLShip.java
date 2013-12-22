@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
@@ -21,7 +22,7 @@ public class FTLShip implements Serializable {
 	final static public int ANCHOR = 12;
 
 	/** The most recent designation */
-	final public static int VERSION = 15;
+	final public static int VERSION = 18;
 	/** Ship's own designation */
 	public int version = 0;
 
@@ -33,6 +34,7 @@ public class FTLShip implements Serializable {
 	public Set<FTLDoor> doors;
 	public List<FTLMount> mounts;
 	public List<FTLGib> gibs;
+	public FTLMount artilleryMount;
 
 	// === Images
 	public String imagePath;
@@ -106,7 +108,7 @@ public class FTLShip implements Serializable {
 	// public HashMap<Systems, FTLInterior> interiorMap;
 
 	public FTLShip() {
-		rooms = new HashSet<FTLRoom>();
+		rooms = new TreeSet<FTLRoom>();
 		doors = new HashSet<FTLDoor>();
 		mounts = new LinkedList<FTLMount>();
 		gibs = new LinkedList<FTLGib>();
@@ -313,7 +315,7 @@ public class FTLShip implements Serializable {
 			return null;
 		
 		for (FTLRoom r : rooms) {
-			if (r != null && id != -1 && r.id == id)
+			if (r != null && r.id == id)
 				return r;
 		}
 		return null;

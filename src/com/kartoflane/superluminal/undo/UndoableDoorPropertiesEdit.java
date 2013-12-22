@@ -61,8 +61,8 @@ public class UndoableDoorPropertiesEdit extends AbstractUndoableEdit {
 
 	public void undo() throws CannotUndoException {
 		super.undo();
-		((FTLDoor) box).leftRoom = oldL;
-		((FTLDoor) box).rightRoom = oldR;
+		((FTLDoor) box).setLeftRoom(oldL);
+		((FTLDoor) box).setRightRoom(oldR);
 
 		if (oldL != null) {
 			Rectangle db = new Rectangle(0, 0, 0, 0);
@@ -132,8 +132,8 @@ public class UndoableDoorPropertiesEdit extends AbstractUndoableEdit {
 
 	public void redo() throws CannotRedoException {
 		super.redo();
-		((FTLDoor) box).leftRoom = currentL;
-		((FTLDoor) box).rightRoom = currentR;
+		((FTLDoor) box).setLeftRoom(currentL);
+		((FTLDoor) box).setRightRoom(currentR);
 
 		if (oldL != null) {
 			Rectangle db = new Rectangle(0, 0, 0, 0);

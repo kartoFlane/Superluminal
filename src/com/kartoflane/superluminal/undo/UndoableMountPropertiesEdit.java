@@ -15,6 +15,7 @@ public class UndoableMountPropertiesEdit extends AbstractUndoableEdit {
 	private FTLMount mount;
 	private FTLMount old;
 	private FTLMount current;
+	private FTLMount prevArtillery;
 	
 	public UndoableMountPropertiesEdit(PaintBox box) {
 		mount = (FTLMount) box;
@@ -26,6 +27,7 @@ public class UndoableMountPropertiesEdit extends AbstractUndoableEdit {
 		old.mirror = mount.mirror;
 		old.powered = mount.powered;
 		old.slide = mount.slide;
+		old.isArtillery = mount.isArtillery;
 	}
 
 	public FTLMount getOldValue() {
@@ -38,6 +40,10 @@ public class UndoableMountPropertiesEdit extends AbstractUndoableEdit {
 
 	public void setCurrentValue(FTLMount m) {
 		current = m;
+	}
+	
+	public void setPrevArtillery(FTLMount m) {
+		prevArtillery = m;
 	}
 
 	public String getPresentationName() {
@@ -59,9 +65,11 @@ public class UndoableMountPropertiesEdit extends AbstractUndoableEdit {
 		if (mount.powered != old.powered)
 			mount.setPowered(old.powered);
 		mount.slide = old.slide;
+		
+		mount.isArtillery = old.isArtillery;
+		Main.ship.artilleryMount = prevArtillery;
 
 		ShipIO.loadWeaponImages(Main.ship);
-		ShipIO.remapMountsToWeapons();
 		mount.updatePosition();
 		mount.redrawLoc(current.slide);
 	}
@@ -81,9 +89,15 @@ public class UndoableMountPropertiesEdit extends AbstractUndoableEdit {
 		if (mount.powered != current.powered)
 			mount.setPowered(current.powered);
 		mount.slide = current.slide;
+		
+		mount.isArtillery = current.isArtillery;
+		if (mount.isArtillery && mount != Main.ship.artilleryMount) {
+			if (Main.ship.artilleryMount != null)
+				Main.ship.artilleryMount.isArtillery = false;
+			Main.ship.artilleryMount = mount;
+		}
 
 		ShipIO.loadWeaponImages(Main.ship);
-		ShipIO.remapMountsToWeapons();
 		mount.updatePosition();
 		mount.redrawLoc(old.slide);
 	}

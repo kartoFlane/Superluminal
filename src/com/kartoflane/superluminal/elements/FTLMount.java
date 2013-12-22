@@ -70,6 +70,8 @@ public class FTLMount extends ImageBox implements Serializable, DraggableBox {
 	 */
 	public int gib;
 	
+	public boolean isArtillery = false;
+	
 	public void stripUnserializable() {
 		super.stripUnserializable();
 		Cache.checkInColor(this, dir_rgb);

@@ -135,7 +135,7 @@ public class Main {
 	public static final int MAX_DESCRIPTION_LENGTH = 200;
 
 	public final static String APPNAME = "Superluminal";
-	public final static String VERSION = "13-08-29";
+	public final static String VERSION = "13-12-22";
 
 	// === Important objects
 	public static Shell shell;
@@ -226,7 +226,7 @@ public class Main {
 	public static Slide mountToolSlide = Slide.UP;
 	public static boolean mountToolMirror = false;
 	public static boolean mountToolHorizontal = true;
-	
+
 	// === Flags for Room tool
 	public static boolean roomToolCreate = true;
 	// === Flags for system tool
@@ -357,7 +357,7 @@ public class Main {
 	public static boolean askedChoice = false;
 
 	public static UndoManager undoManager = new UndoManager();
-	
+
 	/**
 	 * Dummy room serving to mark that a door is linked to empty space, and serves as an airlock.
 	 */
@@ -369,6 +369,7 @@ public class Main {
 	 * ===== REMINDER: INCREMENT SHIP'S VERSION ON MAJOR RELEASES! AND UPDATE VERSION STRING!
 	 * === TODO
 	 * == IMMEDIATE PRIO: (bug fixes)
+	 * - ship selection when loading ftom .ftl
 	 * 
 	 * == MEDIUM PRIO: (new features)
 	 * - multiple systems for the same room for enemy ships
@@ -378,13 +379,12 @@ public class Main {
 	 * 
 	 * =========================================================================
 	 * CHANGELOG:
-	 *  - fixed an issue with weapon mounts sometimes having incorrect positions when their assigned weapon was changed.
-	 *  - fixed an oversight in mount properties undo/redo, the other mount's index would not be redone
-	 *  - fixed a bug with undo/redo that would cause layout.txt to have holes in its room indexing, causing FTL to crash whenever ship was selected in hangar
-	 *  - fixed a crash when loading/creating a new ship while an object was selected
-	 *  - added rudimentary 0x0 room editing
-	 *  - some minor code tweaks
-	 *  - fixed weapon and drone slots not being exported for enemy ships
+	 * - fixed the weapon count bug, causing the spinner to be disabled sometimes
+	 * - for weapons defined explicitly (by choosing them from the dropdown lists), weapon count is automatically set to the number of chosen weapons
+	 * - room IDs can now be changed via the room properties window (double-click) - allows to rearrange room layering (useful primarily for 0x0 rooms)
+	 * - tweaked door linking quite a bit, should prevent the door linking issue
+	 * - fixed crash when user tried to remove station from a room that was not eligible to contain any stations
+	 * - fixed image export, should always create the files correctly, instead of creating folders with the same name as the image
 	 */
 
 	// =================================================================================================== //
@@ -560,7 +560,7 @@ public class Main {
 		mountProperties = new MountPropertiesWindow(shell);
 		doorProperties = new DoorPropertiesWindow(shell);
 		toolSettings = new ToolSettingsWindow(shell);
-		
+
 		spaceRoom = new FTLRoom();
 		spaceRoom.id = -1;
 
@@ -1473,6 +1473,7 @@ public class Main {
 		// === Systems -> Remove System Image
 		final MenuItem mntmRemoveInterior = new MenuItem(menuSystem, SWT.NONE);
 		mntmRemoveInterior.setText("Remove Interior Image");
+		mntmRemoveInterior.setEnabled(false);
 
 		new MenuItem(menuSystem, SWT.SEPARATOR);
 
@@ -1942,7 +1943,7 @@ public class Main {
 				}
 			}
 		});
-		
+
 		shell.addTraverseListener(new TraverseListener() {
 			@Override
 			public void keyTraversed(TraverseEvent e) {
@@ -2008,7 +2009,7 @@ public class Main {
 							hullBox.deselect();
 						if (shieldBox.isSelected())
 							shieldBox.deselect();
-						
+
 						// === file menu options
 					} else if (e.stateMask == SWT.CTRL && e.keyCode == 's' && mntmSaveShip.getEnabled()) {
 						mntmSaveShip.notifyListeners(SWT.Selection, null);
@@ -2136,7 +2137,7 @@ public class Main {
 					toolSettings.open();
 				else
 					toolSettings.close();
-				
+
 				if (doorProperties.isVisible())
 					doorProperties.close();
 			}
@@ -2182,8 +2183,9 @@ public class Main {
 					mntmDrones.setEnabled(!isSystemAssigned(Systems.DRONES, selectedRoom));
 					mntmTeleporter.setSelection(selectedRoom.getSystem() == Systems.TELEPORTER);
 					mntmTeleporter.setEnabled(!isSystemAssigned(Systems.TELEPORTER, selectedRoom));
-					// ===
+					// === interior images
 					mntmSysImage.setEnabled(!selectedRoom.getSystem().equals(Systems.EMPTY) && !selectedRoom.getSystem().equals(Systems.TELEPORTER));
+					mntmRemoveInterior.setEnabled(selectedRoom.getSysBox() != null && selectedRoom.getSysBox().interior != null);
 					mntmGlow.setEnabled(selectedRoom.getSystem().equals(Systems.PILOT) || selectedRoom.getSystem().equals(Systems.SHIELDS)
 							|| selectedRoom.getSystem().equals(Systems.WEAPONS) || selectedRoom.getSystem().equals(Systems.CLOAKING) || selectedRoom.getSystem().equals(Systems.ENGINES));
 				}
@@ -2878,7 +2880,7 @@ public class Main {
 
 					btnCloaked.setEnabled(!ShipIO.isNull(ship.cloakPath) && !tltmGib.getSelection());
 
-					recalculateShieldCenter();
+					recalculateShieldCenter(Main.ship.findLowBounds(), Main.ship.findHighBounds());
 
 					mntmSaveShip.setEnabled(true);
 					mntmSaveShipAs.setEnabled(true);
@@ -2989,7 +2991,7 @@ public class Main {
 					debug(selectedBox.getClass().getSimpleName());
 					selectedBox.deselect();
 				}
-				
+
 				if (!askedChoice) {
 					askSaveChoice();
 					askedChoice = false;
@@ -3081,11 +3083,11 @@ public class Main {
 
 				debug("Resetting UI...");
 				anchor.setVisible(false);
-				
+
 				idList.clear();
 				clearButtonImg();
 				currentPath = null;
-				
+
 				btnCloaked.setEnabled(false);
 				tltmPointer.setEnabled(false);
 				tltmRoom.setEnabled(false);
@@ -3121,7 +3123,7 @@ public class Main {
 				savedSinceAction = true;
 				shell.setText(APPNAME + " - Ship Editor");
 
-				//canvas.redraw();
+				// canvas.redraw();
 			}
 		});
 
@@ -3622,25 +3624,46 @@ public class Main {
 		corners[3] = new Rectangle(r.getBounds().x + r.getBounds().width - CORNER, r.getBounds().y + r.getBounds().height - CORNER, CORNER, CORNER);
 	}
 
-	public static void recalculateShieldCenter() {
+	public static void recalculateShieldCenter(Point oldLow, Point oldHigh) {
+		/*
+		 * if (Main.ship != null) {
+		 * Point center = new Point(0, 0);
+		 * center.x = shieldBox.getLocation().x + shieldBox.getSize().x / 2 - ship.ellipse.x;
+		 * center.y = shieldBox.getLocation().y + shieldBox.getSize().y / 2 - ship.ellipse.y + (ship.isPlayer ? 0 : 110);
+		 * 
+		 * Point low = ship.findLowBounds();
+		 * Point high = ship.findHighBounds();
+		 * 
+		 * // new center
+		 * low.x = low.x + (high.x - low.x) / 2;
+		 * low.y = low.y + (high.y - low.y) / 2;
+		 * 
+		 * // difference
+		 * center.x = center.x - low.x;
+		 * center.y = center.y - low.y;
+		 * 
+		 * low = shieldBox.getLocation();
+		 * shieldBox.setLocation(low.x - center.x, low.y - center.y);
+		 * }
+		 */
 		if (Main.ship != null) {
-			Point center = new Point(0, 0);
-			center.x = shieldEllipse.x + shieldEllipse.width / 2 - ship.ellipse.x;
-			center.y = shieldEllipse.y + shieldEllipse.height / 2 - ship.ellipse.y + (ship.isPlayer ? 0 : 110);
+			oldLow.x = oldLow.x + (oldHigh.x - oldLow.x) / 2;
+			oldLow.y = oldLow.y + (oldHigh.y - oldLow.y) / 2;
 
-			Point low = ship.findLowBounds();
-			Point high = ship.findHighBounds();
+			Point p = Main.ship.findLowBounds();
+			Point pt = Main.ship.findHighBounds();
+			p.x = p.x + (pt.x - p.x) / 2;
+			p.y = p.y + (pt.y - p.y) / 2;
 
-			// new center
-			low.x = low.x + (high.x - low.x) / 2;
-			low.y = low.y + (high.y - low.y) / 2;
+			pt.x = p.x - oldLow.x;
+			pt.y = p.y - oldLow.y;
 
-			// difference
-			center.x = center.x - low.x;
-			center.y = center.y - low.y;
+			p = Main.shieldBox.getLocation();
+			Main.shieldBox.setLocation(p.x + pt.x, p.y + pt.y);
 
-			low = shieldBox.getLocation();
-			shieldBox.setLocation(low.x - center.x, low.y - center.y);
+			p = Main.ship.findLowBounds();
+			Main.ship.offset.x = (p.x - Main.ship.anchor.x + 10) / 35;
+			Main.ship.offset.y = (p.y - Main.ship.anchor.y + 10) / 35;
 		}
 	}
 
@@ -3694,7 +3717,7 @@ public class Main {
 	public static FTLRoom getRoomContainingRect(Rectangle rect) {
 		if (rect != null) {
 			for (FTLRoom r : ship.rooms) {
-				if (r.getBounds().intersects(rect))
+				if (r != null && r.getBounds().intersects(rect))
 					return r;
 			}
 		}
@@ -3703,7 +3726,7 @@ public class Main {
 
 	public static FTLRoom getRoomAt(int x, int y) {
 		for (FTLRoom r : ship.rooms) {
-			if (r.getBounds().contains(x, y))
+			if (r != null && r.getBounds().contains(x, y))
 				return r;
 		}
 		return null;
@@ -3711,7 +3734,7 @@ public class Main {
 
 	public static boolean isSystemAssigned(Systems sys, FTLRoom r) {
 		for (FTLRoom rm : ship.rooms) {
-			if (r != null && rm != r && rm.getSystem() == sys)
+			if (rm != null && r != null && rm != r && rm.getSystem() == sys)
 				return true;
 		}
 		return false;
@@ -3719,7 +3742,7 @@ public class Main {
 
 	public static boolean isSystemAssigned(Systems sys) {
 		for (FTLRoom rm : ship.rooms) {
-			if (rm.getSystem() == sys)
+			if (rm != null && rm.getSystem() == sys)
 				return true;
 		}
 		return false;
@@ -3727,15 +3750,17 @@ public class Main {
 
 	public static boolean isSystemAssigned(Systems sys, FTLShip ship) {
 		for (FTLRoom rm : ship.rooms) {
-			if (rm.getSystem() == sys)
+			if (rm != null && rm.getSystem() == sys)
 				return true;
 		}
 		return false;
 	}
 
 	public static FTLRoom getRoomWithSystem(Systems sys) {
+		if (sys == null)
+			return null;
 		for (FTLRoom rm : ship.rooms) {
-			if (rm.getSystem().equals(sys))
+			if (rm != null && rm.getSystem().equals(sys))
 				return rm;
 		}
 		return null;
@@ -3744,7 +3769,7 @@ public class Main {
 	public static Rectangle getRectFromStation(FTLRoom r) {
 		r.slot = Main.ship.slotMap.get(r.getSystem());
 		int x = 0, y = 0;
-		
+
 		if (r.getBounds().width > 0 && r.getBounds().height > 0) {
 			int w = r.getBounds().width / 35;
 			y = (int) Math.floor(r.slot / w);
@@ -3815,9 +3840,8 @@ public class Main {
 	 */
 	public static FTLDoor wallToDoor(Rectangle rect) {
 		for (FTLDoor dr : ship.doors) {
-			if (rect != null && rect.intersects(dr.getBounds()) && rect.width == dr.getBounds().width) {
+			if (dr != null && rect != null && rect.intersects(dr.getBounds()) && rect.width == dr.getBounds().width)
 				return dr;
-			}
 		}
 		return null;
 	}
@@ -3827,9 +3851,8 @@ public class Main {
 	 */
 	public static FTLDoor getDoorAt(int x, int y) {
 		for (FTLDoor dr : ship.doors) {
-			if (dr.getBounds().contains(x, y)) {
+			if (dr != null && dr.getBounds().contains(x, y))
 				return dr;
-			}
 		}
 		return null;
 	}
@@ -4342,17 +4365,31 @@ public class Main {
 		Rectangle redrawBounds = null;
 		// unregister and hide
 		if (box instanceof FTLRoom) {
-			((FTLRoom) box).deselect();
-			ship.rooms.remove(box);
-			idList.remove(((FTLRoom) box).id);
-			recalculateShieldCenter();
-			layeredPainter.remove(box);
+			FTLRoom r = (FTLRoom) box;
+
+			for (FTLDoor d : r.leftDoors) {
+				d.leftId = -2;
+				d.leftRoom = null;
+			}
+			for (FTLDoor d : r.rightDoors) {
+				d.rightId = -2;
+				d.rightRoom = null;
+			}
+
+			Point oldL = Main.ship.findLowBounds();
+			Point oldH = Main.ship.findHighBounds();
+
+			r.deselect();
+			ship.rooms.remove(r);
+			idList.remove(r.id);
+			recalculateShieldCenter(oldL, oldH);
+			layeredPainter.remove(r);
 
 			if (ship.rooms.size() == 0)
 				btnShields.setEnabled(false);
 
-			box.setVisible(false);
-			redrawBounds = box.getBounds();
+			r.setVisible(false);
+			redrawBounds = r.getBounds();
 		} else if (box instanceof FTLDoor) {
 			((FTLDoor) box).deselect();
 			ship.doors.remove(box);
@@ -4361,9 +4398,13 @@ public class Main {
 
 			redrawBounds = box.getBounds();
 		} else if (box instanceof FTLMount) {
-			((FTLMount) box).deselect();
+			FTLMount m = (FTLMount) box;
+			m.deselect();
 			ship.mounts.remove(box);
 			layeredPainter.remove(box);
+
+			if (m.isArtillery)
+				Main.ship.artilleryMount = null;
 
 			redrawBounds = box.getBounds();
 			redrawBounds.x -= 40;
@@ -4393,12 +4434,24 @@ public class Main {
 		Rectangle redrawBounds = null;
 		// register back and show
 		if (box instanceof FTLRoom) {
-			// ((FTLRoom) box).id = getLowestId();
-			((FTLRoom) box).add(ship);
-			((FTLRoom) box).assignSystem(((FTLRoom) box).sysBox);
+			FTLRoom r = (FTLRoom) box;
 
-			box.setVisible(true);
-			redrawBounds = box.getBounds();
+			if (ship.getRoomWithId(r.id) != null)
+				r.id = getLowestId();
+			r.add(ship);
+			r.assignSystem(r.sysBox);
+
+			for (FTLDoor d : r.leftDoors) {
+				d.leftId = r.id;
+				d.leftRoom = r;
+			}
+			for (FTLDoor d : r.rightDoors) {
+				d.rightId = r.id;
+				d.rightRoom = r;
+			}
+
+			r.setVisible(true);
+			redrawBounds = r.getBounds();
 		} else if (box instanceof FTLDoor) {
 			((FTLDoor) box).add(ship);
 
@@ -4415,7 +4468,12 @@ public class Main {
 			m.setRotated(m.isRotated());
 
 			ShipIO.loadWeaponImages(Main.ship);
-			ShipIO.remapMountsToWeapons();
+
+			if (m.isArtillery && m != Main.ship.artilleryMount) {
+				if (Main.ship.artilleryMount != null)
+					Main.ship.artilleryMount.isArtillery = false;
+				Main.ship.artilleryMount = m;
+			}
 
 			box.setVisible(true);
 			redrawBounds = box.getBounds();
@@ -4565,9 +4623,9 @@ public class Main {
 		String wow64Arch = System.getenv("PROCESSOR_ARCHITEW6432");
 
 		String realArch = null;
-		
+
 		realArch = arch == null
-				? System.getProperty("os.arch") 
+				? System.getProperty("os.arch")
 				: (arch.endsWith("64") || wow64Arch != null && wow64Arch.endsWith("64")
 						? "64"
 						: "32");

@@ -77,6 +77,7 @@ public class HullBox extends ImageBox implements DraggableBox {
 			cloakImage = Cache.checkOutImageAbsolute(this, path);
 	}
 
+	@Override
 	public void setLocation(int x, int y) {
 		Rectangle oldBounds = Main.cloneRect(bounds);
 		bounds.x = x;
@@ -204,10 +205,10 @@ public class HullBox extends ImageBox implements DraggableBox {
 				|| Main.canvas.getBounds().contains(bounds.x + 35, bounds.y + bounds.height - 35) || Main.canvas.getBounds().contains(bounds.x + bounds.width - 35, bounds.y + 35)) {
 			orig.x = bounds.x;
 			orig.y = bounds.y;
+			setLocation(Main.ship.imageRect.x, Main.ship.imageRect.y);
 		} else {
 			Point p = new Point(bounds.x, bounds.y);
-			bounds.x = orig.x;
-			bounds.y = orig.y;
+			setLocation(orig.x, orig.y);
 			Main.canvas.redraw(p.x, p.y, bounds.width, bounds.height, false);
 			Main.canvasRedraw(bounds, false);
 		}
@@ -239,9 +240,8 @@ public class HullBox extends ImageBox implements DraggableBox {
 				Rectangle oldBounds = Main.cloneRect(bounds);
 
 				if (Main.modShift) { // dragging in one direction, decide direction
-					if (Math.pow((orig.x + offset.x - e.x), 2) + Math.pow((orig.y + offset.y - e.y), 2) >= 3 && (Main.dragDir == null || Main.dragDir == AxisFlag.BOTH)) { // to prevent picking wrong
-																																											// direction due to
-																																											// unintended mouse movement
+					// 3 pixel radius to prevent picking wrong direction due to accidental mouse movement
+					if (Math.pow((orig.x + offset.x - e.x), 2) + Math.pow((orig.y + offset.y - e.y), 2) >= 3 && (Main.dragDir == null || Main.dragDir == AxisFlag.BOTH)) {
 						float angle = Main.getAngle(orig.x + offset.x, orig.y + offset.y, e.x, e.y);
 						// Main.debug(angle);
 						if ((angle > 315 || angle <= 45) || (angle > 135 && angle <= 225)) { // Y axis

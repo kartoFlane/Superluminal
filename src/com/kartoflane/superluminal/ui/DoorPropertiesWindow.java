@@ -149,8 +149,8 @@ public class DoorPropertiesWindow {
 			public void widgetSelected(SelectionEvent e) {
 				if (currentDoor.leftRoom != fid || currentDoor.rightRoom != sid)
 					registerDown(Undoable.DOOR_PROP);
-				currentDoor.leftRoom = fid;
-				currentDoor.rightRoom = sid;
+				currentDoor.setLeftRoom(fid);
+				currentDoor.setRightRoom(sid);
 
 				registerUp(Undoable.DOOR_PROP);
 

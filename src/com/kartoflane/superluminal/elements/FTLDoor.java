@@ -302,4 +302,30 @@ public class FTLDoor extends PaintBox implements Serializable, DraggableBox {
 	public Point getOffset() {
 		return null;
 	}
+	
+	public void setLeftRoom(FTLRoom r) {
+		if (leftRoom != r) {
+			if (leftRoom != null)
+				leftRoom.leftDoors.remove(this);
+			if (r != null) {
+				r.leftDoors.add(this);
+				leftId = r.id;
+			} else
+				leftId = -2;
+			leftRoom = r;
+		}
+	}
+
+	public void setRightRoom(FTLRoom r) {
+		if (rightRoom != r) {
+			if (rightRoom != null)
+				rightRoom.rightDoors.remove(this);
+			if (r != null) {
+				r.rightDoors.add(this);
+				rightId = r.id;
+			} else
+				rightId = -2;
+			rightRoom = r;
+		}
+	}
 }

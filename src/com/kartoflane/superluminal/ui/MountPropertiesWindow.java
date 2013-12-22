@@ -3,12 +3,17 @@ package com.kartoflane.superluminal.ui;
 import javax.swing.event.UndoableEditEvent;
 import javax.swing.undo.AbstractUndoableEdit;
 
-import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
 
 import com.kartoflane.superluminal.core.Main;
@@ -17,12 +22,6 @@ import com.kartoflane.superluminal.elements.FTLMount;
 import com.kartoflane.superluminal.elements.Slide;
 import com.kartoflane.superluminal.undo.Undoable;
 import com.kartoflane.superluminal.undo.UndoableMountPropertiesEdit;
-
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
 
 public class MountPropertiesWindow {
 	protected Shell shell;
@@ -35,9 +34,10 @@ public class MountPropertiesWindow {
 	private Combo comboDir;
 	private Button btnOk;
 	private Button btnCancel;
-	
+
 	private boolean toolMode = false;
 	AbstractUndoableEdit ume = null;
+	private Button btnArtillery;
 
 	public MountPropertiesWindow(Shell parent) {
 		shell = new Shell(parent, SWT.BORDER | SWT.TITLE);
@@ -85,6 +85,12 @@ public class MountPropertiesWindow {
 		btnPowered.setText("Powered (in editor only)");
 		btnPowered.setFont(Main.appFont);
 
+		btnArtillery = new Button(shell, SWT.CHECK);
+		btnArtillery.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
+		btnArtillery.setText("Artillery mount");
+		btnArtillery.setEnabled(false);
+		btnArtillery.setVisible(false); // TODO make it visible again once a fix has been found...
+
 		Label lblDirection = new Label(shell, SWT.NONE);
 		lblDirection.setToolTipText("Direction in which the mount will extend once powered.\n(Shift-right-click)");
 		lblDirection.setText("Direction:");
@@ -124,7 +130,7 @@ public class MountPropertiesWindow {
 				}
 			}
 		});
-		
+
 		btnRotated.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -133,7 +139,7 @@ public class MountPropertiesWindow {
 				}
 			}
 		});
-		
+
 		comboDir.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -153,9 +159,10 @@ public class MountPropertiesWindow {
 			public void widgetSelected(SelectionEvent e) {
 				if (currentMount.index != spNumber.getSelection() - 1 || currentMount.gib != spGib.getSelection() ||
 						currentMount.mirror != btnMirrored.getSelection() || currentMount.rotate != btnRotated.getSelection() ||
-						currentMount.powered != btnPowered.getSelection() || currentMount.slide != Slide.values()[comboDir.getSelectionIndex()])
+						currentMount.powered != btnPowered.getSelection() || currentMount.slide != Slide.values()[comboDir.getSelectionIndex()] ||
+						currentMount.isArtillery != btnArtillery.getSelection())
 					registerDown(Undoable.MOUNT_PROP);
-				
+
 				int oldIndex = currentMount.index;
 				int newIndex = spNumber.getSelection() - 1;
 				FTLMount otherMount = null;
@@ -165,7 +172,7 @@ public class MountPropertiesWindow {
 					if (otherMount != null)
 						otherMount.index = oldIndex;
 				}
-				
+
 				currentMount.gib = spGib.getSelection();
 				currentMount.setMirrored(btnMirrored.getSelection());
 				currentMount.setRotated(btnRotated.getSelection());
@@ -177,21 +184,31 @@ public class MountPropertiesWindow {
 					currentMount.slide = Slide.values()[index];
 					currentMount.redrawLoc(slideOld);
 				}
-				
+
 				ShipIO.loadWeaponImages(Main.ship);
-				ShipIO.remapMountsToWeapons();
-				
+
 				currentMount.setPositionRelative(currentMount.pos.x, currentMount.pos.y);
 				if (otherMount != null)
 					otherMount.setPositionRelative(otherMount.pos.x, otherMount.pos.y);
-				//Main.canvasRedraw(currentMount.getBounds(), true);
-				
+				// Main.canvasRedraw(currentMount.getBounds(), true);
+
+				if (btnArtillery.getSelection() && Main.ship.artilleryMount != currentMount) {
+					if (Main.ship.artilleryMount != null)
+						Main.ship.artilleryMount.isArtillery = false;
+					Main.ship.artilleryMount = currentMount;
+					currentMount.isArtillery = true;
+				} else if (!btnArtillery.getSelection() && Main.ship.artilleryMount == currentMount) {
+					if (Main.ship.artilleryMount != null)
+						Main.ship.artilleryMount.isArtillery = false;
+					Main.ship.artilleryMount = null;
+				}
+
 				registerUp(Undoable.MOUNT_PROP);
 
 				close();
 			}
 		});
-		
+
 		shell.addListener(SWT.Traverse, new Listener() {
 			@Override
 			public void handleEvent(Event e) {
@@ -213,35 +230,37 @@ public class MountPropertiesWindow {
 			btnMirrored.setSelection(currentMount.isMirrored());
 			btnRotated.setSelection(currentMount.isRotated());
 			btnPowered.setSelection(currentMount.isPowered());
-	
+			// btnArtillery.setSelection(Main.isSystemAssigned(Systems.ARTILLERY) && Main.ship.artilleryMount == currentMount);
+
 			comboDir.select(currentMount.slide.ordinal());
-	
+
 			spNumber.setMaximum(Main.ship.mounts.size());
 			spGib.setMaximum(Main.ship.gibs.size());
 		}
-		
+
 		btnOk.setEnabled(true);
 		btnCancel.setEnabled(true);
 		spNumber.setEnabled(true);
 		spGib.setEnabled(true);
 		btnPowered.setEnabled(true);
-		
+		// btnArtillery.setEnabled(Main.isSystemAssigned(Systems.ARTILLERY));
+
 		toolMode = false;
 	}
-	
+
 	public Shell getShell() {
 		return shell;
 	}
-	
+
 	public boolean isVisible() {
 		return shell.isVisible();
 	}
-	
+
 	public void close() {
 		shell.setVisible(false);
 		currentMount = null;
 	}
-	
+
 	public void refresh() {
 		if (toolMode) {
 			btnMirrored.setSelection(Main.mountToolMirror);
@@ -254,14 +273,15 @@ public class MountPropertiesWindow {
 			comboDir.select(currentMount.slide.ordinal());
 		}
 	}
-	
+
 	private void registerDown(int undoable) {
 		if (undoable == Undoable.MOUNT_PROP) {
 			ume = new UndoableMountPropertiesEdit(currentMount);
+			((UndoableMountPropertiesEdit) ume).setPrevArtillery(Main.ship.artilleryMount);
 			currentMount.undoListener.undoableEditHappened(new UndoableEditEvent(currentMount, ume));
 		}
 	}
-	
+
 	private void registerUp(int undoable) {
 		if (ume != null) {
 			if (undoable == Undoable.MOUNT_PROP) {
@@ -272,7 +292,8 @@ public class MountPropertiesWindow {
 				current.mirror = currentMount.mirror;
 				current.powered = currentMount.powered;
 				current.slide = currentMount.slide;
-				
+				current.isArtillery = currentMount.isArtillery;
+
 				((UndoableMountPropertiesEdit) ume).setCurrentValue(current);
 				Main.addEdit(ume);
 			}

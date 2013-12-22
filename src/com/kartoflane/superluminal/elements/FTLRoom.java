@@ -38,6 +38,8 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 	public SystemBox sysBox = null;
 	public int slot;
 	public Slide dir = null;
+	public ArrayList<FTLDoor> leftDoors = new ArrayList<FTLDoor>();
+	public ArrayList<FTLDoor> rightDoors = new ArrayList<FTLDoor>();
 
 	/**
 	 * Path to the interior image; kept for compatibility
@@ -763,6 +765,10 @@ public class FTLRoom extends ColorBox implements Serializable, Comparable<FTLRoo
 
 			p = Main.shieldBox.getLocation();
 			Main.shieldBox.setLocation(p.x + pt.x, p.y + pt.y);
+			
+			p = Main.ship.findLowBounds();
+			Main.ship.offset.x = (p.x - Main.ship.anchor.x + 10) / 35;
+			Main.ship.offset.y = (p.y - Main.ship.anchor.y + 10) / 35;
 		}
 	}
 

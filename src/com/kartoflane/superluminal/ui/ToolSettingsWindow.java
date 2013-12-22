@@ -159,9 +159,13 @@ public class ToolSettingsWindow {
 		compSys.setVisible(Main.getSelectedTool() == Main.tltmSystem);
 
 		btnSplit.setSelection(false);
+		btnSplit.notifyListeners(SWT.Selection, null);
 		btnCreate.setSelection(true);
+		btnCreate.notifyListeners(SWT.Selection, null);
 		btnRemove.setSelection(false);
+		btnRemove.notifyListeners(SWT.Selection, null);
 		btnPlace.setSelection(true);
+		btnPlace.notifyListeners(SWT.Selection, null);
 		
 		shell.pack();
 	}

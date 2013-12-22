@@ -59,9 +59,9 @@ public class UndoableLinkEdit extends AbstractUndoableEdit {
 	public void undo() throws CannotUndoException {
 		super.undo();
 		if (left)
-			((FTLDoor) box).leftRoom = old;
+			((FTLDoor) box).setLeftRoom(old);
 		else
-			((FTLDoor) box).rightRoom = old;
+			((FTLDoor) box).setRightRoom(old);
 
 		if (old != null) {
 			Rectangle db = new Rectangle(0, 0, 0, 0);
@@ -100,9 +100,9 @@ public class UndoableLinkEdit extends AbstractUndoableEdit {
 	public void redo() throws CannotRedoException {
 		super.redo();
 		if (left)
-			((FTLDoor) box).leftRoom = current;
+			((FTLDoor) box).setLeftRoom(current);
 		else
-			((FTLDoor) box).rightRoom = current;
+			((FTLDoor) box).setRightRoom(current);
 
 		if (old != null) {
 			Rectangle db = new Rectangle(0, 0, 0, 0);
