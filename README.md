@@ -5,6 +5,8 @@ Superluminal is a ship editor for the game [FTL: Faster Than Light](http://www.f
 
 To download the editor or post comments, visit the [editor's thread](http://www.ftlgame.com/forum/viewtopic.php?f=12&t=11251) on the official forums.
 
+The source code is admittedly a horrible aberration, and I'd be more comfortable if no-one snooped around it, as it's a total disgrace... Total rewrite is already on its way.
+
 
 Requirements
 ------------
